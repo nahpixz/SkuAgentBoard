@@ -4,6 +4,7 @@ import { MALL_LIST } from './api';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { Info, Tag } from 'lucide-react';
 
 function App() {
   const [c2cData,setC2cData] = useState<MALL_LIST.c2cItem[]>([])
@@ -72,46 +73,82 @@ function App() {
     <>
       <Button onClick={handleClick}>Debug</Button>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 p-2">
         {c2cData.map((item) => (
-          <Card key={item.c2cItemsId}>
-            <CardHeader>
-              <img src={`https:${item.detailDtoList[0].img}`} alt={item.detailDtoList[0].name} className="w-full h-48 object-cover" />
-              <CardTitle>{item.detailDtoList[0].name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-center">
-                <div>
-                  <span className="text-red-500 font-bold text-lg">{item.showPrice}</span>
-                  <span className="text-gray-500 line-through ml-2">{item.showMarketPrice}</span>
-                </div>
+          <Card key={item.c2cItemsId} className="overflow-hidden py-0 gap-1">
+             
+            <div className="relative one bg-[#EDEDED]">
+              <img 
+                src={`https:${item.detailDtoList[0].img}`} 
+                alt={item.detailDtoList[0].name} 
+                className="w-full h-48 object-cover" 
+              />
+              
+              {/* 计数堆叠在图片上 */}
+              <HoverCard>
+                <HoverCardTrigger asChild>
+                  <div className="absolute bottom-2 right-2 bg-black/60 text-white px-2 py-0.5 rounded-full text-xs backdrop-blur-sm cursor-pointer">
+                    x{item.totalItemsCount}
+                  </div>
+                </HoverCardTrigger>
+                <HoverCardContent className="w-80">
+                  <ul className="text-sm">
+                    {item.detailDtoList.map((sku) => (
+                      <li key={sku.skuId} className="flex justify-between py-1 border-b border-gray-100 last:border-0">
+                        <span>{sku.name}</span>
+                        <span>¥{sku.marketPrice}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </HoverCardContent>
+              </HoverCard>
+              
+              <HoverCard>
+                <HoverCardTrigger asChild>
+                  <button 
+                    onClick={() => alert(`skuId: ${item.detailDtoList[0].skuId}`)}
+                    className="absolute top-2 right-2 bg-black/40 text-white/90 px-1.5 py-0.5 text-[10px] line-through rounded-sm backdrop-blur-sm hover:bg-black/60 transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <Info className="h-2.5 w-2.5 opacity-70" />
+                    <span>¥{item.showMarketPrice}</span>
+                    
+                  </button>
+                </HoverCardTrigger>
+                <HoverCardContent className="w-auto p-2">
+                  <span className="text-xs">点击显示skuId: {item.detailDtoList[0].skuId}</span>
+                </HoverCardContent>
+              </HoverCard>
+            </div>
+            
+            <div className="p-1">
+              <div className="flex items-center gap-1">
                 <HoverCard>
                   <HoverCardTrigger asChild>
-                    <span className="text-sm text-gray-600 cursor-pointer">
-                      x{item.totalItemsCount}
+                    <button 
+                      onClick={() => alert(`c2cItemsId: ${item.c2cItemsId}`)}
+                      className="bg-[#786DF6] text-white px-2 py-0.5 rounded-sm text-sm font-bold shadow-sm hover:bg-red-600 transition-colors cursor-pointer flex items-center gap-1 flex-shrink-0"
+                    >
+                      {/* <Tag className="h-3 w-3 opacity-70" /> */}
+                      <span>¥{item.showPrice}</span>
+                    </button>
+                  </HoverCardTrigger>
+                  <HoverCardContent className="w-auto p-2">
+                    <span className="text-xs">点击显示c2cItemsId: {item.c2cItemsId}</span>
+                  </HoverCardContent>
+                </HoverCard>
+                <HoverCard>
+                  <HoverCardTrigger asChild>
+                    <span className="text-sm font-medium truncate cursor-help max-w-[calc(100%-80px)]">
+                      {item.detailDtoList[0].name}
                     </span>
                   </HoverCardTrigger>
-                  <HoverCardContent className="w-80">
-                    <ul>
-                      {item.detailDtoList.map((sku) => (
-                        <li key={sku.skuId} className="flex justify-between">
-                          <span>{sku.name}</span>
-                          <span>¥{sku.marketPrice}</span>
-                        </li>
-                      ))}
-                    </ul>
+                  <HoverCardContent className="w-80 p-2">
+                    <p className="text-sm">{item.detailDtoList[0].name}</p>
                   </HoverCardContent>
                 </HoverCard>
               </div>
-            </CardContent>
-            <CardFooter className="flex justify-end gap-2">
-              <Button variant="link" onClick={() => alert(`c2cItemsId: ${item.c2cItemsId}`)}>
-                Show c2cItemsId
-              </Button>
-              <Button variant="link" onClick={() => alert(`skuId: ${item.detailDtoList[0].skuId}`)}>
-                Show skuId
-              </Button>
-            </CardFooter>
+            </div>
+            
           </Card>
         ))}
       </div>
