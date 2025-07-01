@@ -1,68 +1,43 @@
 import { useEffect, useState } from 'react';
 import './App.css';
-import { MALL_LIST } from './api';
+import { C2C_DETAIL, C2C_LIST, MALL_DETAIL } from './api';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Info, Tag } from 'lucide-react';
 
 function App() {
-  const [c2cData,setC2cData] = useState<MALL_LIST.c2cItem[]>([])
+  const [c2cLastPage,setC2cLastPage] = useState<string>("")
+  const [c2cData,setC2cData] = useState<C2C_LIST.c2cItem[]>([])
   function handleClick() {
     console.log("click")
     // browser.devtools.network.getHAR(function (logInfo) {
     //   console.log('log',logInfo)
     // })
-    // Mock data for demonstration
-    const mockData: MALL_LIST.c2cItem[] = [
-      {
-        c2cItemsId: 12345,
-        c2cItemsName: '示例商品',
-        detailDtoList: [
-          {
-            blindBoxId: 1,
-            img: 'https://via.placeholder.com/150',
-            isHidden: false,
-            itemsId: 54321,
-            marketPrice: 200,
-            name: 'SKU 1',
-            skuId: 9876,
-            type: 1,
-          },
-          {
-            blindBoxId: 2,
-            img: 'https://via.placeholder.com/150',
-            isHidden: false,
-            itemsId: 54322,
-            marketPrice: 300,
-            name: 'SKU 2',
-            skuId: 9877,
-            type: 0,
-          },
-        ],
-        isMyPublish: false,
-        paymentTime: 1672502400,
-        price: 150,
-        showMarketPrice: '¥200.00',
-        showPrice: '¥150.00',
-        totalItemsCount: 1,
-        type: 1,
-        uface: '',
-        uid: '123',
-        uname: '测试用户',
-        uspaceJumpUrl: null,
-      },
-    ];
-    setC2cData(mockData);
   };
+
+  function JumpTo(url: string) {
+    browser.devtools.inspectedWindow.eval(`window.location.assign("${url}");`,
+      (result, error) => {
+        if (error) console.error("跳转失败:", error);
+      })
+  }
+  function HistoryBack() {
+    browser.devtools.inspectedWindow.eval(`history.back()`,
+      (result, error) => {
+        if (error) console.error("跳转失败:", error);
+      })
+  }
   useEffect(() => {
     browser.devtools.network.onRequestFinished.addListener(function (req) {
-      if(req.request.url == MALL_LIST.URL){
+      if(req.request.url == C2C_LIST.URL){
         console.log('req', req)
-        req.getContent((body, encoding)=>{
-          const data = MALL_LIST.parse(JSON.parse(body));
-          setC2cData(data);
-          console.log('data', data)
+
+        req.pageref!=c2cLastPage && req.getContent((body, encoding)=>{
+          const data = C2C_LIST.parse(JSON.parse(body));
+          console.log(req.pageref,data)
+          setC2cLastPage(req.pageref||"")
+          setC2cData(prev => [...prev, ...data]);
         })
       }
 
@@ -71,9 +46,28 @@ function App() {
 
   return (
     <>
-      <Button onClick={handleClick}>Debug</Button>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 p-2">
+      <div className="fixed top-0 left-0 right-0 z-50 p-2 bg-white/80 backdrop-blur-md shadow-sm flex items-center gap-2 border-b">
+        <Button 
+          className="bg-[#786DF6] hover:bg-[#6258D4] text-white rounded-full px-4 py-2 text-sm font-medium transition-all" 
+          onClick={()=>JumpTo(C2C_LIST.HTML_URL)}
+        >
+          市集
+        </Button> 
+        <Button 
+          className="bg-red-500 hover:bg-red-600 text-white rounded-full px-4 py-2 text-sm font-medium transition-all" 
+          onClick={HistoryBack}
+        >
+          返回上一页
+        </Button>
+        <Button 
+          className="ml-auto bg-black/10 hover:bg-black/20 text-gray-800 rounded-full px-4 py-2 text-sm font-medium transition-all" 
+          onClick={handleClick}
+        >
+          调试
+        </Button>
+      </div>
+      
+      <div className="pt-14 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 p-2">
         {c2cData.map((item) => (
           <Card key={item.c2cItemsId} className="overflow-hidden py-0 gap-1">
              
@@ -106,7 +100,7 @@ function App() {
               <HoverCard>
                 <HoverCardTrigger asChild>
                   <button 
-                    onClick={() => alert(`skuId: ${item.detailDtoList[0].skuId}`)}
+                    onClick={() => JumpTo(MALL_DETAIL.URL(item.detailDtoList[0].itemsId))}
                     className="absolute top-2 right-2 bg-black/40 text-white/90 px-1.5 py-0.5 text-[10px] line-through rounded-sm backdrop-blur-sm hover:bg-black/60 transition-colors cursor-pointer flex items-center gap-1"
                   >
                     <Info className="h-2.5 w-2.5 opacity-70" />
@@ -115,7 +109,7 @@ function App() {
                   </button>
                 </HoverCardTrigger>
                 <HoverCardContent className="w-auto p-2">
-                  <span className="text-xs">点击显示skuId: {item.detailDtoList[0].skuId}</span>
+                  <span className="text-xs">点击跳转会员购:{item.detailDtoList[0].itemsId}</span>
                 </HoverCardContent>
               </HoverCard>
             </div>
@@ -125,7 +119,7 @@ function App() {
                 <HoverCard>
                   <HoverCardTrigger asChild>
                     <button 
-                      onClick={() => alert(`c2cItemsId: ${item.c2cItemsId}`)}
+                      onClick={() => JumpTo(C2C_DETAIL.URL(item.c2cItemsId))}
                       className="bg-[#786DF6] text-white px-2 py-0.5 rounded-sm text-sm font-bold shadow-sm hover:bg-red-600 transition-colors cursor-pointer flex items-center gap-1 flex-shrink-0"
                     >
                       {/* <Tag className="h-3 w-3 opacity-70" /> */}
@@ -133,7 +127,7 @@ function App() {
                     </button>
                   </HoverCardTrigger>
                   <HoverCardContent className="w-auto p-2">
-                    <span className="text-xs">点击显示c2cItemsId: {item.c2cItemsId}</span>
+                    <span className="text-xs">点击跳转市集:{item.c2cItemsId}</span>
                   </HoverCardContent>
                 </HoverCard>
                 <HoverCard>

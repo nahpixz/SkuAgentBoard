@@ -1,6 +1,7 @@
 // type callbackType =  Parameters<Browser.devtools.network.Request['getContent']>[0];
 
-export namespace MALL_LIST{
+export namespace C2C_LIST{
+    export const HTML_URL = "https://mall.bilibili.com/neul-next/index.html?page=magic-market_index"
     export const URL = "https://mall.bilibili.com/mall-magic-c/internet/c2c/v2/list"
     export type skuItem = {
         blindBoxId:number
@@ -36,3 +37,11 @@ export namespace MALL_LIST{
 }
 
 
+export namespace C2C_DETAIL{
+    export const URL = (c2cItemsId:number)=> `https://mall.bilibili.com/neul-next/index.html?page=magic-market_detail&noTitleBar=1&itemsId=${c2cItemsId}&from=market_index`
+}
+
+
+export namespace MALL_DETAIL{
+    export const URL = (skuItemsId:number) => `https://mall.bilibili.com/detail.html?from=draw-items&jumpLinkType=0&loadingShow=1&noTitleBar=1#goFrom=na&noReffer=true&itemsId=${skuItemsId}`
+}
