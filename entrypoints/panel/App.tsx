@@ -98,7 +98,7 @@ function App() {
     browser.devtools.network.onRequestFinished.addListener(function (req) {
       if(req._connectionId == connID) return;
       connID = String(req._connectionId) || ""
-      console.debug('req',connID, req)
+      // console.debug('req',connID, req)
 
       if(req.request.url == C2C_LIST.URL){
         req.getContent((body, encoding)=>{
@@ -175,18 +175,20 @@ function App() {
              
             <div className="relative bg-[#F5F5F5] h-36">
               <img 
+                onClick={() => startCheckInventory(item)}
+                title="点击检查库存"
                 src={`https:${item.img}`} 
                 alt={item.name} 
-                className="w-full h-full object-contain mix-blend-multiply" 
+                className="w-full h-full object-contain mix-blend-multiply cursor-pointer" 
               />
               
               {/* 计数堆叠在图片上 */}
               <HoverCard>
                 <HoverCardTrigger asChild>
                   <div 
-                    onClick={() => startCheckInventory(item)}
+                    onClick={() => JumpTo(MARKET_SWG.ITEM_URL(item.skuId))}
                     className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-0.5 rounded-full text-xs backdrop-blur-sm cursor-pointer hover:bg-[#786DF6]/90 transition-colors flex items-center gap-1 shadow-sm"
-                    title="点击检查库存"
+                    title="跳转s-wg搜索库存"
                   >
                     <span>x{item.c2cItemsIds.length}</span>
                   </div>
@@ -284,6 +286,22 @@ function App() {
             
             <div className="p-4 max-h-[60vh] overflow-y-auto">
               <div className="space-y-2"> 
+                <div
+                  key="checkbox-search-new"
+                  className={`flex items-center justify-between p-2 border rounded-md`} //${statusClass}
+                >
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-6 w-6 border border-gray-200 flex-shrink-0">
+                       <AvatarImage src="" />
+                    </Avatar>
+                    <span className="text-xs ">会员购原价</span>
+                    
+                  </div>
+                  <span className={`text-xs font-medium`}>
+                    ¥{checkingItem.c2cLists?.[0]?.showMarketPrice || checkingItem.marketPrice / 100}
+                  </span>
+                </div>
+                
                 {checkingItem.c2cLists && checkingItem.c2cLists
                   .sort((a, b) => {
                     // 将不可用的项排在后面
@@ -346,23 +364,17 @@ function App() {
             <div className="p-4 border-t">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1" title="检查本地库存">
+                  <div className="flex items-center gap-1" title="通过s-wg搜索库存">
                     <input 
                       type="checkbox" 
                       id="check-local" 
                       className="h-4 w-4 rounded border-gray-300 text-[#786DF6] focus:ring-[#786DF6]" 
                       defaultChecked 
                     />
-                    <label htmlFor="check-local" className="text-xs text-gray-700 flex items-center gap-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="2" y="4" width="20" height="16" rx="2" />
-                        <path d="M12 16 v-6" />
-                        <path d="M9 13 h6" />
-                      </svg>
-                    </label>
+                    搜索新库存
                   </div>
                   
-                  <div className="flex items-center gap-1" title="检查远程库存">
+                  {/* <div className="flex items-center gap-1" title="检查远程库存">
                     <input 
                       type="checkbox" 
                       id="check-remote" 
@@ -376,7 +388,7 @@ function App() {
                         <path d="M2 12 L12 17 L22 12" />
                       </svg>
                     </label>
-                  </div>
+                  </div> */}
                 </div>
                 
                 <div className="flex justify-end gap-2">
