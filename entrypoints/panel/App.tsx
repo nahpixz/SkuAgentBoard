@@ -269,7 +269,6 @@ function App() {
         )})}
       </div>
 
-      {/* 库存检查模态框 */}
       {checkingItem && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden">
@@ -284,73 +283,129 @@ function App() {
             </div>
             
             <div className="p-4 max-h-[60vh] overflow-y-auto">
-              <div className="space-y-3"> 
-                {checkingItem.c2cLists && checkingItem.c2cLists.map((c2c) => {
-                  if (!c2c?.c2cItemsId) return null;
-                  
-                  const status = checkStatus[c2c.c2cItemsId];
-                  let statusElement;
-                  switch(status) {
-                    case 'pending':
-                      statusElement = <span className="text-gray-500 flex items-center gap-1"><Clock className="h-3 w-3" /> 待检查</span>;
-                      break;
-                    case 'checking':
-                      statusElement = <span className="text-blue-500 flex items-center gap-1 animate-pulse"><Clock className="h-3 w-3" /> 检查中</span>;
-                      break;
-                    case 'success':
-                      statusElement = <span className="text-green-500 flex items-center gap-1"><Check className="h-3 w-3" /> 有库存</span>;
-                      break;
-                    case 'failed':
-                      statusElement = <span className="text-red-500 flex items-center gap-1"><AlertCircle className="h-3 w-3" /> 无库存</span>;
-                      break;
-                    default:
-                      statusElement = <span className="text-gray-500">未知</span>;
-                  }
-                  
-                  {/* 根据removable和failed设置不可用样式，不可用通过一个动画移动到底部*/}
-                  return (
-                    <div key={c2c.c2cItemsId} className="flex items-center justify-between p-2 border rounded-md">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6 border border-gray-200">
-                          {c2c.uface ? (
-                            <AvatarImage src={c2c.uface} alt={c2c.uname || '用户'} />
-                          ) : (
-                            <AvatarFallback className="text-[10px] bg-gray-100 text-gray-500">
-                              {c2c.uname?.substring(0, 2) || '用户'}
-                            </AvatarFallback>
-                          )}
-                        </Avatar>
-                        <div>
-                          {/* uname文本调整为左对齐 */}
-                          <div className="text-sm">{c2c.uname}</div>
-                          <div className="text-xs text-gray-500">ID: {c2c.c2cItemsId}</div>
+              <div className="space-y-2"> 
+                {checkingItem.c2cLists && checkingItem.c2cLists
+                  .sort((a, b) => {
+                    // 将不可用的项排在后面
+                    const aDisabled = a?.removable || checkStatus[a?.c2cItemsId || 0] === 'failed';
+                    const bDisabled = b?.removable || checkStatus[b?.c2cItemsId || 0] === 'failed';
+                    if (aDisabled && !bDisabled) return 1;
+                    if (!aDisabled && bDisabled) return -1;
+                    return 0;
+                  })
+                  .map((c2c) => {
+                    if (!c2c?.c2cItemsId) return null;
+                    
+                    const status = checkStatus[c2c.c2cItemsId];
+                    const isDisabled = c2c.removable || status === 'failed';
+
+                    
+                    // 根据状态设置不同的样式
+                    let statusClass = '';
+                    if (status === 'checking') {
+                      statusClass = 'bg-gradient-to-r from-blue-50 to-blue-100 animate-pulse border-blue-200';
+                    } else if (status === 'success') {
+                      statusClass = 'bg-gradient-to-r from-green-50 to-green-100 border-green-200';
+                    } else if (status === 'failed') {
+                      statusClass = 'bg-gradient-to-r from-red-50 to-red-100 border-red-200 opacity-60';
+                    } else if (c2c.removable) {
+                      statusClass = 'bg-gray-50 border-gray-200 opacity-60';
+                    }
+                    
+                    // 添加过渡动画类
+                    const transitionClass = isDisabled ? 'transition-all duration-500 ease-in-out' : '';
+                    
+                    return (
+                      <div 
+                        key={c2c.c2cItemsId} 
+                        className={`flex items-center justify-between p-2 border rounded-md ${statusClass} ${transitionClass}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6 border border-gray-200 flex-shrink-0">
+                            {c2c.uface ? (
+                              <AvatarImage src={c2c.uface} alt={c2c.uname || '用户'} />
+                            ) : (
+                              <AvatarFallback className="text-[10px] bg-gray-100 text-gray-500">
+                                {c2c.uname?.substring(0, 2) || '用户'}
+                              </AvatarFallback>
+                            )}
+                          </Avatar>
+                          <span className="text-xs " title={c2c.uname}>{c2c.uname}</span>
+                          <span className="text-xs text-gray-500 " title={`ID: ${c2c.c2cItemsId}`}>#{c2c.c2cItemsId}</span>
                         </div>
+                        <span className={`text-xs font-medium ${isDisabled ? 'text-gray-400' : 'text-[#786DF6]'}`}>
+                          ¥{c2c.showPrice}
+                        </span>
                       </div>
-                      <div className="flex flex-col items-end">
-                        <div className="text-sm font-medium">¥{c2c.showPrice}</div>
-                        {statusElement}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             </div>
 
-            {/* 添加检查选项：是否检查本地库存，是否检查远程库存 */}
             
-            <div className="p-4 border-t flex justify-end gap-2">
-              <Button 
-                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-1.5 text-xs rounded-md"
-                onClick={closeCheckModal}
-              >
-                关闭
-              </Button>
-              <Button 
-                className="bg-[#786DF6] hover:bg-[#6258D4] text-white px-4 py-1.5 text-xs rounded-md"
-                onClick={simulateCheck}
-              >
-                开始检查
-              </Button>
+            <div className="p-4 border-t">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1" title="检查本地库存">
+                    <input 
+                      type="checkbox" 
+                      id="check-local" 
+                      className="h-4 w-4 rounded border-gray-300 text-[#786DF6] focus:ring-[#786DF6]" 
+                      defaultChecked 
+                    />
+                    <label htmlFor="check-local" className="text-xs text-gray-700 flex items-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="4" width="20" height="16" rx="2" />
+                        <path d="M12 16 v-6" />
+                        <path d="M9 13 h6" />
+                      </svg>
+                    </label>
+                  </div>
+                  
+                  <div className="flex items-center gap-1" title="检查远程库存">
+                    <input 
+                      type="checkbox" 
+                      id="check-remote" 
+                      className="h-4 w-4 rounded border-gray-300 text-[#786DF6] focus:ring-[#786DF6]" 
+                      defaultChecked 
+                    />
+                    <label htmlFor="check-remote" className="text-xs text-gray-700 flex items-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2 L2 7 L12 12 L22 7 L12 2" />
+                        <path d="M2 17 L12 22 L22 17" />
+                        <path d="M2 12 L12 17 L22 12" />
+                      </svg>
+                    </label>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end gap-2">
+                  <Button 
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-1.5 text-xs rounded-md"
+                    onClick={closeCheckModal}
+                  >
+                    关闭
+                  </Button>
+                  <Button 
+                    className="bg-[#786DF6] hover:bg-[#6258D4] text-white px-4 py-1.5 text-xs rounded-md"
+                    onClick={simulateCheck}
+                  >
+                    开始检查
+                  </Button>
+                </div>
+              </div>
+              
+              {/* 进度指示器 */}
+              <div className="h-1 w-full bg-gray-100 rounded-full overflow-hidden">
+                {Object.values(checkStatus).length > 0 && (
+                  <div 
+                    className="h-full bg-[#786DF6] transition-all duration-300 ease-out"
+                    style={{
+                      width: `${Object.values(checkStatus).filter(s => s !== 'pending').length / Object.values(checkStatus).length * 100}%`
+                    }}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>
