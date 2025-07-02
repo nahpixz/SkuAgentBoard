@@ -30,9 +30,9 @@ export namespace C2C_LIST{
         uspaceJumpUrl: string | null
     }
 
-    export function parse(jsonBody:any):c2cItem[]{
+    export function parse(jsonBody:any):[c2cItem[],string]{
         const c2cs:c2cItem[] = jsonBody.data.data;
-        return c2cs.filter(x => !x.detailDtoList[0].type)
+        return [c2cs.filter(x => !x.detailDtoList[0].type),jsonBody.data.nextId]
     }
 }
 
@@ -44,4 +44,22 @@ export namespace C2C_DETAIL{
 
 export namespace MALL_DETAIL{
     export const URL = (skuItemsId:number) => `https://mall.bilibili.com/detail.html?from=draw-items&jumpLinkType=0&loadingShow=1&noTitleBar=1#goFrom=na&noReffer=true&itemsId=${skuItemsId}`
+}
+
+export namespace MARKET_SWG{
+    export const URL_searchItemHistory = "https://api.s-wg.net/market/searchItemHistory"
+    
+    export const HTML_URL = 'https://market.s-wg.net/#/search'
+    export const ITEM_URL = (skuId:number)=> `https://market.s-wg.net/#/history/${skuId}`
+
+    export type c2cItem = {
+        c2cItemsId: number,
+        price: number,
+        userName: string,
+        userId: string,
+        isSold: boolean,
+        isBlacklist: boolean,
+        createTime: string,
+        updateTime: string
+    }
 }
