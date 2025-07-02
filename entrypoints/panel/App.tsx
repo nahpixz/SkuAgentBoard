@@ -7,8 +7,11 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/h
 import { Info, Tag } from 'lucide-react';
 import { DB } from './db';
 import { useLiveQuery } from 'dexie-react-hooks';
+
+let connID = "";
+let c2cNextId = "";
+
 function App() {
-  const [c2cNextId,setC2cNextId] = useState<string>("")
   // const [c2cData,setC2cData] = useState<C2C_LIST.c2cItem[]>([])
   const skuList = useLiveQuery(() => DB.getSkuList());
 
@@ -38,26 +41,43 @@ function App() {
   }
   useEffect(() => {
     browser.devtools.network.onRequestFinished.addListener(function (req) {
-      if(req.request.url == C2C_LIST.URL){
-        console.log('req', req)
+      if(req._connectionId == connID) return;
+      connID = String(req._connectionId) || ""
+      console.debug('req',connID, req)
 
+      if(req.request.url == C2C_LIST.URL){
         req.getContent((body, encoding)=>{
           const [data,nextId] = C2C_LIST.parse(JSON.parse(body));
           if(nextId == c2cNextId) return;
-          console.log(c2cNextId,data)
-          setC2cNextId(c2cNextId||"")
+          c2cNextId = nextId;
+          console.log(req._connectionId,'C2C_LIST',nextId,data)
+
           DB.putC2CList(data);
         })
       }
 
-      if(req.request.url.startsWith(MARKET_SWG.URL_searchItemHistory)){
+      if(C2C_DETAIL.isDetail(req.request.url)){
         req.getContent((body, encoding)=>{
-          console.log('reqSearch', req)
+          const data = (JSON.parse(body)).data as C2C_DETAIL.c2cItem
+          console.log(req._connectionId,'C2C_DETAIL', data)
+          
+          DB.putC2CDetail(data);
         })
       }
       
+      if(req.request.url.startsWith(MARKET_SWG.URL_searchItemHistory)){
+        const sku_id = Number(req.request.queryString.find(x=>x.name=='sku_id')?.value);
+        req.getContent((body, encoding)=>{
+          const data = (JSON.parse(body)).data as MARKET_SWG.c2cItem[]
+          console.log(req._connectionId,'MARKET_SWG', MARKET_SWG.filterLatestRecords(data))
+          // if(sku_id) DB.putC2CSeachHistory(data,sku_id);
+        })
+      }
 
-      })
+  
+      
+
+    })
   }, [])
 
   return (
@@ -112,7 +132,9 @@ function App() {
                 <HoverCardContent className="w-80">
                   <ul className="text-sm">
                     {item.c2cLists && item.c2cLists.map((c2c) => (
-                      <li key={c2c?.c2cItemsId} className="flex justify-between py-1 border-b border-gray-100 last:border-0">
+                      <li key={c2c?.c2cItemsId} 
+                        onClick={() => c2c?.c2cItemsId && JumpTo(C2C_DETAIL.URL(c2c?.c2cItemsId))}
+                        className="flex justify-between py-1 border-b border-gray-100 last:border-0 disable">
                         <span>{c2c?.uname}</span>
                         <span>¥{c2c?.showPrice}</span>
                       </li>

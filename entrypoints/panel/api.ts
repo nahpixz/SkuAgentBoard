@@ -39,6 +39,37 @@ export namespace C2C_LIST{
 
 export namespace C2C_DETAIL{
     export const URL = (c2cItemsId:number)=> `https://mall.bilibili.com/neul-next/index.html?page=magic-market_detail&noTitleBar=1&itemsId=${c2cItemsId}&from=market_index`
+    export function isDetail(url:string){
+        return url.startsWith("https://mall.bilibili.com/mall-magic-c/internet/c2c/items/queryC2cItemsDetail")
+    }
+    export type skuItem = C2C_LIST.skuItem &{
+        showMarketPrice: number,
+        forbidExchange: boolean,
+        isDraw: boolean,
+        style: 1|0,
+        boxItemsId: number,
+        boxSkuId: number,
+        predictArriveTime: null,
+        cateName:string; 
+    }
+    export type c2cItem = C2C_LIST.c2cItem &{
+        detailDtoList:skuItem[]
+        marketPrice: number,
+        remainSecond: number,
+        publishStatus: number,
+        dropReason: string,
+        isMyBuyer: boolean,
+        saleStatus: 1|0,
+        buyerUid: string | null,
+        buyerName: string | null,
+        buyerFace: string | null,
+        saleTime: number,
+        startBuyTime: number,
+        publishTime: number,
+        orderId: string | null,
+        hiddenFudaiImg: string,
+    }
+    
 }
 
 
@@ -61,5 +92,27 @@ export namespace MARKET_SWG{
         isBlacklist: boolean,
         createTime: string,
         updateTime: string
+    }
+    export function filterLatestRecords(data:c2cItem[]) {
+        const groupMap = new Map();
+        // 遍历数据，按 userId + userName + price 分组
+        data.forEach(item => {
+            const key = `${item.userId}_${item.userName}`; //_${item.price}
+            if (!groupMap.has(key)) {
+                groupMap.set(key, []);
+            }
+            groupMap.get(key).push(item);
+        });
+        
+        // 对每组数据按 createTime 降序排序，并取第一条（最新记录）
+        const result:c2cItem[] = [];
+        groupMap.forEach(group => {
+            group.sort((a:c2cItem, b:c2cItem) => 
+                Date.parse(b.createTime) -  Date.parse(a.createTime)
+            );
+            result.push(group[0]);
+        });
+        
+        return result;
     }
 }

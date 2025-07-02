@@ -1,5 +1,5 @@
 import Dexie, { PromiseExtended, type EntityTable } from 'dexie';
-import { C2C_LIST } from './api';
+import { C2C_DETAIL, C2C_LIST, MARKET_SWG } from './api';
 
 
 interface StoredSkuItem extends C2C_LIST.skuItem {
@@ -9,6 +9,7 @@ interface StoredSkuItem extends C2C_LIST.skuItem {
 
 interface StoredC2CItem extends Omit<C2C_LIST.c2cItem, 'detailDtoList'> {
     skuItemIds: number[]; // 关联的SKU ItemID
+    removable?:boolean;   //可删除对象
 }
 
 const db = new Dexie('BiliC2C_Database') as Dexie & {
@@ -26,8 +27,20 @@ export namespace DB {
     export type skuItem = StoredSkuItem 
     export type c2cItem = StoredC2CItem 
     // export const instance = db;
-  export const putC2CList:(data: C2C_LIST.c2cItem[])=>Promise<void> = _putC2CList;
   export const getSkuList = _getSkuList;
+  export const putC2CSeachHistory:(data: MARKET_SWG.c2cItem[],skuId:number)=>Promise<void> = _putC2CSeachHistory;
+  export const putC2CList:(data: C2C_LIST.c2cItem[])=>Promise<void> = _putC2CList;
+
+  export function putC2CDetail(data: C2C_DETAIL.c2cItem) {
+    return db.transaction('rw', db.c2cs, db.skus, async () => {
+      const { detailDtoList, ...rest } = data;
+      await db.c2cs.put({
+        ...rest,
+        skuItemIds: detailDtoList.map(it => it.itemsId),
+        removable:data.publishStatus == 2 || data.saleStatus == 0,
+      })
+    })
+  }
 }
 
 async function _getSkuList():Promise<StoredSkuItem[]>{
@@ -38,6 +51,12 @@ async function _getSkuList():Promise<StoredSkuItem[]>{
       return it;
     }))
     return skuIts
+  })
+}
+
+async function _putC2CSeachHistory(data: MARKET_SWG.c2cItem[],skuId:number) {
+  return db.transaction('rw', db.c2cs, db.skus, async () => {
+
   })
 }
 
