@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Info, Tag, Check, AlertCircle, Clock, ArrowLeft, Search, Settings, Trash, X, Bug } from 'lucide-react';
+import { Info, Tag, Check, AlertCircle, Clock, ArrowLeft, Search, Settings, Trash, X, Bug, Home, ShoppingCart, Layers } from 'lucide-react';
 import { DB } from './db';
 import { useLiveQuery } from 'dexie-react-hooks';
 
@@ -24,23 +24,74 @@ function App() {
 
   const [hasSelectedItems, setHasSelectedItems] = useState(false);
   const [hasSelectedC2C, setHasSelectedC2C] = useState(false);
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<{[key: number]: boolean}>({});
+  const [selectedC2CItems, setSelectedC2CItems] = useState<{[key: number]: boolean}>({});
+  
+  // 切换选择模式
+  function toggleSelectMode() {
+    setIsSelectMode(!isSelectMode);
+    if (isSelectMode) {
+      // 退出选择模式时清空选择
+      setSelectedItems({});
+      setSelectedC2CItems({});
+      setHasSelectedItems(false);
+      setHasSelectedC2C(false);
+    }
+  }
+  
+  // 选择/取消选择商品
+  function toggleSelectItem(itemId: number, event: React.MouseEvent) {
+    event.stopPropagation(); // 阻止事件冒泡
+    
+    const newSelectedItems = {...selectedItems};
+    newSelectedItems[itemId] = !newSelectedItems[itemId];
+    setSelectedItems(newSelectedItems);
+    
+    // 更新是否有选中商品的状态
+    setHasSelectedItems(Object.values(newSelectedItems).some(v => v));
+  }
+  
+  // 选择/取消选择C2C库存
+  function toggleSelectC2C(c2cItemId: number, event: React.MouseEvent) {
+    event.stopPropagation(); // 阻止事件冒泡
+    
+    const newSelectedC2CItems = {...selectedC2CItems};
+    newSelectedC2CItems[c2cItemId] = !newSelectedC2CItems[c2cItemId];
+    setSelectedC2CItems(newSelectedC2CItems);
+    
+    // 更新是否有选中C2C库存的状态
+    setHasSelectedC2C(Object.values(newSelectedC2CItems).some(v => v));
+  }
   
   // 选择所有项目
   function handleSelectAll() {
-    // 实现选择所有项目的逻辑
-    setHasSelectedItems(true);
-    setHasSelectedC2C(true);
+    if (!isSelectMode) {
+      toggleSelectMode();
+      return;
+    }
+    
+    const newSelectedItems = {};
+    skuList?.forEach(item => {
+      newSelectedItems[item.itemsId] = true;
+    });
+    setSelectedItems(newSelectedItems);
+    setHasSelectedItems(skuList && skuList.length > 0);
   }
   
   // 删除选中商品
   function handleDeleteSelected() {
     // 实现删除选中商品的逻辑
+    console.log('删除选中商品', selectedItems);
+    setSelectedItems({});
     setHasSelectedItems(false);
   }
   
   // 删除选中c2c库存
   function handleDeleteSelectedC2C() {
     // 实现删除选中c2c库存的逻辑
+    console.log('删除选中c2c库存', selectedC2CItems);
+    setSelectedC2CItems({});
     setHasSelectedC2C(false);
   }
   
@@ -195,34 +246,9 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-50 p-2 bg-white/80 backdrop-blur-md shadow-sm border-b">
-        {/* 导航组 */}
-        <div className="flex items-center gap-2 mb-2">
-          <Button 
-            className="bg-[#786DF6] hover:bg-[#6258D4] text-white rounded-full px-4 py-1.5 text-xs font-medium transition-all" 
-            onClick={()=>JumpTo(C2C_LIST.HTML_URL)}
-          >
-            <Tag className="h-3.5 w-3.5 mr-1" />
-            市集
-          </Button> 
-          <Button 
-            className="bg-[#786DF6] hover:bg-[#6258D4] text-white rounded-full px-4 py-1.5 text-xs font-medium transition-all" 
-            onClick={()=>JumpTo(MARKET_SWG.HTML_URL)}
-          >
-            <Search className="h-3.5 w-3.5 mr-1" />
-            搜索
-          </Button> 
-          <Button 
-            className="bg-red-500 hover:bg-red-600 text-white rounded-full px-4 py-1.5 text-xs font-medium transition-all" 
-            onClick={HistoryBack}
-          >
-            <ArrowLeft className="h-3.5 w-3.5 mr-1" />
-            返回
-          </Button>
-        </div>
-        
-        {/* 操作组和设置组 */}
-        <div className="flex items-center justify-between">
+      {/* 选择模式下的顶部操作栏 */}
+      {isSelectMode && (
+        <div className="fixed top-0 left-0 right-0 z-50 p-2 bg-white/70 backdrop-blur-md shadow-sm border-b flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Button 
               variant="outline" 
@@ -231,7 +257,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
               onClick={handleSelectAll}
             >
               <Check className="h-3.5 w-3.5" />
-              选择
+              全选
             </Button>
             <Button 
               variant="outline" 
@@ -254,41 +280,48 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
               删除选中c2c库存
             </Button>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="rounded-md text-xs flex items-center gap-1 border-gray-200 bg-white/80"
-              onClick={openSettings}
-            >
-              <Settings className="h-3.5 w-3.5" />
-              设置
-            </Button>
-            <Button 
-              className="bg-black/10 hover:bg-black/20 text-gray-800 rounded-md px-3 py-1 text-xs font-medium transition-all flex items-center gap-1" 
-              onClick={handleClick}
-            >
-              <Bug className="h-3.5 w-3.5" />
-              调试
-            </Button>
-          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="rounded-md text-xs flex items-center gap-1 text-gray-500"
+            onClick={toggleSelectMode}
+          >
+            取消
+          </Button>
         </div>
-      </div>
+      )}
       
-      <div className="pt-12 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2">
+      {/* 主内容区域 */}
+      <div className={`${isSelectMode ? 'pt-12' : ''} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
         {skuList&&skuList.map((item) => {
           const allDisabled = isAllDisabled(item);
+          const isSelected = selectedItems[item.itemsId];
           return (
           <Card 
             key={item.itemsId} 
-            className={`overflow-hidden py-0 gap-0 border transition-all hover:shadow-md ${allDisabled ? 'opacity-60 grayscale border-gray-200' : 'border-gray-200 hover:border-[#786DF6]/50'}`}
+            className={`overflow-hidden py-0 gap-0 border transition-all hover:shadow-md 
+              ${allDisabled ? 'opacity-60 grayscale border-gray-200' : 'border-gray-200 hover:border-[#786DF6]/50'}
+              ${isSelected ? 'ring-2 ring-[#786DF6] border-transparent' : ''}`}
           >
-             
             <div className="relative bg-[#F5F5F5] h-36">
+              {/* 选择模式下显示复选框 */}
+              {isSelectMode && (
+                <div 
+                  className="absolute top-2 left-2 z-10"
+                  onClick={(e) => toggleSelectItem(item.itemsId, e)}
+                >
+                  <div className="h-6 w-6 bg-white/90 rounded-full flex items-center justify-center shadow-sm border border-gray-200">
+                    <Checkbox 
+                      checked={isSelected}
+                      className="h-4 w-4 rounded-full data-[state=checked]:bg-[#786DF6] border-gray-300"
+                    />
+                  </div>
+                </div>
+              )}
+              
               <img 
-                onClick={() => startCheckInventory(item)}
-                title="点击检查库存"
+                onClick={() => isSelectMode ? toggleSelectItem(item.itemsId, new MouseEvent('click')) : startCheckInventory(item)}
+                title={isSelectMode ? "点击选择" : "点击检查库存"}
                 src={`https:${item.img}`} 
                 alt={item.name} 
                 className="w-full h-full object-contain mix-blend-multiply cursor-pointer" 
@@ -298,7 +331,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
               <HoverCard>
                 <HoverCardTrigger asChild>
                   <div 
-                    onClick={() => JumpTo(MARKET_SWG.ITEM_URL(item.skuId))}
+                    onClick={(e) => isSelectMode ? e.stopPropagation() : JumpTo(MARKET_SWG.ITEM_URL(item.skuId))}
                     className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-0.5 rounded-full text-xs backdrop-blur-sm cursor-pointer hover:bg-[#786DF6]/90 transition-colors flex items-center gap-1 shadow-sm"
                     title="跳转s-wg搜索库存"
                   >
@@ -308,21 +341,34 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                 <HoverCardContent className="w-80 p-3 rounded-lg shadow-lg border border-gray-200">
                   <h4 className="text-sm font-medium mb-2 text-gray-700">可用库存列表</h4>
                   <ul className="text-sm space-y-1 max-h-60 overflow-y-auto">
-                    {item.c2cLists && item.c2cLists.map((c2c) => (
+                    {item.c2cLists && item.c2cLists.map((c2c) => {
+                      const isC2CSelected = c2c?.c2cItemsId && selectedC2CItems[c2c.c2cItemsId];
+                      return (
                       <li key={c2c?.c2cItemsId} 
-                        onClick={() => c2c?.c2cItemsId && JumpTo(C2C_DETAIL.URL(c2c?.c2cItemsId))}
-                        className={`flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-gray-50 ${c2c?.removable ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        onClick={(e) => isSelectMode && c2c?.c2cItemsId ? toggleSelectC2C(c2c.c2cItemsId, e) : c2c?.c2cItemsId && JumpTo(C2C_DETAIL.URL(c2c?.c2cItemsId))}
+                        className={`flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-gray-50 
+                          ${c2c?.removable ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                          ${isC2CSelected ? 'bg-[#786DF6]/10' : ''}`}
                       >
                         <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6 border border-gray-200">
-                            {c2c?.uface ? (
-                              <AvatarImage src={c2c.uface} alt={c2c.uname || '用户'} />
-                            ) : (
-                              <AvatarFallback className="text-[10px] bg-gray-100 text-gray-500">
-                                {c2c?.uname?.substring(0, 2) || '用户'}
-                              </AvatarFallback>
-                            )}
-                          </Avatar>
+                          {isSelectMode && c2c?.c2cItemsId ? (
+                            <div className="h-6 w-6 flex items-center justify-center">
+                              <Checkbox 
+                                checked={isC2CSelected}
+                                className="h-4 w-4 rounded-full data-[state=checked]:bg-[#786DF6] border-gray-300"
+                              />
+                            </div>
+                          ) : (
+                            <Avatar className="h-6 w-6 border border-gray-200">
+                              {c2c?.uface ? (
+                                <AvatarImage src={c2c.uface} alt={c2c.uname || '用户'} />
+                              ) : (
+                                <AvatarFallback className="text-[10px] bg-gray-100 text-gray-500">
+                                  {c2c?.uname?.substring(0, 2) || '用户'}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                          )}
                           <span className={`text-xs ${c2c?.removable ? 'text-gray-400' : 'text-gray-700'}`}>
                             {c2c?.uname}
                           </span>
@@ -331,7 +377,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                           ¥{c2c?.showPrice}
                         </span>
                       </li>
-                    ))}
+                    )})}
                   </ul>
                 </HoverCardContent>
               </HoverCard>
@@ -380,12 +426,72 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
               </div>
             </div>
           </Card>
-        )})}
+        )})}      
+      </div>
+
+      {/* 底部悬浮工具条 */}
+      <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center">
+        <div className="bg-white/77 backdrop-blur-md shadow-lg rounded-full px-3 py-2 border flex items-center">
+          {/* 导航组 */}
+          <div className="flex items-center">
+            <ToolButton 
+              icon={<ArrowLeft className="h-5 w-5" />}
+              label="返回"
+              onClick={HistoryBack}
+              variant="danger"
+            />
+            <ToolButton 
+              icon={<Tag className="h-5 w-5" />}
+              label="市集"
+              onClick={() => JumpTo(C2C_LIST.HTML_URL)}
+              variant="primary"
+            />
+            <ToolButton 
+              icon={<Search className="h-5 w-5" />}
+              label="搜索"
+              onClick={() => JumpTo(MARKET_SWG.HTML_URL)}
+              variant="primary"
+            />
+            
+          </div>
+          
+          {/* 分隔线 */}
+          <div className="h-8 w-px bg-gray-200 mx-2"></div>
+          
+          {/* 操作工具组 */}
+          <div className="flex items-center">
+            <ToolButton 
+              icon={<Check className="h-5 w-5" />}
+              label="选择"
+              onClick={toggleSelectMode}
+              active={isSelectMode}
+            />
+          </div>
+          
+          {/* 分隔线 */}
+          <div className="h-8 w-px bg-gray-200 mx-2"></div>
+          
+          {/* 设置组 */}
+          <div className="flex items-center">
+            <ToolButton 
+              icon={<Settings className="h-5 w-5" />}
+              label="设置"
+              onClick={openSettings}
+            />
+            <ToolButton 
+              icon={<Bug className="h-5 w-5" />}
+              label="调试"
+              onClick={handleClick}
+            />
+          </div>
+        </div>
       </div>
 
       {checkingItem && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden">
+        // <div className="fixed inset-0 backdrop-blur-xs flex items-center justify-center z-50">
+        //   <div className="bg-white/77 backdrop-blur-xs  rounded-lg w-full max-w-md mx-4 overflow-hidden shadow-[0_0_0_2000px_rgba(0,0,0,0.5)]"></div>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50">
+          <div className="bg-white/91 rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden">
             <div className="p-4 border-b flex justify-between items-center">
               <h3 className="font-medium text-gray-800">库存检查 - {checkingItem.name}</h3>
               <button 
@@ -408,7 +514,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                       <Checkbox 
                         defaultChecked
                         checked={searchNewOption}
-                        className="h-5 w-5 rounded-full data-[state=checked]:bg-[#786DF6] border-gray-300"
+                        className="h-5 w-5 rounded-full data-[state=checked]:bg-[#786DF6] data-[state=checked]:border-none border-gray-300 "
                       />
                     </div>
                     <span className="text-xs">搜索新库存</span>
@@ -424,7 +530,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                       <Checkbox 
                         defaultChecked
                         checked={checkMarketOption}
-                        className="h-5 w-5 rounded-full data-[state=checked]:bg-[#786DF6] border-gray-300"
+                        className="h-5 w-5 rounded-full data-[state=checked]:bg-[#786DF6] data-[state=checked]:border-none border-gray-300"
                       />
                     </div>
                     <span className="text-xs">会员购原价</span>
@@ -545,3 +651,44 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
 }
 
 export default App;
+
+
+// 创建一个工具按钮组件来减少重复代码
+interface ToolButtonProps {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  active?: boolean;
+  variant?: 'primary' | 'danger' | 'default';
+}
+
+const ToolButton = ({ icon, label, onClick, active = false, variant = 'default' }: ToolButtonProps) => {
+  // 根据variant设置不同的颜色
+  const getIconColor = () => {
+    if (active) return 'text-[#786DF6]';
+    switch (variant) {
+      case 'primary': return 'text-[#786DF6]';
+      case 'danger': return 'text-red-500';
+      default: return 'text-gray-500';
+    }
+  };
+
+  return (
+    <HoverCard openDelay={300}>
+      <HoverCardTrigger asChild>
+        <Button
+          variant="ghost"
+          className={`flex items-center justify-center h-10 w-10 rounded-full ${active ? 'bg-[#786DF6]/10' : 'hover:bg-gray-100'}`}
+          onClick={onClick}
+        >
+          <div className={getIconColor()}>
+            {icon}
+          </div>
+        </Button>
+      </HoverCardTrigger>
+      <HoverCardContent className="p-2 w-full text-xs text-white border-none bg-black/70 rounded-md">
+        {label}
+      </HoverCardContent>
+    </HoverCard>
+  );
+};
