@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Info, Tag, Check, AlertCircle, Clock } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Info, Tag, Check, AlertCircle, Clock, ArrowLeft, Search, Settings, Trash, X, Bug } from 'lucide-react';
 import { DB } from './db';
 import { useLiveQuery } from 'dexie-react-hooks';
 
@@ -18,6 +19,60 @@ function App() {
   const [checkingItem, setCheckingItem] = useState<DB.skuItem | null>(null);
   const [checkStatus, setCheckStatus] = useState<{[key: number]: 'pending' | 'checking' | 'success' | 'failed'}>({});
 
+  const [checkMarketOption, setCheckMarketOption] = useState(true);
+  const [searchNewOption, setSearchNewOption] = useState(true);
+
+  const [hasSelectedItems, setHasSelectedItems] = useState(false);
+  const [hasSelectedC2C, setHasSelectedC2C] = useState(false);
+  
+  // 选择所有项目
+  function handleSelectAll() {
+    // 实现选择所有项目的逻辑
+    setHasSelectedItems(true);
+    setHasSelectedC2C(true);
+  }
+  
+  // 删除选中商品
+  function handleDeleteSelected() {
+    // 实现删除选中商品的逻辑
+    setHasSelectedItems(false);
+  }
+  
+  // 删除选中c2c库存
+  function handleDeleteSelectedC2C() {
+    // 实现删除选中c2c库存的逻辑
+    setHasSelectedC2C(false);
+  }
+  
+  // 打开设置
+  function openSettings() {
+    // 实现打开设置的逻辑
+  }
+
+  // 在库存检查模态框中使用的状态样式计算
+const getStatusClass = (isChecking: boolean, isSuccess: boolean, isFailed: boolean, isRemovable: boolean) => {
+  if (isChecking) return 'bg-gradient-to-r from-blue-50 to-blue-100 animate-pulse border-blue-200';
+  if (isSuccess) return 'bg-gradient-to-r from-green-50 to-green-100 border-green-200';
+  if (isFailed) return 'bg-gradient-to-r from-red-50 to-red-100 border-red-200 opacity-60';
+  if (isRemovable) return 'bg-gray-50 border-gray-200 opacity-60';
+  return '';
+};
+
+// 计算前置检查项的状态样式
+const statusClass = getStatusClass(
+  false,false,false,
+  !searchNewOption
+);
+
+const marketStatusClass = getStatusClass(
+  checkMarketOption && Object.values(checkStatus).some(s => s === 'checking'),
+  checkMarketOption && Object.values(checkStatus).every(s => s === 'success'),
+  checkMarketOption && Object.values(checkStatus).some(s => s === 'failed'),
+  !checkMarketOption
+);
+
+const transitionClass = 'transition-all duration-500 ease-in-out';
+  
   function handleClick() {
     console.log("click")
     // browser.devtools.network.getHAR(function (logInfo) {
@@ -58,6 +113,9 @@ function App() {
       }
     });
     setCheckStatus(initialStatus);
+    
+    setCheckMarketOption(true);
+    setSearchNewOption(true);
   }
 
   function simulateCheck() {
@@ -137,31 +195,85 @@ function App() {
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-50 p-2 bg-white/80 backdrop-blur-md shadow-sm flex items-center gap-2 border-b">
-        <Button 
-          className="bg-[#786DF6] hover:bg-[#6258D4] text-white rounded-full px-4 py-1.5 text-xs font-medium transition-all" 
-          onClick={()=>JumpTo(C2C_LIST.HTML_URL)}
-        >
-          市集
-        </Button> 
-        <Button 
-          className="bg-[#786DF6] hover:bg-[#6258D4] text-white rounded-full px-4 py-1.5 text-xs font-medium transition-all" 
-          onClick={()=>JumpTo(MARKET_SWG.HTML_URL)}
-        >
-          搜索
-        </Button> 
-        <Button 
-          className="bg-red-500 hover:bg-red-600 text-white rounded-full px-4 py-1.5 text-xs font-medium transition-all" 
-          onClick={HistoryBack}
-        >
-          返回上一页
-        </Button>
-        <Button 
-          className="ml-auto bg-black/10 hover:bg-black/20 text-gray-800 rounded-full px-4 py-1.5 text-xs font-medium transition-all" 
-          onClick={handleClick}
-        >
-          调试
-        </Button>
+      <div className="fixed top-0 left-0 right-0 z-50 p-2 bg-white/80 backdrop-blur-md shadow-sm border-b">
+        {/* 导航组 */}
+        <div className="flex items-center gap-2 mb-2">
+          <Button 
+            className="bg-[#786DF6] hover:bg-[#6258D4] text-white rounded-full px-4 py-1.5 text-xs font-medium transition-all" 
+            onClick={()=>JumpTo(C2C_LIST.HTML_URL)}
+          >
+            <Tag className="h-3.5 w-3.5 mr-1" />
+            市集
+          </Button> 
+          <Button 
+            className="bg-[#786DF6] hover:bg-[#6258D4] text-white rounded-full px-4 py-1.5 text-xs font-medium transition-all" 
+            onClick={()=>JumpTo(MARKET_SWG.HTML_URL)}
+          >
+            <Search className="h-3.5 w-3.5 mr-1" />
+            搜索
+          </Button> 
+          <Button 
+            className="bg-red-500 hover:bg-red-600 text-white rounded-full px-4 py-1.5 text-xs font-medium transition-all" 
+            onClick={HistoryBack}
+          >
+            <ArrowLeft className="h-3.5 w-3.5 mr-1" />
+            返回
+          </Button>
+        </div>
+        
+        {/* 操作组和设置组 */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="rounded-md text-xs flex items-center gap-1 border-gray-200 bg-white/80"
+              onClick={handleSelectAll}
+            >
+              <Check className="h-3.5 w-3.5" />
+              选择
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="rounded-md text-xs flex items-center gap-1 border-gray-200 bg-white/80"
+              onClick={handleDeleteSelected}
+              disabled={!hasSelectedItems}
+            >
+              <Trash className="h-3.5 w-3.5" />
+              删除选中商品
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="rounded-md text-xs flex items-center gap-1 border-gray-200 bg-white/80"
+              onClick={handleDeleteSelectedC2C}
+              disabled={!hasSelectedC2C}
+            >
+              <X className="h-3.5 w-3.5" />
+              删除选中c2c库存
+            </Button>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="rounded-md text-xs flex items-center gap-1 border-gray-200 bg-white/80"
+              onClick={openSettings}
+            >
+              <Settings className="h-3.5 w-3.5" />
+              设置
+            </Button>
+            <Button 
+              className="bg-black/10 hover:bg-black/20 text-gray-800 rounded-md px-3 py-1 text-xs font-medium transition-all flex items-center gap-1" 
+              onClick={handleClick}
+            >
+              <Bug className="h-3.5 w-3.5" />
+              调试
+            </Button>
+          </div>
+        </div>
       </div>
       
       <div className="pt-12 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2">
@@ -288,19 +400,41 @@ function App() {
               <div className="space-y-2"> 
                 <div
                   key="checkbox-search-new"
-                  className={`flex items-center justify-between p-2 border rounded-md`} //${statusClass}
+                  className={`flex items-center justify-between p-2 border rounded-md`}
+                  onClick={() => setSearchNewOption((prev)=>!prev)}
                 >
                   <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6 border border-gray-200 flex-shrink-0">
-                       <AvatarImage src="" />
-                    </Avatar>
-                    <span className="text-xs ">会员购原价</span>
-                    
+                    <div className="h-6 w-6 flex items-center justify-center flex-shrink-0">
+                      <Checkbox 
+                        defaultChecked
+                        checked={searchNewOption}
+                        className="h-5 w-5 rounded-full data-[state=checked]:bg-[#786DF6] border-gray-300"
+                      />
+                    </div>
+                    <span className="text-xs">搜索新库存</span>
+                  </div>
+                </div>
+                <div
+                  key="checkbox-check-market"
+                  className={`flex items-center justify-between p-2 border rounded-md ${marketStatusClass} ${transitionClass}`}
+                  onClick={() => setCheckMarketOption((prev)=>!prev)}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 flex items-center justify-center flex-shrink-0">
+                      <Checkbox 
+                        defaultChecked
+                        checked={checkMarketOption}
+                        className="h-5 w-5 rounded-full data-[state=checked]:bg-[#786DF6] border-gray-300"
+                      />
+                    </div>
+                    <span className="text-xs">会员购原价</span>
                   </div>
                   <span className={`text-xs font-medium`}>
                     ¥{checkingItem.c2cLists?.[0]?.showMarketPrice || checkingItem.marketPrice / 100}
                   </span>
                 </div>
+
+                
                 
                 {checkingItem.c2cLists && checkingItem.c2cLists
                   .sort((a, b) => {
@@ -373,22 +507,6 @@ function App() {
                     />
                     搜索新库存
                   </div>
-                  
-                  {/* <div className="flex items-center gap-1" title="检查远程库存">
-                    <input 
-                      type="checkbox" 
-                      id="check-remote" 
-                      className="h-4 w-4 rounded border-gray-300 text-[#786DF6] focus:ring-[#786DF6]" 
-                      defaultChecked 
-                    />
-                    <label htmlFor="check-remote" className="text-xs text-gray-700 flex items-center gap-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 2 L2 7 L12 12 L22 7 L12 2" />
-                        <path d="M2 17 L12 22 L22 17" />
-                        <path d="M2 12 L12 17 L22 12" />
-                      </svg>
-                    </label>
-                  </div> */}
                 </div>
                 
                 <div className="flex justify-end gap-2">
