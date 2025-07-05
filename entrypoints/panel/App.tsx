@@ -9,12 +9,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Info, Tag, Check, AlertCircle, Clock, ArrowLeft, Search, Settings, Trash, X, Bug, Home, ShoppingCart, Layers } from 'lucide-react';
 import { DB } from './db';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { waitSearchNew } from './tasks';
+import { checkingPromises, HistoryBack, JumpTo, ToC2cSearch, waitForRequest } from './tasks';
 
 let connID = "";
+let connTime = 0;
 let c2cNextId = "";
 
-let searchNewPromise:{resolve:(v:any) => void,reject:() => void}|null = null;
+let searchNewPromise: Promise<MARKET_SWG.c2cItem[]> | null = null;
 type CHECK_STATUS = 'pending' | 'doing' | 'success' | 'failed' | 'disable';
 
 type C2CCheckView={
@@ -138,32 +139,17 @@ const marketStatusClass =  getStatusClass('pending')
 
 const transitionClass = 'transition-all duration-500 ease-in-out';
   
-  function handleClick() {
+  function handleDebug() {
     console.log("click")
+    console.log('checkingC2Cs',...checkingC2Cs)
+    // console.log('skuList',...skuList?.filter(it=>it.itemsId===checkingItem?.itemsId)[0].c2cLists)
+    
     // browser.devtools.network.getHAR(function (logInfo) {
     //   console.log('log',logInfo)
     // })
   };
 
-  function JumpTo(url: string) {
-    return new Promise<void>((resolve,reject)=>{
-      browser.devtools.inspectedWindow.eval(`window.location.assign("${url}");`,
-      (result, e) => {
-        if (e) {
-          console.error("跳转失败:", e);
-          reject(e)
-        }
-        resolve()
-      })
-    })
-    
-  }
-  function HistoryBack() {
-    browser.devtools.inspectedWindow.eval(`history.back()`,
-      (result, error) => {
-        if (error) console.error("跳转失败:", error);
-      })
-  }
+  
 
   function getItemLabel(it:DB.skuItem){
     if(!it.c2cLists) return '¥ ?'
@@ -187,37 +173,8 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
     });
     setCheckStatus(initialStatus);
     
-    setCheckMarketOption(true);
+    setCheckMarketOption(false);
     setSearchNewOption(true);
-  }
-
-  function simulateCheck() {
-    if (!checkingItem || !checkingItem.c2cLists) return;
-    
-    // 模拟检查过程
-    const newStatus = {...checkStatus};
-    let remaining = Object.keys(checkStatus).length;
-    
-    checkingItem.c2cLists.forEach((c2c, index) => {
-      if (!c2c?.c2cItemsId) return;
-      
-      // 设置为checking状态
-      newStatus[c2c.c2cItemsId] = 'doing';
-      setCheckStatus({...newStatus});
-      
-      // 模拟异步检查结果
-      setTimeout(() => {
-        // 随机结果，实际应用中应替换为真实API调用
-        newStatus[c2c.c2cItemsId] = Math.random() > 0.5 ? 'success' : 'failed';
-        setCheckStatus({...newStatus});
-        
-        remaining--;
-        if (remaining === 0) {
-          // 所有检查完成后的操作
-          console.log('所有检查完成');
-        }
-      }, 1000 + index * 500); // 错开时间以模拟真实场景
-    });
   }
 
   function closeCheckModal() {
@@ -227,33 +184,98 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
 
   async function startCheck() {
     if (!checkingItem) return console.error('检查项不存在');
+
+    let tC2CsMap = new Map();
     if(searchNewOption){
-      console.log('start search...')
-      setCheckStatus({...checkStatus,['checkbox-search-new']:'doing'})
-      JumpTo(MARKET_SWG.ITEM_URL(checkingItem.skuId));
-      const data = await waitSearchNew();
-      console.log('search done',data);
-      setCheckingC2Cs(prev => [
-        ...prev,
-        ...data.filter(x => !x.isSold)
-          .map(x => ({
-            c2cItemsId: x.c2cItemsId,
-            uface: 'https://i0.hdslb.com/bfs/face/member/noface.jpg',
-            uname: x.userName,
-            showPrice: `${x.price}`,
-          }))
-        ]
-      )
-      setCheckStatus({...checkStatus,['checkbox-search-new']:'success'})
+      try {
+        console.log('start search...')
+        setCheckStatus(prev => ({...prev,['checkbox-search-new']:'doing'}))
+        const pendingRequest= waitForRequest(MARKET_SWG.JSON_PREFIX);
+        ToC2cSearch(checkingItem.skuId);
+        const data = await pendingRequest;
+        
+        checkingC2Cs.forEach(x=> x && tC2CsMap.set(x.c2cItemsId,x))
+        data.forEach(x => {
+          if(!x.isSold && !tC2CsMap.get(x.c2cItemsId)){
+            tC2CsMap.set(x.c2cItemsId,{
+              c2cItemsId: x.c2cItemsId,
+              uface: 'https://i0.hdslb.com/bfs/face/member/noface.jpg',
+              uname: x.userName,
+              showPrice: `${x.price}`,
+            })
+          }
+        });
+        // tC2Cs = [
+        //   ...tC2Cs,
+        //   ...data.filter(x => !x.isSold)
+        //     .map(x => ({
+        //       c2cItemsId: x.c2cItemsId,
+        //       uface: 'https://i0.hdslb.com/bfs/face/member/noface.jpg',
+        //       uname: x.userName,
+        //       showPrice: `${x.price}`,
+        //     }))
+        // ]
+        setCheckStatus(prev => ({...prev,['checkbox-search-new']:'success'}))
+        setCheckingC2Cs(Array.from(tC2CsMap.values()))
+        console.log('search done',data);
+      } catch (e) {
+        console.error(e)
+        setCheckStatus(prev => ({...prev,['checkbox-search-new']:'failed'}))
+      }
     }
 
+    for (const c2c of tC2CsMap.values()) {
+     
+      if(!c2c || !c2c?.c2cItemsId) continue;
+
+      if (c2c?.removable) {
+        setCheckStatus(prev => ({...prev,[c2c.c2cItemsId]:'disable'}))
+        continue;
+      }
+      
+      try {
+        console.log('start check',c2c.c2cItemsId,new Date())
+        setCheckStatus(prev => ({...prev,[c2c.c2cItemsId]:'doing'}))
+        JumpTo(C2C_DETAIL.URL(c2c.c2cItemsId))
+        const data = await waitForRequest(C2C_DETAIL.JSON_PREFIX);
+        const c2cD = {
+          ...data,
+          skuItemIds: data.detailDtoList.map(it => it.itemsId),
+          removable:data.publishStatus !=1 || data.saleStatus != 1,
+        }
+        tC2CsMap.set(c2cD.c2cItemsId,c2cD)
+        // c2cArr[i] = c2cD;
+        setCheckingC2Cs(Array.from(tC2CsMap.values()))
+        setCheckStatus(prev => ({...prev,[c2c.c2cItemsId]:c2cD.removable?'disable':'success'}))
+        await new Promise((r,j)=>setTimeout(r,5000))
+        console.log('done check',c2c.c2cItemsId,new Date())
+        
+        // DB.putC2CDetail(data);
+      } catch (e) {
+        console.error(e);
+        setCheckStatus(prev => ({...prev,[c2c.c2cItemsId]:'failed'}))
+      }
+
+    }
   }
+
+  // useEffect(()=>{
+  //   if(!checkingItem) return;
+  //   const newCheckingItem = skuList?.find(it=>it.itemsId===checkingItem?.itemsId)
+  //   if(newCheckingItem){
+  //     setCheckingItem(newCheckingItem)
+  //     const tC2CsMap = new Map();
+  //     checkingC2Cs.forEach(x=> x && tC2CsMap.set(x.c2cItemsId,x))
+  //     newCheckingItem.c2cLists?.forEach(x=> x && tC2CsMap.set(x.c2cItemsId,x))
+  //     setCheckingC2Cs(Array.from(tC2CsMap.values()))
+  //   }
+  // },[skuList])
 
   useEffect(() => {
     browser.devtools.network.onRequestFinished.addListener(async function (req) {
-      if(req._connectionId == connID) return;
+      if(!req._connectionId || req._connectionId == connID && req.time == connTime) return //console.debug('reqRet',req._connectionId,req.request.url,req);
       connID = String(req._connectionId) || ""
-      // console.debug('req',connID, req)
+      // console.debug('req',req._connectionId,req.request.url,req)
 
       if(req.request.url == C2C_LIST.URL){
         req.getContent((body, encoding)=>{
@@ -270,10 +292,21 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
         req.getContent((body, encoding)=>{
           const data = (JSON.parse(body)).data as C2C_DETAIL.c2cItem
           console.log(req._connectionId,'C2C_DETAIL', data)
-          
+          checkingPromises[C2C_DETAIL.JSON_PREFIX]?.resolve(data)
           DB.putC2CDetail(data);
         })
       }
+
+      // https://api.s-wg.net/market/searchItemHistory
+      if (req.request.url.startsWith(MARKET_SWG.JSON_PREFIX)) {
+        console.warn('checkingPromises',checkingPromises[MARKET_SWG.JSON_PREFIX])
+        req.getContent((body, encoding) => {
+          const data = (JSON.parse(body)).data as MARKET_SWG.c2cItem[]
+          console.log(req._connectionId, 'MARKET_SWG', data)
+          checkingPromises[MARKET_SWG.JSON_PREFIX]?.resolve(data)
+        })
+      }
+
     })
   }, [])
 
@@ -364,7 +397,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
               <HoverCard>
                 <HoverCardTrigger asChild>
                   <div 
-                    onClick={(e) => isSelectMode ? e.stopPropagation() : JumpTo(MARKET_SWG.ITEM_URL(item.skuId))}
+                    onClick={(e) => isSelectMode ? e.stopPropagation() : ToC2cSearch(item.skuId)}
                     className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-0.5 rounded-full text-xs backdrop-blur-sm cursor-pointer hover:bg-[#786DF6]/90 transition-colors flex items-center gap-1 shadow-sm"
                     title="跳转s-wg搜索库存"
                   >
@@ -463,7 +496,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
       </div>
 
       {/* 底部悬浮工具条 */}
-      <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center">
+      <div className="fixed bottom-6 left-0 right-0 z-100 flex justify-center">
         <div className="bg-white/77 backdrop-blur-md shadow-lg rounded-full px-3 py-2 border flex items-center">
           {/* 导航组 */}
           <div className="flex items-center">
@@ -514,7 +547,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
             <ToolButton 
               icon={<Bug className="h-5 w-5" />}
               label="调试"
-              onClick={handleClick}
+              onClick={handleDebug}
             />
           </div>
         </div>
@@ -561,7 +594,6 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                   <div className="flex items-center gap-2">
                     <div className="h-6 w-6 flex items-center justify-center flex-shrink-0">
                       <Checkbox 
-                        defaultChecked
                         checked={checkMarketOption}
                         className="h-5 w-5 rounded-full data-[state=checked]:bg-[#786DF6] data-[state=checked]:border-none border-gray-300"
                       />
@@ -608,6 +640,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                     
                     return (
                       <div 
+                        onClick={() => JumpTo(C2C_DETAIL.URL(c2c.c2cItemsId))}
                         key={c2c.c2cItemsId} 
                         className={`flex items-center justify-between p-2 border rounded-md ${statusClass} ${transitionClass}`}
                       >
@@ -636,6 +669,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
             
             <div className="p-4 border-t">
               <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-4"></div>
                 <div className="flex justify-end gap-2">
                   <Button 
                     className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-1.5 text-xs rounded-md"

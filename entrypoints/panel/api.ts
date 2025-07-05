@@ -39,8 +39,9 @@ export namespace C2C_LIST{
 
 export namespace C2C_DETAIL{
     export const URL = (c2cItemsId:number)=> `https://mall.bilibili.com/neul-next/index.html?page=magic-market_detail&noTitleBar=1&itemsId=${c2cItemsId}&from=market_index`
+    export const JSON_PREFIX = "https://mall.bilibili.com/mall-magic-c/internet/c2c/items/queryC2cItemsDetail"
     export function isDetail(url:string){
-        return url.startsWith("https://mall.bilibili.com/mall-magic-c/internet/c2c/items/queryC2cItemsDetail")
+        return url.startsWith(JSON_PREFIX)
     }
     export type skuItem = C2C_LIST.skuItem &{
         showMarketPrice: number,
@@ -78,7 +79,7 @@ export namespace MALL_DETAIL{
 }
 
 export namespace MARKET_SWG{
-    export const URL_searchItemHistory = "https://api.s-wg.net/market/searchItemHistory"
+    export const JSON_PREFIX = "https://api.s-wg.net/market/searchItemHistory"
     
     export const HTML_URL = 'https://market.s-wg.net/#/search'
     export const ITEM_URL = (skuId:number)=> `https://market.s-wg.net/#/history/${skuId}`

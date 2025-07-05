@@ -37,7 +37,7 @@ export namespace DB {
       await db.c2cs.put({
         ...rest,
         skuItemIds: detailDtoList.map(it => it.itemsId),
-        removable:data.publishStatus == 2 || data.saleStatus == 0,
+        removable:data.publishStatus == 2 || data.saleStatus != 1,
       })
     })
   }
