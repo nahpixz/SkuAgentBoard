@@ -1,9 +1,9 @@
 @import '../../lib/shadcn.css';
 
-@keyframes moveToBottom {
+/* @keyframes moveToBottom {
   from { transform: translateY(0); }
   to { transform: translateY(10px); opacity: 0.3; }
-}
+} */
 /* :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

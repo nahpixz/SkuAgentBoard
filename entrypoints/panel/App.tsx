@@ -9,15 +9,27 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Info, Tag, Check, AlertCircle, Clock, ArrowLeft, Search, Settings, Trash, X, Bug, Home, ShoppingCart, Layers } from 'lucide-react';
 import { DB } from './db';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { waitSearchNew } from './tasks';
 
 let connID = "";
 let c2cNextId = "";
 
+let searchNewPromise:{resolve:(v:any) => void,reject:() => void}|null = null;
+type CHECK_STATUS = 'pending' | 'doing' | 'success' | 'failed' | 'disable';
+
+type C2CCheckView={
+  removable?:boolean;
+  c2cItemsId: number;
+  uface:string;
+  uname:string;
+  showPrice:string;
+}
 function App() {
   // const [c2cData,setC2cData] = useState<C2C_LIST.c2cItem[]>([])
   const skuList = useLiveQuery(() => DB.getSkuList());
   const [checkingItem, setCheckingItem] = useState<DB.skuItem | null>(null);
-  const [checkStatus, setCheckStatus] = useState<{[key: number]: 'pending' | 'checking' | 'success' | 'failed'}>({});
+  const [checkingC2Cs, setCheckingC2Cs] = useState<(C2CCheckView|undefined)[]>([]);
+  const [checkStatus, setCheckStatus] = useState<{[key: number|string]: CHECK_STATUS}>({});
 
   const [checkMarketOption, setCheckMarketOption] = useState(true);
   const [searchNewOption, setSearchNewOption] = useState(true);
@@ -71,12 +83,12 @@ function App() {
       return;
     }
     
-    const newSelectedItems = {};
+    const newSelectedItems:{[key: number]: boolean} = {};
     skuList?.forEach(item => {
       newSelectedItems[item.itemsId] = true;
     });
     setSelectedItems(newSelectedItems);
-    setHasSelectedItems(skuList && skuList.length > 0);
+    setHasSelectedItems(Boolean(skuList && skuList.length > 0));
   }
   
   // 删除选中商品
@@ -101,26 +113,28 @@ function App() {
   }
 
   // 在库存检查模态框中使用的状态样式计算
-const getStatusClass = (isChecking: boolean, isSuccess: boolean, isFailed: boolean, isRemovable: boolean) => {
-  if (isChecking) return 'bg-gradient-to-r from-blue-50 to-blue-100 animate-pulse border-blue-200';
-  if (isSuccess) return 'bg-gradient-to-r from-green-50 to-green-100 border-green-200';
-  if (isFailed) return 'bg-gradient-to-r from-red-50 to-red-100 border-red-200 opacity-60';
-  if (isRemovable) return 'bg-gray-50 border-gray-200 opacity-60';
-  return '';
-};
+
+  const getStatusClass = (status: CHECK_STATUS) => {
+    if (status === 'doing') {
+      return 'bg-gradient-to-r from-blue-50 to-blue-100 animate-pulse border-blue-200';
+    } else if (status === 'success') {
+      return 'bg-gradient-to-r from-green-50 to-green-100 border-green-200';
+    } else if (status === 'failed') {
+      return 'bg-gradient-to-r from-red-50 to-red-100 border-red-200 opacity-60';
+    } else if (status === 'disable') {
+      return 'bg-gray-50 border-gray-200 opacity-60';
+    }
+    return '';
+  };
 
 // 计算前置检查项的状态样式
-const statusClass = getStatusClass(
-  false,false,false,
-  !searchNewOption
-);
-
-const marketStatusClass = getStatusClass(
-  checkMarketOption && Object.values(checkStatus).some(s => s === 'checking'),
-  checkMarketOption && Object.values(checkStatus).every(s => s === 'success'),
-  checkMarketOption && Object.values(checkStatus).some(s => s === 'failed'),
-  !checkMarketOption
-);
+const marketStatusClass =  getStatusClass('pending')
+// const marketStatusClass = getStatusClass(
+//   checkMarketOption && Object.values(checkStatus).some(s => s === 'doing'),
+//   checkMarketOption && Object.values(checkStatus).every(s => s === 'success'),
+//   checkMarketOption && Object.values(checkStatus).some(s => s === 'failed'),
+//   !checkMarketOption
+// );
 
 const transitionClass = 'transition-all duration-500 ease-in-out';
   
@@ -132,10 +146,17 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
   };
 
   function JumpTo(url: string) {
-    browser.devtools.inspectedWindow.eval(`window.location.assign("${url}");`,
-      (result, error) => {
-        if (error) console.error("跳转失败:", error);
+    return new Promise<void>((resolve,reject)=>{
+      browser.devtools.inspectedWindow.eval(`window.location.assign("${url}");`,
+      (result, e) => {
+        if (e) {
+          console.error("跳转失败:", e);
+          reject(e)
+        }
+        resolve()
       })
+    })
+    
   }
   function HistoryBack() {
     browser.devtools.inspectedWindow.eval(`history.back()`,
@@ -154,10 +175,11 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
            item.c2cLists.every(c2c => c2c?.removable === true);
   }
 
-  function startCheckInventory(item: DB.skuItem) {
+  function opencheckInventory(item: DB.skuItem) {
     setCheckingItem(item);
+    setCheckingC2Cs(item.c2cLists||[])
     // 初始化所有c2c项为pending状态
-    const initialStatus: {[key: number]: 'pending' | 'checking' | 'success' | 'failed'} = {};
+    const initialStatus: {[key: number]: 'pending' | 'doing' | 'success' | 'failed'} = {};
     item.c2cLists?.forEach(c2c => {
       if (c2c?.c2cItemsId) {
         initialStatus[c2c.c2cItemsId] = 'pending';
@@ -180,7 +202,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
       if (!c2c?.c2cItemsId) return;
       
       // 设置为checking状态
-      newStatus[c2c.c2cItemsId] = 'checking';
+      newStatus[c2c.c2cItemsId] = 'doing';
       setCheckStatus({...newStatus});
       
       // 模拟异步检查结果
@@ -203,8 +225,32 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
     setCheckStatus({});
   }
 
+  async function startCheck() {
+    if (!checkingItem) return console.error('检查项不存在');
+    if(searchNewOption){
+      console.log('start search...')
+      setCheckStatus({...checkStatus,['checkbox-search-new']:'doing'})
+      JumpTo(MARKET_SWG.ITEM_URL(checkingItem.skuId));
+      const data = await waitSearchNew();
+      console.log('search done',data);
+      setCheckingC2Cs(prev => [
+        ...prev,
+        ...data.filter(x => !x.isSold)
+          .map(x => ({
+            c2cItemsId: x.c2cItemsId,
+            uface: 'https://i0.hdslb.com/bfs/face/member/noface.jpg',
+            uname: x.userName,
+            showPrice: `${x.price}`,
+          }))
+        ]
+      )
+      setCheckStatus({...checkStatus,['checkbox-search-new']:'success'})
+    }
+
+  }
+
   useEffect(() => {
-    browser.devtools.network.onRequestFinished.addListener(function (req) {
+    browser.devtools.network.onRequestFinished.addListener(async function (req) {
       if(req._connectionId == connID) return;
       connID = String(req._connectionId) || ""
       // console.debug('req',connID, req)
@@ -228,19 +274,6 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
           DB.putC2CDetail(data);
         })
       }
-      
-      if(req.request.url.startsWith(MARKET_SWG.URL_searchItemHistory)){
-        const sku_id = Number(req.request.queryString.find(x=>x.name=='sku_id')?.value);
-        req.getContent((body, encoding)=>{
-          const data = (JSON.parse(body)).data as MARKET_SWG.c2cItem[]
-          console.log(req._connectionId,'MARKET_SWG', MARKET_SWG.filterLatestRecords(data))
-          // if(sku_id) DB.putC2CSeachHistory(data,sku_id);
-        })
-      }
-
-  
-      
-
     })
   }, [])
 
@@ -320,7 +353,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
               )}
               
               <img 
-                onClick={() => isSelectMode ? toggleSelectItem(item.itemsId, new MouseEvent('click')) : startCheckInventory(item)}
+                onClick={(e) => isSelectMode ? toggleSelectItem(item.itemsId, e) : opencheckInventory(item)} //new MouseEvent('click')
                 title={isSelectMode ? "点击选择" : "点击检查库存"}
                 src={`https:${item.img}`} 
                 alt={item.name} 
@@ -354,7 +387,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                           {isSelectMode && c2c?.c2cItemsId ? (
                             <div className="h-6 w-6 flex items-center justify-center">
                               <Checkbox 
-                                checked={isC2CSelected}
+                                checked={Boolean(isC2CSelected)}
                                 className="h-4 w-4 rounded-full data-[state=checked]:bg-[#786DF6] border-gray-300"
                               />
                             </div>
@@ -491,7 +524,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
         // <div className="fixed inset-0 backdrop-blur-xs flex items-center justify-center z-50">
         //   <div className="bg-white/77 backdrop-blur-xs  rounded-lg w-full max-w-md mx-4 overflow-hidden shadow-[0_0_0_2000px_rgba(0,0,0,0.5)]"></div>
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50">
-          <div className="bg-white/91 rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden">
             <div className="p-4 border-b flex justify-between items-center">
               <h3 className="font-medium text-gray-800">库存检查 - {checkingItem.name}</h3>
               <button 
@@ -506,7 +539,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
               <div className="space-y-2"> 
                 <div
                   key="checkbox-search-new"
-                  className={`flex items-center justify-between p-2 border rounded-md`}
+                  className={`flex items-center justify-between p-2 border rounded-md ${getStatusClass(checkStatus['checkbox-search-new'])}`}
                   onClick={() => setSearchNewOption((prev)=>!prev)}
                 >
                   <div className="flex items-center gap-2">
@@ -542,7 +575,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
 
                 
                 
-                {checkingItem.c2cLists && checkingItem.c2cLists
+                {checkingC2Cs && checkingC2Cs
                   .sort((a, b) => {
                     // 将不可用的项排在后面
                     const aDisabled = a?.removable || checkStatus[a?.c2cItemsId || 0] === 'failed';
@@ -560,7 +593,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                     
                     // 根据状态设置不同的样式
                     let statusClass = '';
-                    if (status === 'checking') {
+                    if (status === 'doing') {
                       statusClass = 'bg-gradient-to-r from-blue-50 to-blue-100 animate-pulse border-blue-200';
                     } else if (status === 'success') {
                       statusClass = 'bg-gradient-to-r from-green-50 to-green-100 border-green-200';
@@ -584,7 +617,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                               <AvatarImage src={c2c.uface} alt={c2c.uname || '用户'} />
                             ) : (
                               <AvatarFallback className="text-[10px] bg-gray-100 text-gray-500">
-                                {c2c.uname?.substring(0, 2) || '用户'}
+                                {c2c.uname?.substring(0, 1) || '用户'}
                               </AvatarFallback>
                             )}
                           </Avatar>
@@ -603,18 +636,6 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
             
             <div className="p-4 border-t">
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1" title="通过s-wg搜索库存">
-                    <input 
-                      type="checkbox" 
-                      id="check-local" 
-                      className="h-4 w-4 rounded border-gray-300 text-[#786DF6] focus:ring-[#786DF6]" 
-                      defaultChecked 
-                    />
-                    搜索新库存
-                  </div>
-                </div>
-                
                 <div className="flex justify-end gap-2">
                   <Button 
                     className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-1.5 text-xs rounded-md"
@@ -624,24 +645,13 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                   </Button>
                   <Button 
                     className="bg-[#786DF6] hover:bg-[#6258D4] text-white px-4 py-1.5 text-xs rounded-md"
-                    onClick={simulateCheck}
+                    onClick={startCheck}
                   >
                     开始检查
                   </Button>
                 </div>
               </div>
               
-              {/* 进度指示器 */}
-              <div className="h-1 w-full bg-gray-100 rounded-full overflow-hidden">
-                {Object.values(checkStatus).length > 0 && (
-                  <div 
-                    className="h-full bg-[#786DF6] transition-all duration-300 ease-out"
-                    style={{
-                      width: `${Object.values(checkStatus).filter(s => s !== 'pending').length / Object.values(checkStatus).length * 100}%`
-                    }}
-                  />
-                )}
-              </div>
             </div>
           </div>
         </div>
