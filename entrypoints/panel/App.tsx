@@ -247,7 +247,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
         // c2cArr[i] = c2cD;
         setCheckingC2Cs(Array.from(tC2CsMap.values()))
         setCheckStatus(prev => ({...prev,[c2c.c2cItemsId]:c2cD.removable?'disable':'success'}))
-        await new Promise((r,j)=>setTimeout(r,5000))
+        
         console.log('done check',c2c.c2cItemsId,new Date())
         
         // DB.putC2CDetail(data);
