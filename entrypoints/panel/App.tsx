@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Info, Tag, Check, AlertCircle, Clock, ArrowLeft, Search, Settings, Trash, X, Bug, Home, ShoppingCart, Layers } from 'lucide-react';
+import { Info, Tag, Check, AlertCircle, Clock, ArrowLeft, Search, Settings, Trash, X, Bug, Home, ShoppingCart, Layers, Filter, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, Percent, Package } from 'lucide-react';
 import { DB } from './db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { checkingPromises, HistoryBack, JumpTo, ToC2cSearch, waitForRequest } from './tasks';
@@ -25,15 +25,55 @@ type C2CCheckView={
   uname:string;
   showPrice:string;
 }
+
+// 筛选和排序的默认值常量
+const DEFAULT_FILTER_VALUES = {
+  sortOption: 'price' as 'price' | 'discount' | 'stock' | 'updateTime',
+  sortDirection: 'asc' as 'asc' | 'desc',
+  showOnlyInStock: false,
+  priceRange: 100,
+  discountRange: 100,
+  updateTimeRange: 7
+};
+
 function App() {
   // const [c2cData,setC2cData] = useState<C2C_LIST.c2cItem[]>([])
   const skuList = useLiveQuery(() => DB.getSkuList());
   const [checkingItem, setCheckingItem] = useState<DB.skuItem | null>(null);
   const [checkingC2Cs, setCheckingC2Cs] = useState<(C2CCheckView|undefined)[]>([]);
   const [checkStatus, setCheckStatus] = useState<{[key: number|string]: CHECK_STATUS}>({});
+  const [isCheckingInProgress, setIsCheckingInProgress] = useState(false);
+  const [isCheckingComplete, setIsCheckingComplete] = useState(false);
 
   const [checkMarketOption, setCheckMarketOption] = useState(true);
   const [searchNewOption, setSearchNewOption] = useState(true);
+
+  // 搜索相关状态
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [searchType, setSearchType] = useState<'remote' | 'local'>('local');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // 设置相关状态
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [autoCaptureMallSetting, setAutoCaptureMallSetting] = useState(true);
+  const [autoCaptureDetailSetting, setAutoCaptureDetailSetting] = useState(false);
+
+  // 筛选相关状态
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [sortOption, setSortOption] = useState<'price' | 'discount' | 'stock' | 'updateTime'>(DEFAULT_FILTER_VALUES.sortOption);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(DEFAULT_FILTER_VALUES.sortDirection);
+  const [showOnlyInStock, setShowOnlyInStock] = useState(DEFAULT_FILTER_VALUES.showOnlyInStock);
+  const [priceRange, setPriceRange] = useState<number>(DEFAULT_FILTER_VALUES.priceRange);
+  const [discountRange, setDiscountRange] = useState<number>(DEFAULT_FILTER_VALUES.discountRange);
+  const [updateTimeRange, setUpdateTimeRange] = useState<number>(DEFAULT_FILTER_VALUES.updateTimeRange);
+  
+  // 应用的筛选状态（只有点击应用筛选后才更新）
+  const [appliedSortOption, setAppliedSortOption] = useState<'price' | 'discount' | 'stock' | 'updateTime'>(DEFAULT_FILTER_VALUES.sortOption);
+  const [appliedSortDirection, setAppliedSortDirection] = useState<'asc' | 'desc'>(DEFAULT_FILTER_VALUES.sortDirection);
+  const [appliedShowOnlyInStock, setAppliedShowOnlyInStock] = useState(DEFAULT_FILTER_VALUES.showOnlyInStock);
+  const [appliedPriceRange, setAppliedPriceRange] = useState<number>(DEFAULT_FILTER_VALUES.priceRange);
+  const [appliedDiscountRange, setAppliedDiscountRange] = useState<number>(DEFAULT_FILTER_VALUES.discountRange);
+  const [appliedUpdateTimeRange, setAppliedUpdateTimeRange] = useState<number>(DEFAULT_FILTER_VALUES.updateTimeRange);
 
   const [hasSelectedItems, setHasSelectedItems] = useState(false);
   const [hasSelectedC2C, setHasSelectedC2C] = useState(false);
@@ -51,6 +91,10 @@ function App() {
       setHasSelectedItems(false);
       setHasSelectedC2C(false);
     }
+    
+    // 检查完成后，更新状态
+    setIsCheckingInProgress(false);
+    setIsCheckingComplete(true);
   }
   
   // 选择/取消选择商品
@@ -110,8 +154,51 @@ function App() {
   
   // 打开设置
   function openSettings() {
-    // 实现打开设置的逻辑
+    setIsSettingsModalOpen(true);
   }
+  
+  // 打开搜索
+  function openSearch() {
+    setIsSearchModalOpen(true);
+    setSearchQuery('');
+  }
+  
+  // 执行搜索
+  function performSearch() {
+    console.log('搜索', searchType, searchQuery);
+    // 本地搜索直接通过状态过滤，远程搜索需要调用API
+    if (searchType === 'remote') {
+      // 这里应该调用远程搜索API，但目前只是模拟
+      console.log('执行远程搜索', searchQuery);
+    }
+    setIsSearchModalOpen(false);
+  }
+  
+  // 打开筛选
+  function openFilter() {
+    setIsFilterModalOpen(true);
+  }
+  
+  // 应用筛选设置
+  const applyFilterSettings = () => {
+    setAppliedSortOption(sortOption);
+    setAppliedSortDirection(sortDirection);
+    setAppliedShowOnlyInStock(showOnlyInStock);
+    setAppliedPriceRange(priceRange);
+    setAppliedDiscountRange(discountRange);
+    setAppliedUpdateTimeRange(updateTimeRange);
+    setIsFilterModalOpen(false);
+  };
+  
+  // 重置筛选设置
+  const resetFilterSettings = () => {
+    setSortOption(DEFAULT_FILTER_VALUES.sortOption);
+    setSortDirection(DEFAULT_FILTER_VALUES.sortDirection);
+    setShowOnlyInStock(DEFAULT_FILTER_VALUES.showOnlyInStock);
+    setPriceRange(DEFAULT_FILTER_VALUES.priceRange);
+    setDiscountRange(DEFAULT_FILTER_VALUES.discountRange);
+    setUpdateTimeRange(DEFAULT_FILTER_VALUES.updateTimeRange);
+  };
 
   // 在库存检查模态框中使用的状态样式计算
 
@@ -180,21 +267,118 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
   function closeCheckModal() {
     setCheckingItem(null);
     setCheckStatus({});
+    setIsCheckingInProgress(false);
+    setIsCheckingComplete(false);
   }
+  
+  // 处理筛选和排序
+  const getFilteredAndSortedItems = () => {
+    if (!skuList) return [];
+    
+    // 先筛选
+    let filteredItems = [...skuList];
+    
+    // 应用筛选条件（使用已应用的筛选状态）
+    filteredItems = filteredItems.filter(item => {
+      // 只显示有货商品
+      if (appliedShowOnlyInStock && isAllDisabled(item)) {
+        return false;
+      }
+      
+      // 价格范围筛选
+      if (appliedPriceRange < 100) {
+        const price = item.marketPrice / 100; // 转换为元
+        if (price > appliedPriceRange) return false;
+      }
+      
+      // 折扣范围筛选
+      if (appliedDiscountRange < 100) {
+        // 计算折扣率 (1 - 最低价/市场价) * 100
+        const lowestPrice = item.c2cLists && item.c2cLists.length > 0 
+          ? parseFloat(item.c2cLists.sort((x, y) => (x?.price || 0) - (y?.price || 0))[0]?.showPrice || '0')
+          : 0;
+        const marketPrice = item.marketPrice / 100;
+        const discount = marketPrice > 0 ? (1 - lowestPrice / marketPrice) * 100 : 0;
+        
+        if (discount > appliedDiscountRange) return false;
+      }
+      
+      // 库存更新时间筛选
+      if (appliedUpdateTimeRange < 7 && item.c2cInfosLastUpdateTime) {
+        const updateTime = new Date(item.c2cInfosLastUpdateTime).getTime();
+        const now = new Date().getTime();
+        const daysDiff = Math.floor((now - updateTime) / (1000 * 60 * 60 * 24));
+        
+        if (daysDiff > appliedUpdateTimeRange) return false;
+      }
+      
+      return true;
+    });
+    
+    // 再排序（使用已应用的排序状态）
+    filteredItems.sort((a, b) => {
+      let valueA, valueB;
+      
+      switch (appliedSortOption) {
+        case 'price':
+          valueA = a.marketPrice;
+          valueB = b.marketPrice;
+          break;
+        case 'discount':
+          // 计算折扣率 (1 - 最低价/市场价) * 100
+          const discountA = a.c2cLists && a.c2cLists.length > 0 
+            ? (1 - parseFloat(a.c2cLists.sort((x, y) => (x?.price || 0) - (y?.price || 0))[0]?.showPrice || '0') / (a.marketPrice / 100)) * 100
+            : 0;
+          const discountB = b.c2cLists && b.c2cLists.length > 0 
+            ? (1 - parseFloat(b.c2cLists.sort((x, y) => (x?.price || 0) - (y?.price || 0))[0]?.showPrice || '0') / (b.marketPrice / 100)) * 100
+            : 0;
+          valueA = discountA;
+          valueB = discountB;
+          break;
+        case 'stock':
+          valueA = a.c2cItemsIds.length;
+          valueB = b.c2cItemsIds.length;
+          break;
+        case 'updateTime':
+          valueA = a.c2cInfosLastUpdateTime || 0;
+          valueB = b.c2cInfosLastUpdateTime || 0;
+          break;
+        default:
+          return 0;
+      }
+      
+      // 根据排序方向返回结果
+      return appliedSortDirection === 'asc' ? valueA - valueB : valueB - valueA;
+    });
+    
+    // 如果有搜索查询且是本地搜索，应用搜索过滤
+    if (searchQuery && searchType === 'local') {
+      const query = searchQuery.toLowerCase();
+      filteredItems = filteredItems.filter(item => 
+        item.name.toLowerCase().includes(query) ||
+        item.skuId.toString().includes(query)
+      );
+    }
+    
+    return filteredItems;
+  };
 
   async function startCheck() {
     if (!checkingItem) return console.error('检查项不存在');
+    
+    // 设置检查状态为进行中，重置完成状态
+    setIsCheckingInProgress(true);
+    setIsCheckingComplete(false);
 
-    let tC2CsMap = new Map();
+    let tC2CsMap = new Map<number,C2CCheckView>();
+    checkingC2Cs.forEach(x=> x && tC2CsMap.set(x.c2cItemsId,x))
     if(searchNewOption){
       try {
         console.log('start search...')
         setCheckStatus(prev => ({...prev,['checkbox-search-new']:'doing'}))
-        const pendingRequest= waitForRequest(MARKET_SWG.JSON_PREFIX);
-        ToC2cSearch(checkingItem.skuId);
+        const pendingRequest= waitForRequest(MARKET_SWG.JSON_PREFIX,'checkbox-search-new');
+        await ToC2cSearch(checkingItem.skuId);
         const data = await pendingRequest;
-        
-        checkingC2Cs.forEach(x=> x && tC2CsMap.set(x.c2cItemsId,x))
         data.forEach(x => {
           if(!x.isSold && !tC2CsMap.get(x.c2cItemsId)){
             tC2CsMap.set(x.c2cItemsId,{
@@ -234,10 +418,12 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
       }
       
       try {
-        console.log('start check',c2c.c2cItemsId,new Date())
+        console.warn('start check',c2c.c2cItemsId,new Date())
         setCheckStatus(prev => ({...prev,[c2c.c2cItemsId]:'doing'}))
-        JumpTo(C2C_DETAIL.URL(c2c.c2cItemsId))
-        const data = await waitForRequest(C2C_DETAIL.JSON_PREFIX);
+        const pendingRequest = waitForRequest(C2C_DETAIL.JSON_PREFIX,c2c.c2cItemsId);
+        await JumpTo(C2C_DETAIL.URL(c2c.c2cItemsId))
+        // await new Promise((r,j)=>setTimeout(r,1))
+        const data = await pendingRequest;
         const c2cD = {
           ...data,
           skuItemIds: data.detailDtoList.map(it => it.itemsId),
@@ -248,7 +434,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
         setCheckingC2Cs(Array.from(tC2CsMap.values()))
         setCheckStatus(prev => ({...prev,[c2c.c2cItemsId]:c2cD.removable?'disable':'success'}))
         
-        console.log('done check',c2c.c2cItemsId,new Date())
+        console.warn('done check',c2c.c2cItemsId,new Date())
         
         // DB.putC2CDetail(data);
       } catch (e) {
@@ -257,6 +443,9 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
       }
 
     }
+
+    setIsCheckingInProgress(false);
+    setIsCheckingComplete(true);
   }
 
   // useEffect(()=>{
@@ -272,7 +461,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
   // },[skuList])
 
   useEffect(() => {
-    browser.devtools.network.onRequestFinished.addListener(async function (req) {
+    async function networkListener(req:globalThis.Browser.devtools.network.Request) {
       if(!req._connectionId || req._connectionId == connID && req.time == connTime) return //console.debug('reqRet',req._connectionId,req.request.url,req);
       connID = String(req._connectionId) || ""
       // console.debug('req',req._connectionId,req.request.url,req)
@@ -289,25 +478,37 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
       }
 
       if(C2C_DETAIL.isDetail(req.request.url)){
+        console.debug('req',req._connectionId,req.request.url,req)
         req.getContent((body, encoding)=>{
-          const data = (JSON.parse(body)).data as C2C_DETAIL.c2cItem
-          console.log(req._connectionId,'C2C_DETAIL', data)
-          checkingPromises[C2C_DETAIL.JSON_PREFIX]?.resolve(data)
-          DB.putC2CDetail(data);
+          try{
+            const data = (JSON.parse(body)).data as C2C_DETAIL.c2cItem
+            // console.log(req._connectionId,'C2C_DETAIL', data)
+            checkingPromises[C2C_DETAIL.JSON_PREFIX][data.c2cItemsId]?.resolve(data)
+            DB.putC2CDetail(data);
+          }catch(e){
+            console.error(e)
+            console.error('req',req._connectionId,req.request.url,req)
+            console.error(body)
+          }
         })
       }
 
       // https://api.s-wg.net/market/searchItemHistory
       if (req.request.url.startsWith(MARKET_SWG.JSON_PREFIX)) {
-        console.warn('checkingPromises',checkingPromises[MARKET_SWG.JSON_PREFIX])
+        // console.warn('checkingPromises',checkingPromises[MARKET_SWG.JSON_PREFIX])
         req.getContent((body, encoding) => {
           const data = (JSON.parse(body)).data as MARKET_SWG.c2cItem[]
           console.log(req._connectionId, 'MARKET_SWG', data)
-          checkingPromises[MARKET_SWG.JSON_PREFIX]?.resolve(data)
+          checkingPromises[MARKET_SWG.JSON_PREFIX]['checkbox-search-new']?.resolve(data)
         })
       }
 
-    })
+    }
+
+    browser.devtools.network.onRequestFinished.addListener(networkListener);
+    return () => {
+      browser.devtools.network.onRequestFinished.removeListener(networkListener);
+    };
   }, [])
 
   return (
@@ -359,7 +560,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
       
       {/* 主内容区域 */}
       <div className={`${isSelectMode ? 'pt-12' : ''} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
-        {skuList&&skuList.map((item) => {
+        {getFilteredAndSortedItems().map((item) => {
           const allDisabled = isAllDisabled(item);
           const isSelected = selectedItems[item.itemsId];
           return (
@@ -401,13 +602,24 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                     className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-0.5 rounded-full text-xs backdrop-blur-sm cursor-pointer hover:bg-[#786DF6]/90 transition-colors flex items-center gap-1 shadow-sm"
                     title="跳转s-wg搜索库存"
                   >
-                    <span>x{item.c2cItemsIds.length}</span>
+                    {/* item.c2cLists?.filter(x=>!x?.removable).length || */}
+                    <span>x{ item.c2cItemsIds.length}</span> 
                   </div>
                 </HoverCardTrigger>
                 <HoverCardContent className="w-80 p-3 rounded-lg shadow-lg border border-gray-200">
                   <h4 className="text-sm font-medium mb-2 text-gray-700">可用库存列表</h4>
                   <ul className="text-sm space-y-1 max-h-60 overflow-y-auto">
-                    {item.c2cLists && item.c2cLists.map((c2c) => {
+                    {item.c2cLists && item.c2cLists
+                    .filter(x=>!x?.removable)
+                    // .sort((a, b) => {
+                    //   // 将不可用的项排在后面
+                    //   const aDisabled = a?.removable;
+                    //   const bDisabled = b?.removable;
+                    //   if (aDisabled && !bDisabled) return 1;
+                    //   if (!aDisabled && bDisabled) return -1;
+                    //   return 0;
+                    // })
+                    .map((c2c) => {
                       const isC2CSelected = c2c?.c2cItemsId && selectedC2CItems[c2c.c2cItemsId];
                       return (
                       <li key={c2c?.c2cItemsId} 
@@ -515,7 +727,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
             <ToolButton 
               icon={<Search className="h-5 w-5" />}
               label="搜索"
-              onClick={() => JumpTo(MARKET_SWG.HTML_URL)}
+              onClick={openSearch}
               variant="primary"
             />
             
@@ -532,6 +744,12 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
               onClick={toggleSelectMode}
               active={isSelectMode}
             />
+            <ToolButton 
+              icon={<Layers className="h-5 w-5" />}
+              label="筛选"
+              onClick={openFilter}
+              active={isFilterModalOpen}
+            />
           </div>
           
           {/* 分隔线 */}
@@ -543,6 +761,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
               icon={<Settings className="h-5 w-5" />}
               label="设置"
               onClick={openSettings}
+              active={isSettingsModalOpen}
             />
             <ToolButton 
               icon={<Bug className="h-5 w-5" />}
@@ -553,6 +772,359 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
         </div>
       </div>
 
+      {/* 搜索模态框 - 简化版 */}
+      {isSearchModalOpen && (
+        <div 
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={() => setIsSearchModalOpen(false)}
+        >
+          <div 
+            className="w-full max-w-md mx-4 animate-in fade-in duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative flex items-center">
+              <div className="absolute left-0 top-0 bottom-0 flex items-center z-10">
+                <button 
+                  className="h-10 px-3 flex items-center justify-center gap-1.5 bg-white/90 backdrop-blur-sm rounded-l-lg border-y border-l border-gray-200 text-gray-600 hover:text-[#786DF6] hover:bg-gray-50 transition-all text-xs font-medium"
+                  onClick={() => setSearchType(searchType === 'local' ? 'remote' : 'local')}
+                  title={searchType === 'local' ? '切换到远程搜索' : '切换到本地搜索'}
+                >
+                  {searchType === 'local' ? (
+                    <>
+                      <Home className="h-3.5 w-3.5" />
+                      <span>本地</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="h-3.5 w-3.5" />
+                      <span>远程</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={searchType === 'local' ? "搜索本地商品..." : "搜索远程商品..."}
+                className="w-full pl-16 pr-10 py-2.5 text-sm bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-[#786DF6]/50 focus:border-transparent"
+                autoFocus
+                onKeyDown={(e) => e.key === 'Enter' && performSearch()}
+              />
+              
+              <div className="absolute right-0 top-0 bottom-0 flex items-center">
+                <button 
+                  className="h-10 w-10 flex items-center justify-center bg-[#786DF6] rounded-r-lg text-white hover:bg-[#6258D4] transition-colors"
+                  onClick={performSearch}
+                >
+                  <Search className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* 设置模态框 */}
+      {isSettingsModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="font-medium text-gray-800">设置</h3>
+              <button 
+                onClick={() => setIsSettingsModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="p-4 space-y-4">
+              <div className="flex items-center justify-between p-2 border rounded-md hover:bg-gray-50">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-6 flex items-center justify-center flex-shrink-0">
+                    <Checkbox 
+                      checked={autoCaptureMallSetting}
+                      onCheckedChange={(checked) => setAutoCaptureMallSetting(checked === true)}
+                      className="h-5 w-5 rounded-full data-[state=checked]:bg-[#786DF6] data-[state=checked]:border-none border-gray-300"
+                    />
+                  </div>
+                  <span className="text-sm">市集自动抓取</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between p-2 border rounded-md bg-gray-50 opacity-60">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-6 flex items-center justify-center flex-shrink-0">
+                    <Checkbox 
+                      checked={autoCaptureDetailSetting}
+                      disabled
+                      className="h-5 w-5 rounded-full data-[state=checked]:bg-[#786DF6] data-[state=checked]:border-none border-gray-300"
+                    />
+                  </div>
+                  <span className="text-sm">商品详情自动抓取</span>
+                </div>
+                <span className="text-xs text-gray-500">暂不可用</span>
+              </div>
+              
+              <div className="flex justify-end gap-2 pt-2">
+                <Button 
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-1.5 text-xs rounded-md"
+                  onClick={() => setIsSettingsModalOpen(false)}
+                >
+                  取消
+                </Button>
+                <Button 
+                  className="bg-[#786DF6] hover:bg-[#6258D4] text-white px-4 py-1.5 text-xs rounded-md"
+                  onClick={() => {
+                    // 保存设置逻辑
+                    console.log('保存设置', { autoCaptureMallSetting, autoCaptureDetailSetting });
+                    setIsSettingsModalOpen(false);
+                  }}
+                >
+                  保存
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* 筛选模态框 - 现代化版本 */}
+      {isFilterModalOpen && (
+        <div 
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={() => setIsFilterModalOpen(false)}
+        >
+          <div 
+            className="bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="font-medium text-gray-800 flex items-center gap-2">
+                <Filter className="h-4 w-4 text-[#786DF6]" />
+                筛选与排序
+              </h3>
+              <button 
+                onClick={() => setIsFilterModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            
+            <div className="p-4 max-h-[70vh] overflow-y-auto">
+              {/* 排序部分 */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                    <ArrowUpDown className="h-3.5 w-3.5" />
+                    排序方式
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    className={`px-3 py-2 text-xs rounded-lg flex items-center justify-between transition-all ${sortOption === 'price' ? 'bg-[#786DF6] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                    onClick={() => {
+                      if (sortOption === 'price') {
+                        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+                      } else {
+                        setSortOption('price');
+                        setSortDirection('asc');
+                      }
+                    }}
+                  >
+                    <span>价格</span>
+                    {sortOption === 'price' && (
+                      sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    )}
+                  </button>
+                  
+                  <button 
+                    className={`px-3 py-2 text-xs rounded-lg flex items-center justify-between transition-all ${sortOption === 'discount' ? 'bg-[#786DF6] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                    onClick={() => {
+                      if (sortOption === 'discount') {
+                        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+                      } else {
+                        setSortOption('discount');
+                        setSortDirection('asc');
+                      }
+                    }}
+                  >
+                    <span>折扣</span>
+                    {sortOption === 'discount' && (
+                      sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    )}
+                  </button>
+                  
+                  <button 
+                    className={`px-3 py-2 text-xs rounded-lg flex items-center justify-between transition-all ${sortOption === 'stock' ? 'bg-[#786DF6] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                    onClick={() => {
+                      if (sortOption === 'stock') {
+                        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+                      } else {
+                        setSortOption('stock');
+                        setSortDirection('asc');
+                      }
+                    }}
+                  >
+                    <span>库存</span>
+                    {sortOption === 'stock' && (
+                      sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    )}
+                  </button>
+                  
+                  <button 
+                    className={`px-3 py-2 text-xs rounded-lg flex items-center justify-between transition-all ${sortOption === 'updateTime' ? 'bg-[#786DF6] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                    onClick={() => {
+                      if (sortOption === 'updateTime') {
+                        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+                      } else {
+                        setSortOption('updateTime');
+                        setSortDirection('asc');
+                      }
+                    }}
+                  >
+                    <span>更新时间</span>
+                    {sortOption === 'updateTime' && (
+                      sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              
+              {/* 筛选部分 */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                    <SlidersHorizontal className="h-3.5 w-3.5" />
+                    价格范围
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    0-100
+                  </span>
+                </div>
+                <div className="px-1">
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    value={priceRange || 100}
+                    onChange={(e) => setPriceRange(parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#786DF6]"
+                  />
+                  <div className="flex justify-between mt-1 text-xs text-gray-500">
+                    <span>¥0</span>
+                    <span>¥{priceRange || 100}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                    <Percent className="h-3.5 w-3.5" />
+                    折扣范围
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    0-100%
+                  </span>
+                </div>
+                <div className="px-1">
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    value={discountRange || 100}
+                    onChange={(e) => setDiscountRange(parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#786DF6]"
+                  />
+                  <div className="flex justify-between mt-1 text-xs text-gray-500">
+                    <span>0%</span>
+                    <span>{discountRange || 100}%</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" />
+                    库存更新时间
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    0-7天内
+                  </span>
+                </div>
+                <div className="px-1">
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="7" 
+                    value={updateTimeRange || 7}
+                    onChange={(e) => setUpdateTimeRange(parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#786DF6]"
+                  />
+                  <div className="flex justify-between mt-1 text-xs text-gray-500">
+                    <span>当天</span>
+                    <span>{updateTimeRange || 7}天内</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <div className="flex items-center mb-2">
+                  <div 
+                    className="relative inline-block w-10 mr-2 align-middle select-none"
+                    onClick={() => setShowOnlyInStock(!showOnlyInStock)}
+                  >
+                    <input 
+                      type="checkbox" 
+                      id="showOnlyInStock" 
+                      checked={showOnlyInStock}
+                      onChange={(e) => setShowOnlyInStock(e.target.checked)}
+                      className="sr-only" // 隐藏原始复选框
+                    />
+                    <div className="block h-5 w-10 rounded-full bg-gray-300 cursor-pointer"
+                      style={{
+                        background: showOnlyInStock ? '#786DF6' : '#D1D5DB'
+                      }}
+                    ></div>
+                    <div 
+                      className="absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition-transform duration-200 ease-in-out"
+                      style={{
+                        transform: showOnlyInStock ? 'translateX(20px)' : 'translateX(0)',
+                        border: showOnlyInStock ? '2px solid #786DF6' : '2px solid #D1D5DB'
+                      }}
+                    ></div>
+                  </div>
+                  <label htmlFor="showOnlyInStock" className="text-sm font-medium text-gray-700 flex items-center gap-1.5 cursor-pointer">
+                    <Package className="h-3.5 w-3.5" />
+                    只显示有货商品
+                  </label>
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                <button 
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 text-xs rounded-lg transition-colors"
+                  onClick={resetFilterSettings}
+                >
+                  重置
+                </button>
+                <button 
+                  className="bg-[#786DF6] hover:bg-[#6258D4] text-white px-4 py-2 text-xs rounded-lg transition-colors"
+                  onClick={applyFilterSettings}
+                >
+                  应用筛选
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {checkingItem && (
         // <div className="fixed inset-0 backdrop-blur-xs flex items-center justify-center z-50">
         //   <div className="bg-white/77 backdrop-blur-xs  rounded-lg w-full max-w-md mx-4 overflow-hidden shadow-[0_0_0_2000px_rgba(0,0,0,0.5)]"></div>
@@ -610,8 +1182,8 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                 {checkingC2Cs && checkingC2Cs
                   .sort((a, b) => {
                     // 将不可用的项排在后面
-                    const aDisabled = a?.removable || checkStatus[a?.c2cItemsId || 0] === 'failed';
-                    const bDisabled = b?.removable || checkStatus[b?.c2cItemsId || 0] === 'failed';
+                    const aDisabled = a?.removable;
+                    const bDisabled = b?.removable;
                     if (aDisabled && !bDisabled) return 1;
                     if (!aDisabled && bDisabled) return -1;
                     return 0;
@@ -678,10 +1250,26 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                     关闭
                   </Button>
                   <Button 
-                    className="bg-[#786DF6] hover:bg-[#6258D4] text-white px-4 py-1.5 text-xs rounded-md"
+                    className={`px-4 py-1.5 text-xs rounded-md bg-[#786DF6] hover:bg-[#6258D4] text-white disabled:opacity-99 disabled:cursor-not-allowed`}
                     onClick={startCheck}
+                    disabled={isCheckingInProgress || isCheckingComplete}
                   >
-                    开始检查
+                    {isCheckingComplete ? (
+                      <span className="flex items-center gap-1">
+                        <Check className="h-3.5 w-3.5" />
+                        检查完成
+                      </span>
+                    ) : isCheckingInProgress ? (
+                      <span className="flex items-center gap-1">
+                        <svg className="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        检查中...
+                      </span>
+                    ) : (
+                      '开始检查'
+                    )}
                   </Button>
                 </div>
               </div>

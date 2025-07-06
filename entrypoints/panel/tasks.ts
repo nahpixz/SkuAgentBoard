@@ -4,33 +4,34 @@ type RequestTypeMap = {
   [MARKET_SWG.JSON_PREFIX]: MARKET_SWG.c2cItem[];
   [C2C_DETAIL.JSON_PREFIX]: C2C_DETAIL.c2cItem;
 };
-type RequestKey = keyof RequestTypeMap;
+type RequestUrl = keyof RequestTypeMap;
 type PromiseResolver = {
   resolve: (data: any) => void;
   reject: (reason?: any) => void;
 } | null;
-export const checkingPromises:Record<RequestKey,{resolve:(v:any) => void,reject:(v:any) => void}|null>
+export const checkingPromises:Record<RequestUrl,Record<string|number,PromiseResolver>>
 = {
-  [MARKET_SWG.JSON_PREFIX]:null,
-  [C2C_DETAIL.JSON_PREFIX]:null,
+  [MARKET_SWG.JSON_PREFIX]:{},
+  [C2C_DETAIL.JSON_PREFIX]:{},
 }
 
-export async function waitForRequest<T extends RequestKey>(requestPrefix:T,timeout=20000):Promise<RequestTypeMap[T]> {
+export async function waitForRequest<T extends RequestUrl>(requestPrefix:T,key:string|number,timeout=20000):Promise<RequestTypeMap[T]> {
   return new Promise((resolve, reject) => {
+        const cpM = checkingPromises[requestPrefix] as Record<string|number,PromiseResolver>;
         const timer = setTimeout(() => {
-            checkingPromises[requestPrefix]=null;
+            cpM[key] = null;
             reject(new Error("Timeout waiting for response"));
         }, timeout);
 
-        checkingPromises[requestPrefix]={
+        cpM[key]={
             resolve:(x => {
                 clearTimeout(timer);
-                checkingPromises[requestPrefix]=null;
+                cpM[key]=null;
                 resolve(x);
             }),
             reject:(x => {
                 clearTimeout(timer);
-                checkingPromises[requestPrefix]=null;
+                cpM[key]=null;
                 reject(x);
             }),
         };
@@ -90,16 +91,40 @@ export function ToC2cSearch(sku_id:number){
     })
 }
 
+export function JumpToComplete(url: string){
+  return new Promise<void>((resolve,reject)=>{
+    const onNavigated = async (id: number, changeInfo: Browser.tabs.TabChangeInfo) => {
+      if (id !== browser.devtools.inspectedWindow.tabId) return;
+      if (changeInfo.status !== "complete") return;
+      console.log('jumped:',url)
+      resolve();
+      browser.tabs.onUpdated.removeListener(onNavigated)
+    };
+    browser.tabs.onUpdated.addListener(onNavigated);
+    browser.tabs.update(browser.devtools.inspectedWindow.tabId, { url, autoDiscardable: false }).catch(reject);
+  })
+}
+
+
+
 export function JumpTo(url: string) {
     return new Promise<void>((resolve,reject)=>{
+      const onNavigated = async () => {
+        console.log('jump to',url)
+        resolve();
+        browser.devtools.network.onNavigated.removeListener(onNavigated)
+      };
+      browser.devtools.network.onNavigated.addListener(onNavigated);
+
+
       browser.devtools.inspectedWindow.eval(`window.location.assign("${url}")`,
       (result, e) => {
         if (e) {
           console.error("跳转失败:", e);
           reject(e)
         }
-        console.log('jump to',url)
-        resolve()
+        // console.log('jump to',url)
+        // resolve()
       })
     })
     

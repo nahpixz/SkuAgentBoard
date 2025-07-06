@@ -4,6 +4,7 @@ import { C2C_DETAIL, C2C_LIST, MARKET_SWG } from "./api";
 interface StoredSkuItem extends C2C_LIST.skuItem {
   c2cItemsIds: number[]; // 关联的C2C项目IDs
   c2cLists?: (StoredC2CItem | undefined)[]; //Only for get,Not for put/add
+  c2cInfosLastUpdateTime?: number; // 最后一次更新时间
 }
 
 interface StoredC2CItem extends Omit<C2C_LIST.c2cItem, "detailDtoList"> {
