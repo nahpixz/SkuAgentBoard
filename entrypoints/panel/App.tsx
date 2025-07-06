@@ -83,13 +83,17 @@ function App() {
   
   // 切换选择模式
   function toggleSelectMode() {
-    setIsSelectMode(!isSelectMode);
     if (isSelectMode) {
       // 退出选择模式时清空选择
+      setIsSelectMode(false);
       setSelectedItems({});
       setSelectedC2CItems({});
       setHasSelectedItems(false);
       setHasSelectedC2C(false);
+    } else {
+      // 进入选择模式前关闭其他模态窗
+      closeAllModals();
+      setIsSelectMode(true);
     }
     
     // 检查完成后，更新状态
@@ -152,15 +156,41 @@ function App() {
     setHasSelectedC2C(false);
   }
   
+  // 关闭所有模态窗
+  function closeAllModals() {
+    setIsSearchModalOpen(false);
+    setIsSettingsModalOpen(false);
+    setIsFilterModalOpen(false);
+    
+    // 关闭选择模式并清空选择状态
+    if (isSelectMode) {
+      setIsSelectMode(false);
+      setSelectedItems({});
+      setSelectedC2CItems({});
+      setHasSelectedItems(false);
+      setHasSelectedC2C(false);
+    }
+  }
+  
   // 打开设置
   function openSettings() {
-    setIsSettingsModalOpen(true);
+    if (isSettingsModalOpen) {
+      setIsSettingsModalOpen(false);
+    } else {
+      closeAllModals();
+      setIsSettingsModalOpen(true);
+    }
   }
   
   // 打开搜索
   function openSearch() {
-    setIsSearchModalOpen(true);
-    setSearchQuery('');
+    if (isSearchModalOpen) {
+      setIsSearchModalOpen(false);
+    } else {
+      closeAllModals();
+      setIsSearchModalOpen(true);
+      setSearchQuery('');
+    }
   }
   
   // 执行搜索
@@ -176,7 +206,12 @@ function App() {
   
   // 打开筛选
   function openFilter() {
-    setIsFilterModalOpen(true);
+    if (isFilterModalOpen) {
+      setIsFilterModalOpen(false);
+    } else {
+      closeAllModals();
+      setIsFilterModalOpen(true);
+    }
   }
   
   // 应用筛选设置
@@ -724,12 +759,6 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
               onClick={() => JumpTo(C2C_LIST.HTML_URL)}
               variant="primary"
             />
-            <ToolButton 
-              icon={<Search className="h-5 w-5" />}
-              label="搜索"
-              onClick={openSearch}
-              variant="primary"
-            />
             
           </div>
           
@@ -738,6 +767,12 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
           
           {/* 操作工具组 */}
           <div className="flex items-center">
+            <ToolButton 
+              icon={<Search className="h-5 w-5" />}
+              label="搜索"
+              onClick={openSearch}
+              active={isSearchModalOpen}
+            />
             <ToolButton 
               icon={<Check className="h-5 w-5" />}
               label="选择"
@@ -772,54 +807,89 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
         </div>
       </div>
 
-      {/* 搜索模态框 - 简化版 */}
+      {/* 搜索模态框 - 现代化设计 */}
       {isSearchModalOpen && (
         <div 
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50"
           onClick={() => setIsSearchModalOpen(false)}
         >
           <div 
-            className="w-full max-w-md mx-4 animate-in fade-in duration-300"
+            className="w-full max-w-lg mx-4 animate-in fade-in slide-in-from-top-4 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative flex items-center">
-              <div className="absolute left-0 top-0 bottom-0 flex items-center z-10">
-                <button 
-                  className="h-10 px-3 flex items-center justify-center gap-1.5 bg-white/90 backdrop-blur-sm rounded-l-lg border-y border-l border-gray-200 text-gray-600 hover:text-[#786DF6] hover:bg-gray-50 transition-all text-xs font-medium"
-                  onClick={() => setSearchType(searchType === 'local' ? 'remote' : 'local')}
-                  title={searchType === 'local' ? '切换到远程搜索' : '切换到本地搜索'}
-                >
-                  {searchType === 'local' ? (
-                    <>
-                      <Home className="h-3.5 w-3.5" />
-                      <span>本地</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingCart className="h-3.5 w-3.5" />
-                      <span>远程</span>
-                    </>
-                  )}
-                </button>
+            <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden">
+              {/* 搜索类型选择器 */}
+              <div className="flex items-center p-2 border-b border-gray-100/50">
+                <div className="flex bg-gray-100/80 rounded-xl p-1 gap-1">
+                  <button 
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      searchType === 'local' 
+                        ? 'bg-white text-[#786DF6] shadow-sm border border-[#786DF6]/20' 
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
+                    }`}
+                    onClick={() => setSearchType('local')}
+                  >
+                    <Home className="h-4 w-4" />
+                    <span>本地搜索</span>
+                  </button>
+                  <button 
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      searchType === 'remote' 
+                        ? 'bg-white text-[#786DF6] shadow-sm border border-[#786DF6]/20' 
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
+                    }`}
+                    onClick={() => setSearchType('remote')}
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    <span>远程搜索</span>
+                  </button>
+                </div>
               </div>
               
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={searchType === 'local' ? "搜索本地商品..." : "搜索远程商品..."}
-                className="w-full pl-16 pr-10 py-2.5 text-sm bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-[#786DF6]/50 focus:border-transparent"
-                autoFocus
-                onKeyDown={(e) => e.key === 'Enter' && performSearch()}
-              />
-              
-              <div className="absolute right-0 top-0 bottom-0 flex items-center">
-                <button 
-                  className="h-10 w-10 flex items-center justify-center bg-[#786DF6] rounded-r-lg text-white hover:bg-[#6258D4] transition-colors"
-                  onClick={performSearch}
-                >
-                  <Search className="h-4 w-4" />
-                </button>
+              {/* 搜索输入区域 */}
+              <div className="relative p-4">
+                <div className="relative flex items-center">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10">
+                    <Search className="h-5 w-5" />
+                  </div>
+                  
+                  <input
+                     type="text"
+                     value={searchQuery}
+                     onChange={(e) => setSearchQuery(e.target.value)}
+                     placeholder={searchType === 'local' ? "搜索本地商品名称或SKU..." : "搜索远程商品..."}
+                     className="w-full pl-12 pr-16 py-4 text-base bg-gray-50/80 border border-gray-200/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#786DF6]/30 focus:border-[#786DF6]/50 focus:bg-white transition-all duration-200 placeholder:text-gray-400"
+                     autoFocus
+                     onKeyDown={(e) => {
+                       if (e.key === 'Enter') {
+                         performSearch();
+                       } else if (e.key === 'Escape') {
+                         setIsSearchModalOpen(false);
+                       }
+                     }}
+                   />
+                  
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                    <button 
+                      className="h-10 w-10 flex items-center justify-center bg-[#786DF6] rounded-lg text-white hover:bg-[#6258D4] transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
+                      onClick={performSearch}
+                    >
+                      <Search className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+                
+                {/* 搜索提示 */}
+                <div className="mt-3 text-xs text-gray-500 flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Enter</kbd>
+                    <span>搜索</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Esc</kbd>
+                    <span>关闭</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -891,7 +961,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
         </div>
       )}
       
-      {/* 筛选模态框 - 现代化版本 */}
+      {/* 筛选模态框 */}
       {isFilterModalOpen && (
         <div 
           className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50"
@@ -1125,6 +1195,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
         </div>
       )}
       
+      {/* 库存检查模态框  */}
       {checkingItem && (
         // <div className="fixed inset-0 backdrop-blur-xs flex items-center justify-center z-50">
         //   <div className="bg-white/77 backdrop-blur-xs  rounded-lg w-full max-w-md mx-4 overflow-hidden shadow-[0_0_0_2000px_rgba(0,0,0,0.5)]"></div>
