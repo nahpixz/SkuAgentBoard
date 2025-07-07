@@ -10,6 +10,7 @@ import { Info, Tag, Check, AlertCircle, Clock, ArrowLeft, Search, Settings, Tras
 import { DB } from './db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { checkingPromises, HistoryBack, JumpTo, ToC2cSearch, waitForRequest } from './tasks';
+import { useSettingsStore } from './store';
 
 let connID = "";
 let connTime = 0;
@@ -39,6 +40,7 @@ const DEFAULT_FILTER_VALUES = {
 function App() {
   // const [c2cData,setC2cData] = useState<C2C_LIST.c2cItem[]>([])
   const skuList = useLiveQuery(() => DB.getSkuList());
+  
   const [checkingItem, setCheckingItem] = useState<DB.skuItem | null>(null);
   const [checkingC2Cs, setCheckingC2Cs] = useState<(C2CCheckView|undefined)[]>([]);
   const [checkStatus, setCheckStatus] = useState<{[key: number|string]: CHECK_STATUS}>({});
@@ -55,8 +57,8 @@ function App() {
 
   // 设置相关状态
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [autoCaptureMallSetting, setAutoCaptureMallSetting] = useState(true);
-  const [autoCaptureDetailSetting, setAutoCaptureDetailSetting] = useState(false);
+  // const settingsOptions = useSettingsStore((state) => state);
+  const settingsOptions = useSettingsStore();
 
   // 筛选相关状态
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -424,16 +426,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
             })
           }
         });
-        // tC2Cs = [
-        //   ...tC2Cs,
-        //   ...data.filter(x => !x.isSold)
-        //     .map(x => ({
-        //       c2cItemsId: x.c2cItemsId,
-        //       uface: 'https://i0.hdslb.com/bfs/face/member/noface.jpg',
-        //       uname: x.userName,
-        //       showPrice: `${x.price}`,
-        //     }))
-        // ]
+        
         setCheckStatus(prev => ({...prev,['checkbox-search-new']:'success'}))
         setCheckingC2Cs(Array.from(tC2CsMap.values()))
         console.log('search done',data);
@@ -501,7 +494,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
       connID = String(req._connectionId) || ""
       // console.debug('req',req._connectionId,req.request.url,req)
 
-      if(req.request.url == C2C_LIST.URL){
+      if(useSettingsStore.getState().autoCaptureMall && req.request.url == C2C_LIST.URL){
         req.getContent((body, encoding)=>{
           const [data,nextId] = C2C_LIST.parse(JSON.parse(body));
           if(nextId == c2cNextId) return;
@@ -510,31 +503,30 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
 
           DB.putC2CList(data);
         })
-      }
-
-      if(C2C_DETAIL.isDetail(req.request.url)){
-        console.debug('req',req._connectionId,req.request.url,req)
+      }else if(C2C_DETAIL.isDetail(req.request.url)){
+        // console.debug('req',req._connectionId,req.request.url,req)
         req.getContent((body, encoding)=>{
           try{
             const data = (JSON.parse(body)).data as C2C_DETAIL.c2cItem
-            // console.log(req._connectionId,'C2C_DETAIL', data)
+            console.log(req._connectionId,'C2C_DETAIL', data)
             checkingPromises[C2C_DETAIL.JSON_PREFIX][data.c2cItemsId]?.resolve(data)
             DB.putC2CDetail(data);
           }catch(e){
             console.error(e)
             console.error('req',req._connectionId,req.request.url,req)
-            console.error(body)
           }
         })
-      }
-
-      // https://api.s-wg.net/market/searchItemHistory
-      if (req.request.url.startsWith(MARKET_SWG.JSON_PREFIX)) {
+      }else if (req.request.url.startsWith(MARKET_SWG.JSON_PREFIX)) {
         // console.warn('checkingPromises',checkingPromises[MARKET_SWG.JSON_PREFIX])
         req.getContent((body, encoding) => {
-          const data = (JSON.parse(body)).data as MARKET_SWG.c2cItem[]
-          console.log(req._connectionId, 'MARKET_SWG', data)
-          checkingPromises[MARKET_SWG.JSON_PREFIX]['checkbox-search-new']?.resolve(data)
+          try {
+            const data = (JSON.parse(body)).data as MARKET_SWG.c2cItem[]
+            console.log(req._connectionId, 'MARKET_SWG', data)
+            checkingPromises[MARKET_SWG.JSON_PREFIX]['checkbox-search-new']?.resolve(data)
+          } catch (e) {
+            console.error(e)
+            console.error('req',req._connectionId,req.request.url,req)
+          }
         })
       }
 
@@ -911,12 +903,13 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
             </div>
             
             <div className="p-4 space-y-4">
-              <div className="flex items-center justify-between p-2 border rounded-md hover:bg-gray-50">
+              <div className="flex items-center justify-between p-2 border rounded-md hover:bg-gray-50"
+               onClick={settingsOptions.toggleAutoCaptureMall}>
                 <div className="flex items-center gap-2">
                   <div className="h-6 w-6 flex items-center justify-center flex-shrink-0">
                     <Checkbox 
-                      checked={autoCaptureMallSetting}
-                      onCheckedChange={(checked) => setAutoCaptureMallSetting(checked === true)}
+                      checked={settingsOptions.autoCaptureMall}
+                      // onCheckedChange={(checked) => settingsOptions.current.autoCaptureMall = (checked === true)}
                       className="h-5 w-5 rounded-full data-[state=checked]:bg-[#786DF6] data-[state=checked]:border-none border-gray-300"
                     />
                   </div>
@@ -928,7 +921,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                 <div className="flex items-center gap-2">
                   <div className="h-6 w-6 flex items-center justify-center flex-shrink-0">
                     <Checkbox 
-                      checked={autoCaptureDetailSetting}
+                      checked={settingsOptions.autoCaptureDetail}
                       disabled
                       className="h-5 w-5 rounded-full data-[state=checked]:bg-[#786DF6] data-[state=checked]:border-none border-gray-300"
                     />
@@ -938,24 +931,6 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                 <span className="text-xs text-gray-500">暂不可用</span>
               </div>
               
-              <div className="flex justify-end gap-2 pt-2">
-                <Button 
-                  className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-1.5 text-xs rounded-md"
-                  onClick={() => setIsSettingsModalOpen(false)}
-                >
-                  取消
-                </Button>
-                <Button 
-                  className="bg-[#786DF6] hover:bg-[#6258D4] text-white px-4 py-1.5 text-xs rounded-md"
-                  onClick={() => {
-                    // 保存设置逻辑
-                    console.log('保存设置', { autoCaptureMallSetting, autoCaptureDetailSetting });
-                    setIsSettingsModalOpen(false);
-                  }}
-                >
-                  保存
-                </Button>
-              </div>
             </div>
           </div>
         </div>
