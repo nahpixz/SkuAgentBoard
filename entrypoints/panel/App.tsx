@@ -799,90 +799,85 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
         </div>
       </div>
 
-      {/* 搜索模态框 - 现代化设计 */}
+      {/* 搜索组件 - 精简设计 */}
       {isSearchModalOpen && (
-        <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50"
-          onClick={() => setIsSearchModalOpen(false)}
-        >
-          <div 
-            className="w-full max-w-lg mx-4 animate-in fade-in slide-in-from-top-4 duration-300"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden">
+        <div className="fixed top-2 left-1/2 -translate-x-1/2 z-40 w-full max-w-md mx-4">
+          <div className="bg-white/77 backdrop-blur-xl rounded-xl shadow-2xl border border-white/20 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="relative flex items-center">
               {/* 搜索类型选择器 */}
-              <div className="flex items-center p-2 border-b border-gray-100/50">
-                <div className="flex bg-gray-100/80 rounded-xl p-1 gap-1">
-                  <button 
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      searchType === 'local' 
-                        ? 'bg-white text-[#786DF6] shadow-sm border border-[#786DF6]/20' 
-                        : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
-                    }`}
-                    onClick={() => setSearchType('local')}
-                  >
+              <div className="relative group">
+                <button 
+                  className="h-12 w-12 flex items-center justify-center text-gray-500 hover:text-[#786DF6] transition-colors border-r border-gray-200/50"
+                  onClick={() => setSearchType(searchType === 'local' ? 'remote' : 'local')}
+                >
+                  {searchType === 'local' ? (
                     <Home className="h-4 w-4" />
-                    <span>本地搜索</span>
-                  </button>
-                  <button 
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      searchType === 'remote' 
-                        ? 'bg-white text-[#786DF6] shadow-sm border border-[#786DF6]/20' 
-                        : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
-                    }`}
-                    onClick={() => setSearchType('remote')}
-                  >
+                  ) : (
                     <ShoppingCart className="h-4 w-4" />
-                    <span>远程搜索</span>
-                  </button>
-                </div>
-              </div>
-              
-              {/* 搜索输入区域 */}
-              <div className="relative p-4">
-                <div className="relative flex items-center">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10">
-                    <Search className="h-5 w-5" />
-                  </div>
-                  
-                  <input
-                     type="text"
-                     value={searchQuery}
-                     onChange={(e) => setSearchQuery(e.target.value)}
-                     placeholder={searchType === 'local' ? "搜索本地商品名称或SKU..." : "搜索远程商品..."}
-                     className="w-full pl-12 pr-16 py-4 text-base bg-gray-50/80 border border-gray-200/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#786DF6]/30 focus:border-[#786DF6]/50 focus:bg-white transition-all duration-200 placeholder:text-gray-400"
-                     autoFocus
-                     onKeyDown={(e) => {
-                       if (e.key === 'Enter') {
-                         performSearch();
-                       } else if (e.key === 'Escape') {
-                         setIsSearchModalOpen(false);
-                       }
-                     }}
-                   />
-                  
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                  )}
+                </button>
+                
+                {/* Hover 下拉菜单 */}
+                <div className="absolute top-full left-0 mt-1 w-32 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto z-50">
+                  <div className="bg-white rounded-lg shadow-xl border border-gray-200/50 overflow-hidden">
                     <button 
-                      className="h-10 w-10 flex items-center justify-center bg-[#786DF6] rounded-lg text-white hover:bg-[#6258D4] transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
-                      onClick={performSearch}
+                      className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                        searchType === 'local' 
+                          ? 'bg-[#786DF6]/10 text-[#786DF6]' 
+                          : 'hover:bg-gray-50 text-gray-700'
+                      }`}
+                      onClick={() => setSearchType('local')}
                     >
-                      <Search className="h-4 w-4" />
+                      <Home className="h-3 w-3" />
+                      <span>本地搜索</span>
+                    </button>
+                    <button 
+                      className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                        searchType === 'remote' 
+                          ? 'bg-[#786DF6]/10 text-[#786DF6]' 
+                          : 'hover:bg-gray-50 text-gray-700'
+                      }`}
+                      onClick={() => setSearchType('remote')}
+                    >
+                      <ShoppingCart className="h-3 w-3" />
+                      <span>远程搜索</span>
                     </button>
                   </div>
                 </div>
-                
-                {/* 搜索提示 */}
-                <div className="mt-3 text-xs text-gray-500 flex items-center gap-2">
-                  <div className="flex items-center gap-1">
-                    <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Enter</kbd>
-                    <span>搜索</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Esc</kbd>
-                    <span>关闭</span>
-                  </div>
-                </div>
               </div>
+              
+              {/* 搜索输入框 */}
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={searchType === 'local' ? "搜索本地商品名称或SKU..." : "搜索远程商品..."}
+                className="flex-1 h-12 px-4 text-sm bg-transparent border-none focus:outline-none placeholder:text-gray-400"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    performSearch();
+                  } else if (e.key === 'Escape') {
+                    setIsSearchModalOpen(false);
+                  }
+                }}
+              />
+              
+              {/* 搜索按钮 */}
+              <button 
+                className="h-12 w-12 flex items-center justify-center text-gray-400 hover:text-[#786DF6] hover:bg-gray-50/50 transition-colors"
+                onClick={performSearch}
+              >
+                <Search className="h-4 w-4" />
+              </button>
+              
+              {/* 关闭按钮 */}
+              {/* <button 
+                className="h-12 w-12 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors border-l border-gray-200/50"
+                onClick={() => setIsSearchModalOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </button> */}
             </div>
           </div>
         </div>
