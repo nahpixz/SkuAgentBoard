@@ -6,11 +6,12 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Info, Tag, Check, AlertCircle, Clock, ArrowLeft, Search, Settings, Trash, X, Bug, Home, ShoppingCart, Layers, Filter, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, Percent, Package } from 'lucide-react';
+import { Info, Tag, Check, AlertCircle, Clock, ArrowLeft, Search, Settings, Trash, X, Bug, Home, ShoppingCart, Layers, Filter, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, Percent, Package, ShoppingBasket } from 'lucide-react';
 import { DB } from './db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { checkingPromises, HistoryBack, JumpTo, ToC2cSearch, waitForRequest } from './tasks';
 import { useSettingsStore } from './store';
+import { ToolButton } from '@/components/panel/tool-button';
 
 let connID = "";
 let connTime = 0;
@@ -420,7 +421,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
           if(!x.isSold && !tC2CsMap.get(x.c2cItemsId)){
             tC2CsMap.set(x.c2cItemsId,{
               c2cItemsId: x.c2cItemsId,
-              uface: 'https://i0.hdslb.com/bfs/face/member/noface.jpg',
+              uface: 'https://i0.hdslb.com/bfs/face/member/noface.jpg@72w_72h_85q.webp',
               uname: x.userName,
               showPrice: `${x.price}`,
             })
@@ -616,7 +617,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
               <img 
                 onClick={(e) => isSelectMode ? toggleSelectItem(item.itemsId, e) : opencheckInventory(item)} //new MouseEvent('click')
                 title={isSelectMode ? "点击选择" : "点击检查库存"}
-                src={`https:${item.img}`} 
+                src={`https:${item.img}@522w_522h_85q.webp`} 
                 alt={item.name} 
                 className="w-full h-full object-contain mix-blend-multiply cursor-pointer" 
               />
@@ -666,7 +667,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                           ) : (
                             <Avatar className="h-6 w-6 border border-gray-200">
                               {c2c?.uface ? (
-                                <AvatarImage src={c2c.uface} alt={c2c.uname || '用户'} />
+                                <AvatarImage src={`${c2c.uface}@72w_72h_85q.webp`} alt={c2c.uname || '用户'} />
                               ) : (
                                 <AvatarFallback className="text-[10px] bg-gray-100 text-gray-500">
                                   {c2c?.uname?.substring(0, 2) || '用户'}
@@ -735,7 +736,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
       </div>
 
       {/* 底部悬浮工具条 */}
-      <div className="fixed bottom-6 left-0 right-0 z-100 flex justify-center">
+      <div className="fixed bottom-6 left-0 right-0 z-51 flex justify-center">
         <div className="bg-white/77 backdrop-blur-md shadow-lg rounded-full px-3 py-2 border flex items-center">
           {/* 导航组 */}
           <div className="flex items-center">
@@ -746,7 +747,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
               variant="danger"
             />
             <ToolButton 
-              icon={<Tag className="h-5 w-5" />}
+              icon={<ShoppingCart className="h-5 w-5" />}
               label="市集"
               onClick={() => JumpTo(C2C_LIST.HTML_URL)}
               variant="primary"
@@ -1169,7 +1170,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
       {checkingItem && (
         // <div className="fixed inset-0 backdrop-blur-xs flex items-center justify-center z-50">
         //   <div className="bg-white/77 backdrop-blur-xs  rounded-lg w-full max-w-md mx-4 overflow-hidden shadow-[0_0_0_2000px_rgba(0,0,0,0.5)]"></div>
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-60">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden">
             <div className="p-4 border-b flex justify-between items-center">
               <h3 className="font-medium text-gray-800">库存检查 - {checkingItem.name}</h3>
@@ -1260,7 +1261,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                         <div className="flex items-center gap-2">
                           <Avatar className="h-6 w-6 border border-gray-200 flex-shrink-0">
                             {c2c.uface ? (
-                              <AvatarImage src={c2c.uface} alt={c2c.uname || '用户'} />
+                              <AvatarImage src={`${c2c.uface}@72w_72h_85q.webp`} alt={c2c.uname || '用户'} />
                             ) : (
                               <AvatarFallback className="text-[10px] bg-gray-100 text-gray-500">
                                 {c2c.uname?.substring(0, 1) || '用户'}
@@ -1324,44 +1325,3 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
 }
 
 export default App;
-
-
-// 创建一个工具按钮组件来减少重复代码
-interface ToolButtonProps {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-  active?: boolean;
-  variant?: 'primary' | 'danger' | 'default';
-}
-
-const ToolButton = ({ icon, label, onClick, active = false, variant = 'default' }: ToolButtonProps) => {
-  // 根据variant设置不同的颜色
-  const getIconColor = () => {
-    if (active) return 'text-[#786DF6]';
-    switch (variant) {
-      case 'primary': return 'text-[#786DF6]';
-      case 'danger': return 'text-red-500';
-      default: return 'text-gray-500';
-    }
-  };
-
-  return (
-    <HoverCard openDelay={300}>
-      <HoverCardTrigger asChild>
-        <Button
-          variant="ghost"
-          className={`flex items-center justify-center h-10 w-10 rounded-full ${active ? 'bg-[#786DF6]/10' : 'hover:bg-gray-100'}`}
-          onClick={onClick}
-        >
-          <div className={getIconColor()}>
-            {icon}
-          </div>
-        </Button>
-      </HoverCardTrigger>
-      <HoverCardContent className="p-2 w-full text-xs text-white border-none bg-black/70 rounded-md">
-        {label}
-      </HoverCardContent>
-    </HoverCard>
-  );
-};
