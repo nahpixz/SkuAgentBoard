@@ -6,7 +6,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Info, Tag, Check, AlertCircle, Clock, ArrowLeft, Search, Settings, Trash, X, Bug, Home, ShoppingCart, Layers, Filter, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, Percent, Package, ShoppingBasket } from 'lucide-react';
+import { Info, Tag, Check, AlertCircle, Clock, ArrowLeft, Search, Settings, Trash, X, Bug, Home, ShoppingCart, Layers, Filter, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, Percent, Package } from 'lucide-react';
+import { PriceRangeFilter } from '../../components/panel/price-range-filter';
 import { DB } from './db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { checkingPromises, HistoryBack, JumpTo, ToC2cSearch, waitForRequest } from './tasks';
@@ -33,7 +34,7 @@ const DEFAULT_FILTER_VALUES = {
   sortOption: 'price' as 'price' | 'discount' | 'stock' | 'updateTime',
   sortDirection: 'asc' as 'asc' | 'desc',
   showOnlyInStock: false,
-  priceRange: 100,
+  priceRange: [0, 100] as [number, number],
   discountRange: 100,
   updateTimeRange: 7
 };
@@ -66,7 +67,7 @@ function App() {
   const [sortOption, setSortOption] = useState<'price' | 'discount' | 'stock' | 'updateTime'>(DEFAULT_FILTER_VALUES.sortOption);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(DEFAULT_FILTER_VALUES.sortDirection);
   const [showOnlyInStock, setShowOnlyInStock] = useState(DEFAULT_FILTER_VALUES.showOnlyInStock);
-  const [priceRange, setPriceRange] = useState<number>(DEFAULT_FILTER_VALUES.priceRange);
+  const [priceRange, setPriceRange] = useState<[number, number]>(DEFAULT_FILTER_VALUES.priceRange);
   const [discountRange, setDiscountRange] = useState<number>(DEFAULT_FILTER_VALUES.discountRange);
   const [updateTimeRange, setUpdateTimeRange] = useState<number>(DEFAULT_FILTER_VALUES.updateTimeRange);
   
@@ -74,7 +75,7 @@ function App() {
   const [appliedSortOption, setAppliedSortOption] = useState<'price' | 'discount' | 'stock' | 'updateTime'>(DEFAULT_FILTER_VALUES.sortOption);
   const [appliedSortDirection, setAppliedSortDirection] = useState<'asc' | 'desc'>(DEFAULT_FILTER_VALUES.sortDirection);
   const [appliedShowOnlyInStock, setAppliedShowOnlyInStock] = useState(DEFAULT_FILTER_VALUES.showOnlyInStock);
-  const [appliedPriceRange, setAppliedPriceRange] = useState<number>(DEFAULT_FILTER_VALUES.priceRange);
+  const [appliedPriceRange, setAppliedPriceRange] = useState<[number, number]>(DEFAULT_FILTER_VALUES.priceRange);
   const [appliedDiscountRange, setAppliedDiscountRange] = useState<number>(DEFAULT_FILTER_VALUES.discountRange);
   const [appliedUpdateTimeRange, setAppliedUpdateTimeRange] = useState<number>(DEFAULT_FILTER_VALUES.updateTimeRange);
 
@@ -324,9 +325,9 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
       }
       
       // 价格范围筛选
-      if (appliedPriceRange < 100) {
-        const price = item.marketPrice / 100; // 转换为元
-        if (price > appliedPriceRange) return false;
+      const price = item.marketPrice / 100; // 转换为元
+      if (price < appliedPriceRange[0] || price > appliedPriceRange[1]) {
+        return false;
       }
       
       // 折扣范围筛选
@@ -939,23 +940,17 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
           onClick={() => setIsFilterModalOpen(false)}
         >
           <div 
-            className="mt-8 bg-white/95  rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300"
+            className="mt-8 bg-white/95 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="font-medium text-gray-800 flex items-center gap-2">
-                <Filter className="h-4 w-4 text-[#786DF6]" />
-                筛选与排序
-              </h3>
+            <div className="relative p-4 max-h-[88vh] overflow-y-auto">
+              {/* 关闭按钮 */}
               <button 
                 onClick={() => setIsFilterModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
               >
                 <X className="h-4 w-4" />
               </button>
-            </div>
-            
-            <div className="p-4 max-h-[70vh] overflow-y-auto">
               {/* 排序部分 */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
@@ -1036,31 +1031,13 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
               </div>
               
               {/* 筛选部分 */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
-                    <SlidersHorizontal className="h-3.5 w-3.5" />
-                    价格范围
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    0-100
-                  </span>
-                </div>
-                <div className="px-1">
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="100" 
-                    value={priceRange || 100}
-                    onChange={(e) => setPriceRange(parseInt(e.target.value))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#786DF6]"
-                  />
-                  <div className="flex justify-between mt-1 text-xs text-gray-500">
-                    <span>¥0</span>
-                    <span>¥{priceRange || 100}</span>
-                  </div>
-                </div>
-              </div>
+              <PriceRangeFilter
+                  items={skuList || []}
+                  // priceUnit={10}
+                  minPrice={priceRange[0]}
+                  maxPrice={priceRange[1]}
+                  onRangeChange={(min, max) => setPriceRange([min, max])}
+                />
               
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
