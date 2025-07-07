@@ -935,11 +935,11 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
       {/* 筛选模态框 */}
       {isFilterModalOpen && (
         <div 
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-start justify-center z-50"
           onClick={() => setIsFilterModalOpen(false)}
         >
           <div 
-            className="bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300"
+            className="mt-8 bg-white/95  rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 border-b border-gray-100 flex justify-between items-center">
@@ -964,7 +964,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                     排序方式
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   <button 
                     className={`px-3 py-2 text-xs rounded-lg flex items-center justify-between transition-all ${sortOption === 'price' ? 'bg-[#786DF6] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                     onClick={() => {
@@ -983,7 +983,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                   </button>
                   
                   <button 
-                    className={`px-3 py-2 text-xs rounded-lg flex items-center justify-between transition-all ${sortOption === 'discount' ? 'bg-[#786DF6] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                    className={`px-3 py-2 text-xs rounded-lg flex items-center justify-between transition-all  ${sortOption === 'discount' ? 'bg-[#786DF6] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                     onClick={() => {
                       if (sortOption === 'discount') {
                         setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
