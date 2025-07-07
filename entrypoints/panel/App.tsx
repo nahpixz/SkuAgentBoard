@@ -586,7 +586,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
       )}
       
       {/* 主内容区域 */}
-      <div className={`${isSelectMode ? 'pt-12' : ''} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
+      <div className={`${isSelectMode||isSearchModalOpen ? 'pt-8' : ''} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
         {getFilteredAndSortedItems().map((item) => {
           const allDisabled = isAllDisabled(item);
           const isSelected = selectedItems[item.itemsId];
@@ -801,13 +801,13 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
 
       {/* 搜索组件 - 精简设计 */}
       {isSearchModalOpen && (
-        <div className="fixed top-2 left-1/2 -translate-x-1/2 z-40 w-full max-w-md mx-4">
-          <div className="bg-white/77 backdrop-blur-xl rounded-xl shadow-2xl border border-white/20 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="fixed top-0 left-0 right-0 z-50 p-2 bg-white/70 backdrop-blur-md shadow-sm border-b flex items-center justify-between">
+          <div className="w-full">
             <div className="relative flex items-center">
               {/* 搜索类型选择器 */}
               <div className="relative group">
                 <button 
-                  className="h-12 w-12 flex items-center justify-center text-gray-500 hover:text-[#786DF6] transition-colors border-r border-gray-200/50"
+                  className="h-8 w-12 flex items-center justify-center text-gray-500 hover:text-[#786DF6] transition-colors border-r border-gray-200/50"
                   onClick={() => setSearchType(searchType === 'local' ? 'remote' : 'local')}
                 >
                   {searchType === 'local' ? (
@@ -818,7 +818,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                 </button>
                 
                 {/* Hover 下拉菜单 */}
-                <div className="absolute top-full left-0 mt-1 w-32 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto z-50">
+                <div className="absolute top-4/5 left-0 mt-1 w-32 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto z-50">
                   <div className="bg-white rounded-lg shadow-xl border border-gray-200/50 overflow-hidden">
                     <button 
                       className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
@@ -852,7 +852,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={searchType === 'local' ? "搜索本地商品名称或SKU..." : "搜索远程商品..."}
-                className="flex-1 h-12 px-4 text-sm bg-transparent border-none focus:outline-none placeholder:text-gray-400"
+                className="flex-1 h-8 px-4 text-sm bg-transparent border-none focus:outline-none placeholder:text-gray-400"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -865,7 +865,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
               
               {/* 搜索按钮 */}
               <button 
-                className="h-12 w-12 flex items-center justify-center text-gray-400 hover:text-[#786DF6] hover:bg-gray-50/50 transition-colors"
+                className="h-8 w-12 flex items-center justify-center text-gray-400 hover:text-[#786DF6] hover:bg-gray-50/50 transition-colors"
                 onClick={performSearch}
               >
                 <Search className="h-4 w-4" />
