@@ -758,7 +758,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
             <ToolButton 
               icon={<img className="size-5" src="https://gw.alicdn.com/imgextra/i2/O1CN01yQ3RYl1EqAGI2JrGE_!!6000000000402-2-tps-144-144.png_110x10000.jpg_.webp"/>}
               label="闲鱼"
-              onClick={() => JumpTo(GOOFISH.HOME_URL)}
+              onClick={() => JumpTo(GOOFISH.SEARCH_URL)}
             />
             
           </div>
