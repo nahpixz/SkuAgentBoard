@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import './App.css';
-import { C2C_DETAIL, C2C_LIST, MALL_DETAIL, MARKET_SWG } from './api';
+import { C2C_DETAIL, C2C_LIST, GOOFISH, MALL_DETAIL, MARKET_SWG } from './api';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
@@ -13,6 +13,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { checkingPromises, HistoryBack, JumpTo, ToC2cSearch, waitForRequest } from './tasks';
 import { useSettingsStore } from './store';
 import { ToolButton } from '@/components/panel/tool-button';
+import { Icon } from '@iconify/react';
 
 let connID = "";
 let connTime = 0;
@@ -268,6 +269,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
   function handleDebug() {
     console.log("click")
     console.log('checkingC2Cs',...checkingC2Cs)
+     console.log('sorted',skuList?.sort((a,b)=>b.marketPrice-a.marketPrice).slice(0,5))
     // console.log('skuList',...skuList?.filter(it=>it.itemsId===checkingItem?.itemsId)[0].c2cLists)
     
     // browser.devtools.network.getHAR(function (logInfo) {
@@ -331,25 +333,25 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
       }
       
       // 折扣范围筛选
-      if (appliedDiscountRange < 100) {
-        // 计算折扣率 (1 - 最低价/市场价) * 100
-        const lowestPrice = item.c2cLists && item.c2cLists.length > 0 
-          ? parseFloat(item.c2cLists.sort((x, y) => (x?.price || 0) - (y?.price || 0))[0]?.showPrice || '0')
-          : 0;
-        const marketPrice = item.marketPrice / 100;
-        const discount = marketPrice > 0 ? (1 - lowestPrice / marketPrice) * 100 : 0;
+      // if (appliedDiscountRange < 100) {
+      //   // 计算折扣率 (1 - 最低价/市场价) * 100
+      //   const lowestPrice = item.c2cLists && item.c2cLists.length > 0 
+      //     ? parseFloat(item.c2cLists.sort((x, y) => (x?.price || 0) - (y?.price || 0))[0]?.showPrice || '0')
+      //     : 0;
+      //   const marketPrice = item.marketPrice / 100;
+      //   const discount = marketPrice > 0 ? (1 - lowestPrice / marketPrice) * 100 : 0;
         
-        if (discount > appliedDiscountRange) return false;
-      }
+      //   if (discount > appliedDiscountRange) return false;
+      // }
       
       // 库存更新时间筛选
-      if (appliedUpdateTimeRange < 7 && item.c2cInfosLastUpdateTime) {
-        const updateTime = new Date(item.c2cInfosLastUpdateTime).getTime();
-        const now = new Date().getTime();
-        const daysDiff = Math.floor((now - updateTime) / (1000 * 60 * 60 * 24));
+      // if (appliedUpdateTimeRange < 7 && item.c2cInfosLastUpdateTime) {
+      //   const updateTime = new Date(item.c2cInfosLastUpdateTime).getTime();
+      //   const now = new Date().getTime();
+      //   const daysDiff = Math.floor((now - updateTime) / (1000 * 60 * 60 * 24));
         
-        if (daysDiff > appliedUpdateTimeRange) return false;
-      }
+      //   if (daysDiff > appliedUpdateTimeRange) return false;
+      // }
       
       return true;
     });
@@ -742,16 +744,21 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
           {/* 导航组 */}
           <div className="flex items-center">
             <ToolButton 
-              icon={<ArrowLeft className="h-5 w-5" />}
+              icon={<ArrowLeft className="h-8 w-8" />}
               label="返回"
               onClick={HistoryBack}
               variant="danger"
             />
             <ToolButton 
-              icon={<ShoppingCart className="h-5 w-5" />}
+              icon={<Icon icon="mingcute:bilibili-fill" className="size-5 text-[#fb7299]" />}
               label="市集"
               onClick={() => JumpTo(C2C_LIST.HTML_URL)}
-              variant="primary"
+            />
+
+            <ToolButton 
+              icon={<img className="size-5" src="https://gw.alicdn.com/imgextra/i2/O1CN01yQ3RYl1EqAGI2JrGE_!!6000000000402-2-tps-144-144.png_110x10000.jpg_.webp"/>}
+              label="闲鱼"
+              onClick={() => JumpTo(GOOFISH.HOME_URL)}
             />
             
           </div>

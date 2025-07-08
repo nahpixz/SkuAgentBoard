@@ -26,7 +26,7 @@ export const ToolButton = ({ icon, label, onClick, active = false, variant = 'de
       <HoverCardTrigger asChild>
         <Button
           variant="ghost"
-          className={`flex items-center justify-center h-10 w-10 rounded-full ${active ? 'bg-[#786DF6]/10' : 'hover:bg-gray-100'}`}
+          className={`flex p-0 items-center justify-center h-10 w-10 rounded-full ${active ? 'bg-[#786DF6]/10' : 'hover:bg-gray-100'}`}
           onClick={onClick}
         >
           <div className={getIconColor()}>
