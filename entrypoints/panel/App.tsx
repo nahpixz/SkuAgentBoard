@@ -35,7 +35,7 @@ const DEFAULT_FILTER_VALUES = {
   sortOption: 'price' as 'price' | 'discount' | 'stock' | 'updateTime',
   sortDirection: 'asc' as 'asc' | 'desc',
   showOnlyInStock: false,
-  priceRange: [0, 100] as [number, number],
+  priceRange: [0, 250] as [number, number],
   discountRange: 100,
   updateTimeRange: 7
 };
@@ -590,7 +590,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
       )}
       
       {/* 主内容区域 */}
-      <div className={`${isSelectMode||isSearchModalOpen ? 'pt-8' : ''} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
+      <div className={`${isSelectMode||isSearchModalOpen ? 'pt-16' : ''} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
         {getFilteredAndSortedItems().map((item) => {
           const allDisabled = isAllDisabled(item);
           const isSelected = selectedItems[item.itemsId];

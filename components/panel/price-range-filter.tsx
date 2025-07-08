@@ -23,7 +23,7 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
   const [localMaxPrice, setLocalMaxPrice] = useState(maxPrice);
   const [containerWidth, setContainerWidth] = useState(280);
   
-  const maxItemPrice = Math.max(...items.map(item => item.marketPrice / 100));
+  const maxItemPrice = React.useMemo(()=>Math.max(...items.map(item => item.marketPrice / 100)),[items]);
   // 计算价格分组数据
   const priceGroups = React.useMemo(() => {
     if (!items || items.length === 0) return [];
@@ -96,8 +96,10 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
   const chartWidth = width - padding * 2;
   const chartHeight = height - padding;
 
-  // 监听容器宽度变化
   useEffect(() => {
+    onRangeChange(localMinPrice, maxItemPrice);
+
+    // 监听容器宽度变化
     const updateWidth = () => {
       if (containerRef.current) {
         setContainerWidth(containerRef.current.offsetWidth);
