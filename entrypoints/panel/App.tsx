@@ -14,6 +14,7 @@ import { checkingPromises, HistoryBack, JumpTo, ToC2cSearch, waitForRequest } fr
 import { useSettingsStore } from './store';
 import { ToolButton } from '@/components/panel/tool-button';
 import { Icon } from '@iconify/react';
+import { motion } from "motion/react"
 
 let connID = "";
 let connTime = 0;
@@ -43,6 +44,13 @@ const DEFAULT_FILTER_VALUES = {
 function App() {
   // const [c2cData,setC2cData] = useState<C2C_LIST.c2cItem[]>([])
   const skuList = useLiveQuery(() => DB.getSkuList());
+  const skuPriceRange = useMemo<[number, number]>(()=>{
+    const prices = skuList?.map(item => item.marketPrice/100) || [0];
+    return [
+      0,//Math.min(...prices),
+      Math.max(...prices) || DEFAULT_FILTER_VALUES.priceRange[1]
+    ]
+  },[skuList]);
   
   const [checkingItem, setCheckingItem] = useState<DB.skuItem | null>(null);
   const [checkingC2Cs, setCheckingC2Cs] = useState<(C2CCheckView|undefined)[]>([]);
@@ -68,7 +76,7 @@ function App() {
   const [sortOption, setSortOption] = useState<'price' | 'discount' | 'stock' | 'updateTime'>(DEFAULT_FILTER_VALUES.sortOption);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(DEFAULT_FILTER_VALUES.sortDirection);
   const [showOnlyInStock, setShowOnlyInStock] = useState(DEFAULT_FILTER_VALUES.showOnlyInStock);
-  const [priceRange, setPriceRange] = useState<[number, number]>(DEFAULT_FILTER_VALUES.priceRange);
+  const [priceRange, setPriceRange] = useState<[number, number]>(skuPriceRange);
   const [discountRange, setDiscountRange] = useState<number>(DEFAULT_FILTER_VALUES.discountRange);
   const [updateTimeRange, setUpdateTimeRange] = useState<number>(DEFAULT_FILTER_VALUES.updateTimeRange);
   
@@ -76,7 +84,7 @@ function App() {
   const [appliedSortOption, setAppliedSortOption] = useState<'price' | 'discount' | 'stock' | 'updateTime'>(DEFAULT_FILTER_VALUES.sortOption);
   const [appliedSortDirection, setAppliedSortDirection] = useState<'asc' | 'desc'>(DEFAULT_FILTER_VALUES.sortDirection);
   const [appliedShowOnlyInStock, setAppliedShowOnlyInStock] = useState(DEFAULT_FILTER_VALUES.showOnlyInStock);
-  const [appliedPriceRange, setAppliedPriceRange] = useState<[number, number]>(DEFAULT_FILTER_VALUES.priceRange);
+  const [appliedPriceRange, setAppliedPriceRange] = useState<[number, number]>(skuPriceRange);
   const [appliedDiscountRange, setAppliedDiscountRange] = useState<number>(DEFAULT_FILTER_VALUES.discountRange);
   const [appliedUpdateTimeRange, setAppliedUpdateTimeRange] = useState<number>(DEFAULT_FILTER_VALUES.updateTimeRange);
 
@@ -85,6 +93,8 @@ function App() {
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<{[key: number]: boolean}>({});
   const [selectedC2CItems, setSelectedC2CItems] = useState<{[key: number]: boolean}>({});
+
+  useEffect(()=>{setPriceRange(skuPriceRange);setAppliedPriceRange(skuPriceRange)},[skuPriceRange])
   
   // 切换选择模式
   function toggleSelectMode() {
@@ -165,7 +175,7 @@ function App() {
   function closeAllModals() {
     setIsSearchModalOpen(false);
     setIsSettingsModalOpen(false);
-    setIsFilterModalOpen(false);
+    closeFilter();
     
     // 关闭选择模式并清空选择状态
     if (isSelectMode) {
@@ -208,11 +218,14 @@ function App() {
     }
     setIsSearchModalOpen(false);
   }
-  
+  function closeFilter() {
+    setPriceRange(appliedPriceRange);
+    setIsFilterModalOpen(false)
+  }
   // 打开筛选
-  function openFilter() {
+  function toggleFilter() {
     if (isFilterModalOpen) {
-      setIsFilterModalOpen(false);
+      closeFilter();
     } else {
       closeAllModals();
       setIsFilterModalOpen(true);
@@ -227,7 +240,7 @@ function App() {
     setAppliedPriceRange(priceRange);
     setAppliedDiscountRange(discountRange);
     setAppliedUpdateTimeRange(updateTimeRange);
-    setIsFilterModalOpen(false);
+    closeFilter();
   };
   
   // 重置筛选设置
@@ -235,7 +248,7 @@ function App() {
     setSortOption(DEFAULT_FILTER_VALUES.sortOption);
     setSortDirection(DEFAULT_FILTER_VALUES.sortDirection);
     setShowOnlyInStock(DEFAULT_FILTER_VALUES.showOnlyInStock);
-    setPriceRange(DEFAULT_FILTER_VALUES.priceRange);
+    setPriceRange(skuPriceRange);
     setDiscountRange(DEFAULT_FILTER_VALUES.discountRange);
     setUpdateTimeRange(DEFAULT_FILTER_VALUES.updateTimeRange);
   };
@@ -269,6 +282,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
   function handleDebug() {
     console.log("click")
     console.log('checkingC2Cs',...checkingC2Cs)
+    console.log('skuPriceRange',skuPriceRange)
      console.log('sorted',skuList?.sort((a,b)=>b.marketPrice-a.marketPrice).slice(0,5))
     // console.log('skuList',...skuList?.filter(it=>it.itemsId===checkingItem?.itemsId)[0].c2cLists)
     
@@ -546,7 +560,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
     <>
       {/* 选择模式下的顶部操作栏 */}
       {isSelectMode && (
-        <div className="fixed top-0 left-0 right-0 z-50 p-2 bg-white/70 backdrop-blur-md shadow-sm border-b flex items-center justify-between">
+        <div className="fixed top-0 left-0 right-0 z-50 p-2 bg-white/70 backdrop-blur-md shadow-sm border-b flex items-center justify-between ">
           <div className="flex items-center gap-2">
             <Button 
               variant="outline" 
@@ -590,7 +604,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
       )}
       
       {/* 主内容区域 */}
-      <div className={`${isSelectMode||isSearchModalOpen ? 'pt-16' : ''} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
+      <div className={`${isSelectMode||isSearchModalOpen ? 'pt-16' : 'pt-2'} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
         {getFilteredAndSortedItems().map((item) => {
           const allDisabled = isAllDisabled(item);
           const isSelected = selectedItems[item.itemsId];
@@ -783,7 +797,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
             <ToolButton 
               icon={<Layers className="h-5 w-5" />}
               label="筛选"
-              onClick={openFilter}
+              onClick={toggleFilter}
               active={isFilterModalOpen}
             />
           </div>
@@ -944,7 +958,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
       {isFilterModalOpen && (
         <div 
           className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-start justify-center z-50"
-          onClick={() => setIsFilterModalOpen(false)}
+          onClick={() => closeFilter()}
         >
           <div 
             className="mt-8 bg-white/95 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300"
@@ -953,7 +967,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
             <div className="relative p-4 max-h-[88vh] overflow-y-auto">
               {/* 关闭按钮 */}
               <button 
-                onClick={() => setIsFilterModalOpen(false)}
+                onClick={() => closeFilter()}
                 className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
               >
                 <X className="h-4 w-4" />
@@ -1043,6 +1057,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
                   // priceUnit={10}
                   minPrice={priceRange[0]}
                   maxPrice={priceRange[1]}
+                  maxItemPrice={skuPriceRange[1]}
                   onRangeChange={(min, max) => setPriceRange([min, max])}
                 />
               

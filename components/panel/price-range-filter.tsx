@@ -6,6 +6,7 @@ interface PriceRangeFilterProps {
   priceUnit?: number;
   minPrice: number;
   maxPrice: number;
+  maxItemPrice:number;
   onRangeChange: (min: number, max: number) => void;
 }
 const groupGrowPrice = 250;
@@ -14,6 +15,7 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
   priceUnit = 10,
   minPrice,
   maxPrice,
+  maxItemPrice,
   onRangeChange
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -23,7 +25,7 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
   const [localMaxPrice, setLocalMaxPrice] = useState(maxPrice);
   const [containerWidth, setContainerWidth] = useState(280);
   
-  const maxItemPrice = React.useMemo(()=>Math.max(...items.map(item => item.marketPrice / 100)),[items]);
+  
   // 计算价格分组数据
   const priceGroups = React.useMemo(() => {
     if (!items || items.length === 0) return [];
@@ -97,7 +99,6 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
   const chartHeight = height - padding;
 
   useEffect(() => {
-    onRangeChange(localMinPrice, maxItemPrice);
 
     // 监听容器宽度变化
     const updateWidth = () => {
@@ -218,7 +219,7 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
               id="price-min" 
               value={Math.round(localMinPrice)}
               onChange={(e) => {
-                const newMin = Math.max(0, Math.min(Number(e.target.value), localMaxPrice - priceUnit));
+                const newMin = Math.max(0, Math.min(Number(e.target.value), localMaxPrice - 1));
                 setLocalMinPrice(newMin);
                 onRangeChange(newMin, localMaxPrice);
               }}
@@ -234,7 +235,7 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
               id="price-max" 
               value={Math.round(localMaxPrice)}
               onChange={(e) => {
-                const newMax = Math.min(totalPriceRange, Math.max(Number(e.target.value), localMinPrice + priceUnit));
+                const newMax = Math.min(totalPriceRange, Math.max(Number(e.target.value), localMinPrice +1));
                 setLocalMaxPrice(newMax);
                 onRangeChange(localMinPrice, newMax);
               }}
@@ -306,7 +307,7 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
           <circle
             cx={minLineX}
             cy={1}
-            r="4"
+            r="6"
             fill="#786DF6"
             className="cursor-ew-resize"
             onMouseDown={() => handleMouseDown('min')}
@@ -327,7 +328,7 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
           <circle
             cx={maxLineX}
             cy={1}
-            r="4"
+            r="6"
             fill="#786DF6"
             className="cursor-ew-resize"
             onMouseDown={() => handleMouseDown('max')}
