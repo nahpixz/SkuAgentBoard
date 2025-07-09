@@ -1,20 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import './App.css';
 import { C2C_DETAIL, C2C_LIST, GOOFISH, MALL_DETAIL, MARKET_SWG } from './api';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Info, Tag, Check, AlertCircle, Clock, ArrowLeft, Search, Settings, Trash, X, Bug, Home, ShoppingCart, Layers, Filter, ArrowUp, ArrowDown, ArrowUpDown, SlidersHorizontal, Percent, Package } from 'lucide-react';
-import { PriceRangeFilter } from '../../components/panel/price-range-filter';
+import { ArrowLeft, Search, Settings, Bug, Layers, Check } from 'lucide-react';
 import { DB } from './db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { checkingPromises, HistoryBack, JumpTo, ToC2cSearch, waitForRequest } from './tasks';
 import { useSettingsStore } from './store';
 import { ToolButton } from '@/components/panel/tool-button';
 import { Icon } from '@iconify/react';
-import { motion } from "motion/react"
+import { ProductCard } from '@/components/panel/product-card';
+import { SelectModeToolbar } from '@/components/panel/select-mode-toolbar';
+import { SearchModal } from '@/components/panel/search-modal';
+import { SettingsModal } from '@/components/panel/settings-modal';
+import { FilterModal } from '@/components/panel/filter-modal';
+import { InventoryCheckModal } from '@/components/panel/inventory-check-modal';
 
 let connID = "";
 let connTime = 0;
@@ -560,196 +559,33 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
     <>
       {/* 选择模式下的顶部操作栏 */}
       {isSelectMode && (
-        <div className="fixed top-0 left-0 right-0 z-50 p-2 bg-white/70 backdrop-blur-md shadow-sm border-b flex items-center justify-between ">
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="rounded-md text-xs flex items-center gap-1 border-gray-200 bg-white/80"
-              onClick={handleSelectAll}
-            >
-              <Check className="h-3.5 w-3.5" />
-              全选
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="rounded-md text-xs flex items-center gap-1 border-gray-200 bg-white/80"
-              onClick={handleDeleteSelected}
-              disabled={!hasSelectedItems}
-            >
-              <Trash className="h-3.5 w-3.5" />
-              删除选中商品
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="rounded-md text-xs flex items-center gap-1 border-gray-200 bg-white/80"
-              onClick={handleDeleteSelectedC2C}
-              disabled={!hasSelectedC2C}
-            >
-              <X className="h-3.5 w-3.5" />
-              删除选中c2c库存
-            </Button>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="rounded-md text-xs flex items-center gap-1 text-gray-500"
-            onClick={toggleSelectMode}
-          >
-            取消
-          </Button>
-        </div>
+        <SelectModeToolbar
+          hasSelectedItems={hasSelectedItems}
+          hasSelectedC2C={hasSelectedC2C}
+          onSelectAll={handleSelectAll}
+          onDeleteSelected={handleDeleteSelected}
+          onDeleteSelectedC2C={handleDeleteSelectedC2C}
+          onToggleSelectMode={toggleSelectMode}
+        />
       )}
       
       {/* 主内容区域 */}
       <div className={`${isSelectMode||isSearchModalOpen ? 'pt-16' : 'pt-2'} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
         {getFilteredAndSortedItems().map((item) => {
-          const allDisabled = isAllDisabled(item);
           const isSelected = selectedItems[item.itemsId];
           return (
-          <Card 
-            key={item.itemsId} 
-            className={`overflow-hidden py-0 gap-0 border transition-all hover:shadow-md 
-              ${allDisabled ? 'opacity-60 grayscale border-gray-200' : 'border-gray-200 hover:border-[#786DF6]/50'}
-              ${isSelected ? 'ring-2 ring-[#786DF6] border-transparent' : ''}`}
-          >
-            <div className="relative bg-[#F5F5F5] h-36">
-              {/* 选择模式下显示复选框 */}
-              {isSelectMode && (
-                <div 
-                  className="absolute top-2 left-2 z-10"
-                  onClick={(e) => toggleSelectItem(item.itemsId, e)}
-                >
-                  <div className="h-6 w-6 bg-white/90 rounded-full flex items-center justify-center shadow-sm border border-gray-200">
-                    <Checkbox 
-                      checked={isSelected}
-                      className="h-4 w-4 rounded-full data-[state=checked]:bg-[#786DF6] border-gray-300"
-                    />
-                  </div>
-                </div>
-              )}
-              
-              <img 
-                onClick={(e) => isSelectMode ? toggleSelectItem(item.itemsId, e) : opencheckInventory(item)} //new MouseEvent('click')
-                title={isSelectMode ? "点击选择" : "点击检查库存"}
-                src={`https:${item.img}@522w_522h_85q.webp`} 
-                alt={item.name} 
-                className="w-full h-full object-contain mix-blend-multiply cursor-pointer" 
-              />
-              
-              {/* 计数堆叠在图片上 */}
-              <HoverCard>
-                <HoverCardTrigger asChild>
-                  <div 
-                    onClick={(e) => isSelectMode ? e.stopPropagation() : ToC2cSearch(item.skuId)}
-                    className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-0.5 rounded-full text-xs backdrop-blur-sm cursor-pointer hover:bg-[#786DF6]/90 transition-colors flex items-center gap-1 shadow-sm"
-                    title="跳转s-wg搜索库存"
-                  >
-                    {/* item.c2cLists?.filter(x=>!x?.removable).length || */}
-                    <span>x{ item.c2cItemsIds.length}</span> 
-                  </div>
-                </HoverCardTrigger>
-                <HoverCardContent className="w-80 p-3 rounded-lg shadow-lg border border-gray-200">
-                  <h4 className="text-sm font-medium mb-2 text-gray-700">可用库存列表</h4>
-                  <ul className="text-sm space-y-1 max-h-60 overflow-y-auto">
-                    {item.c2cLists && item.c2cLists
-                    .filter(x=>!x?.removable)
-                    // .sort((a, b) => {
-                    //   // 将不可用的项排在后面
-                    //   const aDisabled = a?.removable;
-                    //   const bDisabled = b?.removable;
-                    //   if (aDisabled && !bDisabled) return 1;
-                    //   if (!aDisabled && bDisabled) return -1;
-                    //   return 0;
-                    // })
-                    .map((c2c) => {
-                      const isC2CSelected = c2c?.c2cItemsId && selectedC2CItems[c2c.c2cItemsId];
-                      return (
-                      <li key={c2c?.c2cItemsId} 
-                        onClick={(e) => isSelectMode && c2c?.c2cItemsId ? toggleSelectC2C(c2c.c2cItemsId, e) : c2c?.c2cItemsId && JumpTo(C2C_DETAIL.URL(c2c?.c2cItemsId))}
-                        className={`flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-gray-50 
-                          ${c2c?.removable ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                          ${isC2CSelected ? 'bg-[#786DF6]/10' : ''}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          {isSelectMode && c2c?.c2cItemsId ? (
-                            <div className="h-6 w-6 flex items-center justify-center">
-                              <Checkbox 
-                                checked={Boolean(isC2CSelected)}
-                                className="h-4 w-4 rounded-full data-[state=checked]:bg-[#786DF6] border-gray-300"
-                              />
-                            </div>
-                          ) : (
-                            <Avatar className="h-6 w-6 border border-gray-200">
-                              {c2c?.uface ? (
-                                <AvatarImage src={`${c2c.uface}@72w_72h_85q.webp`} alt={c2c.uname || '用户'} />
-                              ) : (
-                                <AvatarFallback className="text-[10px] bg-gray-100 text-gray-500">
-                                  {c2c?.uname?.substring(0, 2) || '用户'}
-                                </AvatarFallback>
-                              )}
-                            </Avatar>
-                          )}
-                          <span className={`text-xs ${c2c?.removable ? 'text-gray-400' : 'text-gray-700'}`}>
-                            {c2c?.uname}
-                          </span>
-                        </div>
-                        <span className={`text-xs font-medium ${c2c?.removable ? 'text-gray-400' : 'text-[#786DF6]'}`}>
-                          ¥{c2c?.showPrice}
-                        </span>
-                      </li>
-                    )})}
-                  </ul>
-                </HoverCardContent>
-              </HoverCard>
-              
-              <HoverCard>
-                <HoverCardTrigger asChild>
-                  <button 
-                    onClick={() => JumpTo(MALL_DETAIL.URL(item.itemsId))}
-                    className="absolute top-2 right-2 bg-black/50 text-white/90 px-1.5 py-0.5 text-[10px] rounded-sm backdrop-blur-sm hover:bg-black/70 transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
-                  >
-                    <Info className="h-2.5 w-2.5 opacity-70" />
-                    <span>¥{item.marketPrice/100}</span>
-                  </button>
-                </HoverCardTrigger>
-                <HoverCardContent className="w-auto p-2 rounded-lg shadow-md">
-                  <span className="text-xs">点击跳转会员购:{item.itemsId}</span>
-                </HoverCardContent>
-              </HoverCard>
-            </div>
-            
-            <div className="p-2">
-              <div className="flex items-center gap-1.5">
-                <HoverCard>
-                  <HoverCardTrigger asChild>
-                    <button 
-                      onClick={() => JumpTo(C2C_DETAIL.URL(item.c2cItemsIds[0]))}
-                      className={`text-white px-2 py-0.5 rounded-sm text-xs font-medium shadow-sm hover:bg-red-600 transition-colors cursor-pointer flex items-center gap-1 flex-shrink-0 ${allDisabled ? 'bg-gray-400' : 'bg-[#786DF6]'}`}
-                    >
-                      <span>{getItemLabel(item)}</span>
-                    </button>
-                  </HoverCardTrigger>
-                  <HoverCardContent className="w-auto p-2 rounded-lg shadow-md">
-                    <span className="text-xs">点击跳转市集:{item.c2cItemsIds[0]}</span>
-                  </HoverCardContent>
-                </HoverCard>
-                <HoverCard>
-                  <HoverCardTrigger asChild>
-                    <span className="text-xs font-medium truncate cursor-help max-w-[calc(100%-70px)]">
-                      {item.name}
-                    </span>
-                  </HoverCardTrigger>
-                  <HoverCardContent className="w-80 p-2 rounded-lg shadow-md">
-                    <p className="text-sm">{item.name}</p>
-                  </HoverCardContent>
-                </HoverCard>
-              </div>
-            </div>
-          </Card>
-        )})}      
+            <ProductCard
+              key={item.itemsId}
+              item={item}
+              isSelectMode={isSelectMode}
+              isSelected={isSelected}
+              onToggleSelect={toggleSelectItem}
+              onToggleSelectC2C={toggleSelectC2C}
+              onOpenInventoryCheck={opencheckInventory}
+              selectedC2CItems={selectedC2CItems}
+            />
+          );
+        })}      
       </div>
 
       {/* 底部悬浮工具条 */}
@@ -822,503 +658,61 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
         </div>
       </div>
 
-      {/* 搜索组件 - 精简设计 */}
-      {isSearchModalOpen && (
-        <div className="fixed top-0 left-0 right-0 z-50 p-2 bg-white/70 backdrop-blur-md shadow-sm border-b flex items-center justify-between">
-          <div className="w-full">
-            <div className="relative flex items-center">
-              {/* 搜索类型选择器 */}
-              <div className="relative group">
-                <button 
-                  className="h-8 w-12 flex items-center justify-center text-gray-500 hover:text-[#786DF6] transition-colors border-r border-gray-200/50"
-                  onClick={() => setSearchType(searchType === 'local' ? 'remote' : 'local')}
-                >
-                  {searchType === 'local' ? (
-                    <Home className="h-4 w-4" />
-                  ) : (
-                    <ShoppingCart className="h-4 w-4" />
-                  )}
-                </button>
-                
-                {/* Hover 下拉菜单 */}
-                <div className="absolute top-4/5 left-0 mt-1 w-32 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto z-50">
-                  <div className="bg-white rounded-lg shadow-xl border border-gray-200/50 overflow-hidden">
-                    <button 
-                      className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
-                        searchType === 'local' 
-                          ? 'bg-[#786DF6]/10 text-[#786DF6]' 
-                          : 'hover:bg-gray-50 text-gray-700'
-                      }`}
-                      onClick={() => setSearchType('local')}
-                    >
-                      <Home className="h-3 w-3" />
-                      <span>本地搜索</span>
-                    </button>
-                    <button 
-                      className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
-                        searchType === 'remote' 
-                          ? 'bg-[#786DF6]/10 text-[#786DF6]' 
-                          : 'hover:bg-gray-50 text-gray-700'
-                      }`}
-                      onClick={() => setSearchType('remote')}
-                    >
-                      <ShoppingCart className="h-3 w-3" />
-                      <span>远程搜索</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              {/* 搜索输入框 */}
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={searchType === 'local' ? "搜索本地商品名称或SKU..." : "搜索远程商品..."}
-                className="flex-1 h-8 px-4 text-sm bg-transparent border-none focus:outline-none placeholder:text-gray-400"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    performSearch();
-                  } else if (e.key === 'Escape') {
-                    setIsSearchModalOpen(false);
-                  }
-                }}
-              />
-              
-              {/* 搜索按钮 */}
-              <button 
-                className="h-8 w-12 flex items-center justify-center text-gray-400 hover:text-[#786DF6] hover:bg-gray-50/50 transition-colors"
-                onClick={performSearch}
-              >
-                <Search className="h-4 w-4" />
-              </button>
-              
-              {/* 关闭按钮 */}
-              {/* <button 
-                className="h-12 w-12 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors border-l border-gray-200/50"
-                onClick={() => setIsSearchModalOpen(false)}
-              >
-                <X className="h-4 w-4" />
-              </button> */}
-            </div>
-          </div>
-        </div>
-      )}
+      <SearchModal
+        isOpen={isSearchModalOpen}
+        searchType={searchType}
+        searchQuery={searchQuery}
+        onSearchTypeChange={setSearchType}
+        onSearchQueryChange={setSearchQuery}
+        onSearch={performSearch}
+        onClose={() => setIsSearchModalOpen(false)}
+      />
       
-      {/* 设置模态框 */}
-      {isSettingsModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden">
-            <div className="p-4 border-b flex justify-between items-center">
-              <h3 className="font-medium text-gray-800">设置</h3>
-              <button 
-                onClick={() => setIsSettingsModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="p-4 space-y-4">
-              <div className="flex items-center justify-between p-2 border rounded-md hover:bg-gray-50"
-               onClick={settingsOptions.toggleAutoCaptureMall}>
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 flex items-center justify-center flex-shrink-0">
-                    <Checkbox 
-                      checked={settingsOptions.autoCaptureMall}
-                      // onCheckedChange={(checked) => settingsOptions.current.autoCaptureMall = (checked === true)}
-                      className="h-5 w-5 rounded-full data-[state=checked]:bg-[#786DF6] data-[state=checked]:border-none border-gray-300"
-                    />
-                  </div>
-                  <span className="text-sm">市集自动抓取</span>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between p-2 border rounded-md bg-gray-50 opacity-60">
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 flex items-center justify-center flex-shrink-0">
-                    <Checkbox 
-                      checked={settingsOptions.autoCaptureDetail}
-                      disabled
-                      className="h-5 w-5 rounded-full data-[state=checked]:bg-[#786DF6] data-[state=checked]:border-none border-gray-300"
-                    />
-                  </div>
-                  <span className="text-sm">商品详情自动抓取</span>
-                </div>
-                <span className="text-xs text-gray-500">暂不可用</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-      )}
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        autoCaptureMall={settingsOptions.autoCaptureMall}
+        autoCaptureDetail={settingsOptions.autoCaptureDetail}
+        onToggleAutoCaptureMall={settingsOptions.toggleAutoCaptureMall}
+        onClose={() => setIsSettingsModalOpen(false)}
+      />
       
-      {/* 筛选模态框 */}
-      {isFilterModalOpen && (
-        <div 
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-start justify-center z-50"
-          onClick={() => closeFilter()}
-        >
-          <div 
-            className="mt-8 bg-white/95 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="relative p-4 max-h-[88vh] overflow-y-auto">
-              {/* 关闭按钮 */}
-              <button 
-                onClick={() => closeFilter()}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
-              >
-                <X className="h-4 w-4" />
-              </button>
-              {/* 排序部分 */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
-                    <ArrowUpDown className="h-3.5 w-3.5" />
-                    排序方式
-                  </span>
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  <button 
-                    className={`px-3 py-2 text-xs rounded-lg flex items-center justify-between transition-all ${sortOption === 'price' ? 'bg-[#786DF6] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                    onClick={() => {
-                      if (sortOption === 'price') {
-                        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-                      } else {
-                        setSortOption('price');
-                        setSortDirection('asc');
-                      }
-                    }}
-                  >
-                    <span>价格</span>
-                    {sortOption === 'price' && (
-                      sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                    )}
-                  </button>
-                  
-                  <button 
-                    className={`px-3 py-2 text-xs rounded-lg flex items-center justify-between transition-all  ${sortOption === 'discount' ? 'bg-[#786DF6] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                    onClick={() => {
-                      if (sortOption === 'discount') {
-                        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-                      } else {
-                        setSortOption('discount');
-                        setSortDirection('asc');
-                      }
-                    }}
-                  >
-                    <span>折扣</span>
-                    {sortOption === 'discount' && (
-                      sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                    )}
-                  </button>
-                  
-                  <button 
-                    className={`px-3 py-2 text-xs rounded-lg flex items-center justify-between transition-all ${sortOption === 'stock' ? 'bg-[#786DF6] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                    onClick={() => {
-                      if (sortOption === 'stock') {
-                        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-                      } else {
-                        setSortOption('stock');
-                        setSortDirection('asc');
-                      }
-                    }}
-                  >
-                    <span>库存</span>
-                    {sortOption === 'stock' && (
-                      sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                    )}
-                  </button>
-                  
-                  <button 
-                    className={`px-3 py-2 text-xs rounded-lg flex items-center justify-between transition-all ${sortOption === 'updateTime' ? 'bg-[#786DF6] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                    onClick={() => {
-                      if (sortOption === 'updateTime') {
-                        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-                      } else {
-                        setSortOption('updateTime');
-                        setSortDirection('asc');
-                      }
-                    }}
-                  >
-                    <span>更新时间</span>
-                    {sortOption === 'updateTime' && (
-                      sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                    )}
-                  </button>
-                </div>
-              </div>
-              
-              {/* 筛选部分 */}
-              <PriceRangeFilter
-                  items={skuList || []}
-                  // priceUnit={10}
-                  minPrice={priceRange[0]}
-                  maxPrice={priceRange[1]}
-                  maxItemPrice={skuPriceRange[1]}
-                  onRangeChange={(min, max) => setPriceRange([min, max])}
-                />
-              
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
-                    <Percent className="h-3.5 w-3.5" />
-                    折扣范围
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    0-100%
-                  </span>
-                </div>
-                <div className="px-1">
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="100" 
-                    value={discountRange || 100}
-                    onChange={(e) => setDiscountRange(parseInt(e.target.value))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#786DF6]"
-                  />
-                  <div className="flex justify-between mt-1 text-xs text-gray-500">
-                    <span>0%</span>
-                    <span>{discountRange || 100}%</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5" />
-                    库存更新时间
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    0-7天内
-                  </span>
-                </div>
-                <div className="px-1">
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="7" 
-                    value={updateTimeRange || 7}
-                    onChange={(e) => setUpdateTimeRange(parseInt(e.target.value))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#786DF6]"
-                  />
-                  <div className="flex justify-between mt-1 text-xs text-gray-500">
-                    <span>当天</span>
-                    <span>{updateTimeRange || 7}天内</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mb-6">
-                <div className="flex items-center mb-2">
-                  <div 
-                    className="relative inline-block w-10 mr-2 align-middle select-none"
-                    onClick={() => setShowOnlyInStock(!showOnlyInStock)}
-                  >
-                    <input 
-                      type="checkbox" 
-                      id="showOnlyInStock" 
-                      checked={showOnlyInStock}
-                      onChange={(e) => setShowOnlyInStock(e.target.checked)}
-                      className="sr-only" // 隐藏原始复选框
-                    />
-                    <div className="block h-5 w-10 rounded-full bg-gray-300 cursor-pointer"
-                      style={{
-                        background: showOnlyInStock ? '#786DF6' : '#D1D5DB'
-                      }}
-                    ></div>
-                    <div 
-                      className="absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition-transform duration-200 ease-in-out"
-                      style={{
-                        transform: showOnlyInStock ? 'translateX(20px)' : 'translateX(0)',
-                        border: showOnlyInStock ? '2px solid #786DF6' : '2px solid #D1D5DB'
-                      }}
-                    ></div>
-                  </div>
-                  <label htmlFor="showOnlyInStock" className="text-sm font-medium text-gray-700 flex items-center gap-1.5 cursor-pointer">
-                    <Package className="h-3.5 w-3.5" />
-                    只显示有货商品
-                  </label>
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-                <button 
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 text-xs rounded-lg transition-colors"
-                  onClick={resetFilterSettings}
-                >
-                  重置
-                </button>
-                <button 
-                  className="bg-[#786DF6] hover:bg-[#6258D4] text-white px-4 py-2 text-xs rounded-lg transition-colors"
-                  onClick={applyFilterSettings}
-                >
-                  应用筛选
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <FilterModal
+        isOpen={isFilterModalOpen}
+        sortOption={sortOption}
+        sortDirection={sortDirection}
+        priceRange={priceRange}
+        discountRange={discountRange}
+        updateTimeRange={updateTimeRange}
+        showOnlyInStock={showOnlyInStock}
+        skuList={skuList || []}
+        skuPriceRange={skuPriceRange}
+        onSortOptionChange={setSortOption}
+        onSortDirectionChange={setSortDirection}
+        onPriceRangeChange={setPriceRange}
+        onDiscountRangeChange={setDiscountRange}
+        onUpdateTimeRangeChange={setUpdateTimeRange}
+        onShowOnlyInStockChange={setShowOnlyInStock}
+        onApply={applyFilterSettings}
+        onReset={resetFilterSettings}
+        onClose={closeFilter}
+      />
       
-      {/* 库存检查模态框  */}
-      {checkingItem && (
-        // <div className="fixed inset-0 backdrop-blur-xs flex items-center justify-center z-50">
-        //   <div className="bg-white/77 backdrop-blur-xs  rounded-lg w-full max-w-md mx-4 overflow-hidden shadow-[0_0_0_2000px_rgba(0,0,0,0.5)]"></div>
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-60">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden">
-            <div className="p-4 border-b flex justify-between items-center">
-              <h3 className="font-medium text-gray-800">库存检查 - {checkingItem.name}</h3>
-              <button 
-                onClick={closeCheckModal}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="p-4 max-h-[60vh] overflow-y-auto">
-              <div className="space-y-2"> 
-                <div
-                  key="checkbox-search-new"
-                  className={`flex items-center justify-between p-2 border rounded-md ${getStatusClass(checkStatus['checkbox-search-new'])}`}
-                  onClick={() => setSearchNewOption((prev)=>!prev)}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="h-6 w-6 flex items-center justify-center flex-shrink-0">
-                      <Checkbox 
-                        defaultChecked
-                        checked={searchNewOption}
-                        className="h-5 w-5 rounded-full data-[state=checked]:bg-[#786DF6] data-[state=checked]:border-none border-gray-300 "
-                      />
-                    </div>
-                    <span className="text-xs">搜索新库存</span>
-                  </div>
-                </div>
-                <div
-                  key="checkbox-check-market"
-                  className={`flex items-center justify-between p-2 border rounded-md ${marketStatusClass} ${transitionClass}`}
-                  onClick={() => setCheckMarketOption((prev)=>!prev)}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="h-6 w-6 flex items-center justify-center flex-shrink-0">
-                      <Checkbox 
-                        checked={checkMarketOption}
-                        className="h-5 w-5 rounded-full data-[state=checked]:bg-[#786DF6] data-[state=checked]:border-none border-gray-300"
-                      />
-                    </div>
-                    <span className="text-xs">会员购原价</span>
-                  </div>
-                  <span className={`text-xs font-medium`}>
-                    ¥{checkingItem.c2cLists?.[0]?.showMarketPrice || checkingItem.marketPrice / 100}
-                  </span>
-                </div>
-
-                
-                
-                {checkingC2Cs && checkingC2Cs
-                  .sort((a, b) => {
-                    // 将不可用的项排在后面
-                    const aDisabled = a?.removable;
-                    const bDisabled = b?.removable;
-                    if (aDisabled && !bDisabled) return 1;
-                    if (!aDisabled && bDisabled) return -1;
-                    return 0;
-                  })
-                  .map((c2c) => {
-                    if (!c2c?.c2cItemsId) return null;
-                    
-                    const status = checkStatus[c2c.c2cItemsId];
-                    const isDisabled = c2c.removable || status === 'failed';
-
-                    
-                    // 根据状态设置不同的样式
-                    let statusClass = '';
-                    if (status === 'doing') {
-                      statusClass = 'bg-gradient-to-r from-blue-50 to-blue-100 animate-pulse border-blue-200';
-                    } else if (status === 'success') {
-                      statusClass = 'bg-gradient-to-r from-green-50 to-green-100 border-green-200';
-                    } else if (status === 'failed') {
-                      statusClass = 'bg-gradient-to-r from-red-50 to-red-100 border-red-200 opacity-60';
-                    } else if (c2c.removable) {
-                      statusClass = 'bg-gray-50 border-gray-200 opacity-60';
-                    }
-                    
-                    // 添加过渡动画类
-                    const transitionClass = isDisabled ? 'transition-all duration-500 ease-in-out' : '';
-                    
-                    return (
-                      <div 
-                        onClick={() => JumpTo(C2C_DETAIL.URL(c2c.c2cItemsId))}
-                        key={c2c.c2cItemsId} 
-                        className={`flex items-center justify-between p-2 border rounded-md ${statusClass} ${transitionClass}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6 border border-gray-200 flex-shrink-0">
-                            {c2c.uface ? (
-                              <AvatarImage src={`${c2c.uface}@72w_72h_85q.webp`} alt={c2c.uname || '用户'} />
-                            ) : (
-                              <AvatarFallback className="text-[10px] bg-gray-100 text-gray-500">
-                                {c2c.uname?.substring(0, 1) || '用户'}
-                              </AvatarFallback>
-                            )}
-                          </Avatar>
-                          <span className="text-xs " title={c2c.uname}>{c2c.uname}</span>
-                          <span className="text-xs text-gray-500 " title={`ID: ${c2c.c2cItemsId}`}>#{c2c.c2cItemsId}</span>
-                        </div>
-                        <span className={`text-xs font-medium ${isDisabled ? 'text-gray-400' : 'text-[#786DF6]'}`}>
-                          ¥{c2c.showPrice}
-                        </span>
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
-
-            
-            <div className="p-4 border-t">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-4"></div>
-                <div className="flex justify-end gap-2">
-                  <Button 
-                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-1.5 text-xs rounded-md"
-                    onClick={closeCheckModal}
-                  >
-                    关闭
-                  </Button>
-                  <Button 
-                    className={`px-4 py-1.5 text-xs rounded-md bg-[#786DF6] hover:bg-[#6258D4] text-white disabled:opacity-99 disabled:cursor-not-allowed`}
-                    onClick={startCheck}
-                    disabled={isCheckingInProgress || isCheckingComplete}
-                  >
-                    {isCheckingComplete ? (
-                      <span className="flex items-center gap-1">
-                        <Check className="h-3.5 w-3.5" />
-                        检查完成
-                      </span>
-                    ) : isCheckingInProgress ? (
-                      <span className="flex items-center gap-1">
-                        <svg className="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        检查中...
-                      </span>
-                    ) : (
-                      '开始检查'
-                    )}
-                  </Button>
-                </div>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-      )}
+      <InventoryCheckModal
+        checkingItem={checkingItem}
+        checkingC2Cs={checkingC2Cs}
+        checkStatus={checkStatus}
+        searchNewOption={searchNewOption}
+        checkMarketOption={checkMarketOption}
+        isCheckingInProgress={isCheckingInProgress}
+        isCheckingComplete={isCheckingComplete}
+        // marketStatusClass={marketStatusClass}
+        // transitionClass={transitionClass}
+        onSearchNewOptionChange={setSearchNewOption}
+        onCheckMarketOptionChange={setCheckMarketOption}
+        onStartCheck={startCheck}
+        onClose={closeCheckModal}
+        // getStatusClass={getStatusClass}
+      />
     </>
   );
 }
