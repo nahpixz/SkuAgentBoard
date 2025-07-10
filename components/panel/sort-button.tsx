@@ -1,8 +1,8 @@
 import React from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 
-type SortOption = 'price' | 'discount' | 'stock' | 'updateTime';
-type SortDirection = 'asc' | 'desc';
+export type SortOption = 'price' | 'discount' | 'stock' | 'updateTime'|'';
+export type SortDirection = 'asc' | 'desc';
 
 interface SortButtonProps {
   option: SortOption;
