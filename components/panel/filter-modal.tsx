@@ -80,11 +80,11 @@ export function FilterModal({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-start justify-center z-50"
+      className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-start justify-center z-50"
       onClick={_closeFilter}
     >
       <div 
-        className="mt-8 bg-white/95 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300"
+        className="mt-8 bg-white/95 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative p-4 max-h-[88vh] overflow-y-auto">

@@ -79,44 +79,64 @@ export function DataManager({ onDataChange }: DataManagerProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* 消息提示 */}
       {message && (
-        <div className={`p-3 rounded-md text-sm ${
+        <div className={`p-3 rounded-xl text-sm backdrop-blur-sm transition-all duration-300 ${
           message.type === 'success' 
-            ? 'bg-green-50 text-green-700 border border-green-200' 
-            : 'bg-red-50 text-red-700 border border-red-200'
+            ? 'bg-emerald-50/80 text-emerald-700 border border-emerald-200/60 shadow-sm' 
+            : 'bg-red-50/80 text-red-700 border border-red-200/60 shadow-sm'
         }`}>
-          {message.text}
+          <div className="flex items-center gap-2">
+            {message.type === 'success' ? (
+              <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            )}
+            {message.text}
+          </div>
         </div>
       )}
 
       {/* 导出数据 */}
-      <div className="flex items-center justify-between p-3 border rounded-md hover:bg-gray-50">
-        <div className="flex items-center gap-2">
-          <Download className="h-4 w-4 text-blue-500" />
+      <div className="group flex items-center justify-between p-4 rounded-xl border border-gray-200/60 hover:border-blue-300/50 hover:bg-blue-50/30 transition-all duration-200 hover:shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-blue-100/80 flex items-center justify-center group-hover:bg-blue-200/80 transition-colors">
+            <Download className="h-4 w-4 text-blue-600" />
+          </div>
           <div>
-            <div className="text-sm font-medium">导出数据</div>
-            <div className="text-xs text-gray-500">将所有数据导出为JSON文件</div>
+            <div className="text-sm font-medium text-gray-800">导出数据</div>
+            <div className="text-xs text-gray-500 mt-0.5">将所有数据导出为JSON文件</div>
           </div>
         </div>
         <Button
           size="sm"
           onClick={handleExport}
           disabled={isExporting}
-          className="bg-blue-500 hover:bg-blue-600 text-white"
+          className="bg-blue-500/90 hover:bg-blue-600 text-white border-0 rounded-lg px-4 py-2 text-xs font-medium transition-all duration-200 hover:shadow-md disabled:opacity-50"
         >
-          {isExporting ? '导出中...' : '导出'}
+          {isExporting ? (
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin"></div>
+              导出中
+            </div>
+          ) : '导出'}
         </Button>
       </div>
 
       {/* 导入数据 */}
-      <div className="flex items-center justify-between p-3 border rounded-md hover:bg-gray-50">
-        <div className="flex items-center gap-2">
-          <Upload className="h-4 w-4 text-green-500" />
+      <div className="group flex items-center justify-between p-4 rounded-xl border border-gray-200/60 hover:border-emerald-300/50 hover:bg-emerald-50/30 transition-all duration-200 hover:shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-emerald-100/80 flex items-center justify-center group-hover:bg-emerald-200/80 transition-colors">
+            <Upload className="h-4 w-4 text-emerald-600" />
+          </div>
           <div>
-            <div className="text-sm font-medium">导入数据</div>
-            <div className="text-xs text-gray-500">从JSON文件导入数据（会覆盖现有数据）</div>
+            <div className="text-sm font-medium text-gray-800">导入数据</div>
+            <div className="text-xs text-gray-500 mt-0.5">从JSON文件导入数据（会覆盖现有数据）</div>
           </div>
         </div>
         <div className="relative">
@@ -125,43 +145,53 @@ export function DataManager({ onDataChange }: DataManagerProps) {
             accept=".json"
             onChange={handleImport}
             disabled={isImporting}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
           />
           <Button
             size="sm"
             disabled={isImporting}
-            className="bg-green-500 hover:bg-green-600 text-white"
+            className="bg-emerald-500/90 hover:bg-emerald-600 text-white border-0 rounded-lg px-4 py-2 text-xs font-medium transition-all duration-200 hover:shadow-md disabled:opacity-50"
           >
-            {isImporting ? '导入中...' : '选择文件'}
+            {isImporting ? (
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin"></div>
+                导入中
+              </div>
+            ) : '选择文件'}
           </Button>
         </div>
       </div>
 
       {/* 清空数据 */}
       {!showClearConfirm ? (
-        <div className="flex items-center justify-between p-3 border rounded-md hover:bg-gray-50">
-          <div className="flex items-center gap-2">
-            <Trash2 className="h-4 w-4 text-red-500" />
+        <div className="group flex items-center justify-between p-4 rounded-xl border border-gray-200/60 hover:border-red-300/50 hover:bg-red-50/30 transition-all duration-200 hover:shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-red-100/80 flex items-center justify-center group-hover:bg-red-200/80 transition-colors">
+              <Trash2 className="h-4 w-4 text-red-600" />
+            </div>
             <div>
-              <div className="text-sm font-medium">清空数据</div>
-              <div className="text-xs text-gray-500">删除所有本地数据</div>
+              <div className="text-sm font-medium text-gray-800">清空数据</div>
+              <div className="text-xs text-gray-500 mt-0.5">删除所有本地数据</div>
             </div>
           </div>
           <Button
             size="sm"
             variant="destructive"
             onClick={() => setShowClearConfirm(true)}
+            className="bg-red-500/90 hover:bg-red-600 border-0 rounded-lg px-4 py-2 text-xs font-medium transition-all duration-200 hover:shadow-md"
           >
             清空
           </Button>
         </div>
       ) : (
-        <div className="p-3 border border-red-200 rounded-md bg-red-50">
+        <div className="p-4 border border-red-200/60 rounded-xl bg-red-50/50 backdrop-blur-sm">
           <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-            <span className="text-sm font-medium text-red-700">确认清空数据</span>
+            <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center">
+              <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
+            </div>
+            <span className="text-sm font-medium text-red-800">确认清空数据</span>
           </div>
-          <p className="text-xs text-red-600 mb-3">
+          <p className="text-xs text-red-700/80 mb-4 leading-relaxed">
             此操作将永久删除所有本地数据，无法恢复。请确认是否继续？
           </p>
           <div className="flex gap-2">
@@ -170,13 +200,20 @@ export function DataManager({ onDataChange }: DataManagerProps) {
               variant="destructive"
               onClick={handleClear}
               disabled={isClearing}
+              className="bg-red-600 hover:bg-red-700 border-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 disabled:opacity-50"
             >
-              {isClearing ? '清空中...' : '确认清空'}
+              {isClearing ? (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin"></div>
+                  清空中
+                </div>
+              ) : '确认清空'}
             </Button>
             <Button
               size="sm"
               variant="outline"
               onClick={() => setShowClearConfirm(false)}
+              className="border-gray-300/60 hover:bg-gray-100/50 rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200"
             >
               取消
             </Button>
