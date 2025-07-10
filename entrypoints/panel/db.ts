@@ -33,6 +33,9 @@ export namespace DB {
   ) => Promise<void> = _putC2CSeachHistory;
   export const putC2CList: (data: C2C_LIST.c2cItem[]) => Promise<void> =
     _putC2CList;
+  export const exportData = _exportData;
+  export const importData = _importData;
+  export const clearAllData = _clearAllData;
 
   export function putC2CDetail(data: C2C_DETAIL.c2cItem) {
     return db.transaction("rw", db.c2cs, db.skus, async () => {
@@ -88,4 +91,57 @@ async function _putSkuFromC2CItem(c2cIt: C2C_LIST.c2cItem|C2C_DETAIL.c2cItem) {
       c2cItemsIds,
     });
   }
+}
+
+// 导出数据
+async function _exportData(): Promise<string> {
+  return db.transaction("r", db.skus, db.c2cs, async () => {
+    const skus = await db.skus.toArray();
+    const c2cs = await db.c2cs.toArray();
+    
+    const exportData = {
+      version: "1.0",
+      timestamp: new Date().toISOString(),
+      data: {
+        skus: skus.map(sku => {
+          const { c2cLists, ...rest } = sku;
+          return rest;
+        }),
+        c2cs
+      }
+    };
+    
+    return JSON.stringify(exportData, null, 2);
+  });
+}
+
+// 导入数据
+async function _importData(jsonData: string): Promise<void> {
+  try {
+    const importData = JSON.parse(jsonData);
+    
+    if (!importData.data || !importData.data.skus || !importData.data.c2cs) {
+      throw new Error("无效的数据格式");
+    }
+    
+    return db.transaction("rw", db.skus, db.c2cs, async () => {
+      // 清空现有数据
+      await db.skus.clear();
+      await db.c2cs.clear();
+      
+      // 导入新数据
+      await db.skus.bulkAdd(importData.data.skus);
+      await db.c2cs.bulkAdd(importData.data.c2cs);
+    });
+  } catch (error) {
+    throw new Error(`导入失败: ${error instanceof Error ? error.message : '未知错误'}`);
+  }
+}
+
+// 清空所有数据
+async function _clearAllData(): Promise<void> {
+  return db.transaction("rw", db.skus, db.c2cs, async () => {
+    await db.skus.clear();
+    await db.c2cs.clear();
+  });
 }
