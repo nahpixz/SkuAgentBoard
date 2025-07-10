@@ -39,7 +39,7 @@ export namespace DB {
 
   export function putC2CDetail(data: C2C_DETAIL.c2cItem) {
     return db.transaction("rw", db.c2cs, db.skus, async () => {
-      const { detailDtoList, ...rest } = data;
+      const { detailDtoList,buyerNotice, ...rest } = data;
       await db.c2cs.put({
         ...rest,
         skuItemIds: detailDtoList.map((it) => it.itemsId),

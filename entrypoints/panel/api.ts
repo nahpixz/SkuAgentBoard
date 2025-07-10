@@ -64,6 +64,7 @@ export namespace C2C_DETAIL{
         buyerUid: string | null,
         buyerName: string | null,
         buyerFace: string | null,
+        buyerNotice: string | null,
         saleTime: number,
         startBuyTime: number,
         publishTime: number,
