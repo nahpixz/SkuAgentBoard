@@ -12,7 +12,7 @@ import { ProductCard } from '@/components/panel/product-card';
 import { SelectModeToolbar } from '@/components/panel/select-mode-toolbar';
 import { SearchModal } from '@/components/panel/search-modal';
 import { SettingsModal } from '@/components/panel/settings-modal';
-import { FilterModal } from '@/components/panel/filter-modal';
+import { FilterModal, useGlobalFilterStore } from '@/components/panel/filter-modal';
 import { InventoryCheckModal } from '@/components/panel/inventory-check-modal';
 
 let connID = "";
@@ -30,26 +30,9 @@ type C2CCheckView={
   showPrice:string;
 }
 
-// 筛选和排序的默认值常量
-const DEFAULT_FILTER_VALUES = {
-  sortOption: 'price' as 'price' | 'discount' | 'stock' | 'updateTime',
-  sortDirection: 'asc' as 'asc' | 'desc',
-  showOnlyInStock: false,
-  priceRange: [0, 250] as [number, number],
-  discountRange: 100,
-  updateTimeRange: 7
-};
-
 function App() {
   // const [c2cData,setC2cData] = useState<C2C_LIST.c2cItem[]>([])
   const skuList = useLiveQuery(() => DB.getSkuList());
-  const skuPriceRange = useMemo<[number, number]>(()=>{
-    const prices = skuList?.map(item => item.marketPrice/100) || [0];
-    return [
-      0,//Math.min(...prices),
-      Math.max(...prices) || DEFAULT_FILTER_VALUES.priceRange[1]
-    ]
-  },[skuList]);
   
   const [checkingItem, setCheckingItem] = useState<DB.skuItem | null>(null);
   const [checkingC2Cs, setCheckingC2Cs] = useState<(C2CCheckView|undefined)[]>([]);
@@ -71,21 +54,7 @@ function App() {
   const settingsOptions = useSettingsStore();
 
   // 筛选相关状态
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [sortOption, setSortOption] = useState<'price' | 'discount' | 'stock' | 'updateTime'>(DEFAULT_FILTER_VALUES.sortOption);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(DEFAULT_FILTER_VALUES.sortDirection);
-  const [showOnlyInStock, setShowOnlyInStock] = useState(DEFAULT_FILTER_VALUES.showOnlyInStock);
-  const [priceRange, setPriceRange] = useState<[number, number]>(skuPriceRange);
-  const [discountRange, setDiscountRange] = useState<number>(DEFAULT_FILTER_VALUES.discountRange);
-  const [updateTimeRange, setUpdateTimeRange] = useState<number>(DEFAULT_FILTER_VALUES.updateTimeRange);
-  
-  // 应用的筛选状态（只有点击应用筛选后才更新）
-  const [appliedSortOption, setAppliedSortOption] = useState<'price' | 'discount' | 'stock' | 'updateTime'>(DEFAULT_FILTER_VALUES.sortOption);
-  const [appliedSortDirection, setAppliedSortDirection] = useState<'asc' | 'desc'>(DEFAULT_FILTER_VALUES.sortDirection);
-  const [appliedShowOnlyInStock, setAppliedShowOnlyInStock] = useState(DEFAULT_FILTER_VALUES.showOnlyInStock);
-  const [appliedPriceRange, setAppliedPriceRange] = useState<[number, number]>(skuPriceRange);
-  const [appliedDiscountRange, setAppliedDiscountRange] = useState<number>(DEFAULT_FILTER_VALUES.discountRange);
-  const [appliedUpdateTimeRange, setAppliedUpdateTimeRange] = useState<number>(DEFAULT_FILTER_VALUES.updateTimeRange);
+  const filterState = useGlobalFilterStore();
 
   const [hasSelectedItems, setHasSelectedItems] = useState(false);
   const [hasSelectedC2C, setHasSelectedC2C] = useState(false);
@@ -93,7 +62,12 @@ function App() {
   const [selectedItems, setSelectedItems] = useState<{[key: number]: boolean}>({});
   const [selectedC2CItems, setSelectedC2CItems] = useState<{[key: number]: boolean}>({});
 
-  useEffect(()=>{setPriceRange(skuPriceRange);setAppliedPriceRange(skuPriceRange)},[skuPriceRange])
+  useEffect(()=>{
+    const prices = skuList?.map(item => item.marketPrice/100) || [0];
+    const skuMin = Math.min(...prices);
+    const skuMax = Math.max(...prices) || 100;
+    filterState._resetSkuPriceRange(skuMin,skuMax)
+  },[skuList])
   
   // 切换选择模式
   function toggleSelectMode() {
@@ -174,7 +148,7 @@ function App() {
   function closeAllModals() {
     setIsSearchModalOpen(false);
     setIsSettingsModalOpen(false);
-    closeFilter();
+    filterState._closeFilter();
     
     // 关闭选择模式并清空选择状态
     if (isSelectMode) {
@@ -194,6 +168,13 @@ function App() {
       closeAllModals();
       setIsSettingsModalOpen(true);
     }
+  }
+
+  function handleDataChange() {
+    // 数据变化后的处理逻辑
+    // 由于使用了useLiveQuery，数据会自动更新
+    // 这里可以添加额外的处理逻辑，比如重置筛选状态
+    resetFilterSettings();
   }
   
   // 打开搜索
@@ -217,39 +198,26 @@ function App() {
     }
     setIsSearchModalOpen(false);
   }
-  function closeFilter() {
-    setPriceRange(appliedPriceRange);
-    setIsFilterModalOpen(false)
-  }
+  
   // 打开筛选
   function toggleFilter() {
-    if (isFilterModalOpen) {
-      closeFilter();
+    if (filterState.isOpen) {
+      filterState._closeFilter();
     } else {
       closeAllModals();
-      setIsFilterModalOpen(true);
+      useGlobalFilterStore.setState({isOpen:true});
     }
   }
   
   // 应用筛选设置
   const applyFilterSettings = () => {
-    setAppliedSortOption(sortOption);
-    setAppliedSortDirection(sortDirection);
-    setAppliedShowOnlyInStock(showOnlyInStock);
-    setAppliedPriceRange(priceRange);
-    setAppliedDiscountRange(discountRange);
-    setAppliedUpdateTimeRange(updateTimeRange);
-    closeFilter();
+    filterState._apply();
+    filterState._closeFilter();
   };
   
   // 重置筛选设置
   const resetFilterSettings = () => {
-    setSortOption(DEFAULT_FILTER_VALUES.sortOption);
-    setSortDirection(DEFAULT_FILTER_VALUES.sortDirection);
-    setShowOnlyInStock(DEFAULT_FILTER_VALUES.showOnlyInStock);
-    setPriceRange(skuPriceRange);
-    setDiscountRange(DEFAULT_FILTER_VALUES.discountRange);
-    setUpdateTimeRange(DEFAULT_FILTER_VALUES.updateTimeRange);
+    filterState._reset();
   };
 
   // 在库存检查模态框中使用的状态样式计算
@@ -281,7 +249,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
   function handleDebug() {
     console.log("click")
     console.log('checkingC2Cs',...checkingC2Cs)
-    console.log('skuPriceRange',skuPriceRange)
+    console.log('skuPriceRange',filterState.skuPriceRange)
      console.log('sorted',skuList?.sort((a,b)=>b.marketPrice-a.marketPrice).slice(0,5))
     // console.log('skuList',...skuList?.filter(it=>it.itemsId===checkingItem?.itemsId)[0].c2cLists)
     
@@ -335,13 +303,13 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
     // 应用筛选条件（使用已应用的筛选状态）
     filteredItems = filteredItems.filter(item => {
       // 只显示有货商品
-      if (appliedShowOnlyInStock && isAllDisabled(item)) {
+      if (filterState.applied?.showOnlyInStock && isAllDisabled(item)) {
         return false;
       }
       
       // 价格范围筛选
       const price = item.marketPrice / 100; // 转换为元
-      if (price < appliedPriceRange[0] || price > appliedPriceRange[1]) {
+      if (filterState.applied && (price < filterState.applied.priceRange[0] || price > filterState.applied.priceRange[1])) {
         return false;
       }
       
@@ -373,7 +341,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
     filteredItems.sort((a, b) => {
       let valueA, valueB;
       
-      switch (appliedSortOption) {
+      switch (filterState.applied?.sortOption) {
         case 'price':
           valueA = a.marketPrice;
           valueB = b.marketPrice;
@@ -402,7 +370,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
       }
       
       // 根据排序方向返回结果
-      return appliedSortDirection === 'asc' ? valueA - valueB : valueB - valueA;
+      return filterState.applied.sortDirection === 'asc' ? valueA - valueB : valueB - valueA;
     });
     
     // 如果有搜索查询且是本地搜索，应用搜索过滤
@@ -634,7 +602,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
               icon={<Layers className="h-5 w-5" />}
               label="筛选"
               onClick={toggleFilter}
-              active={isFilterModalOpen}
+              active={filterState.isOpen}
             />
           </div>
           
@@ -673,29 +641,11 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
         autoCaptureMall={settingsOptions.autoCaptureMall}
         autoCaptureDetail={settingsOptions.autoCaptureDetail}
         onToggleAutoCaptureMall={settingsOptions.toggleAutoCaptureMall}
+        onDataChange={handleDataChange}
         onClose={() => setIsSettingsModalOpen(false)}
       />
       
-      <FilterModal
-        isOpen={isFilterModalOpen}
-        sortOption={sortOption}
-        sortDirection={sortDirection}
-        priceRange={priceRange}
-        discountRange={discountRange}
-        updateTimeRange={updateTimeRange}
-        showOnlyInStock={showOnlyInStock}
-        skuList={skuList || []}
-        skuPriceRange={skuPriceRange}
-        onSortOptionChange={setSortOption}
-        onSortDirectionChange={setSortDirection}
-        onPriceRangeChange={setPriceRange}
-        onDiscountRangeChange={setDiscountRange}
-        onUpdateTimeRangeChange={setUpdateTimeRange}
-        onShowOnlyInStockChange={setShowOnlyInStock}
-        onApply={applyFilterSettings}
-        onReset={resetFilterSettings}
-        onClose={closeFilter}
-      />
+      <FilterModal skuList={skuList || []} />
       
       <InventoryCheckModal
         checkingItem={checkingItem}

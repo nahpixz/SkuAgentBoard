@@ -1,68 +1,87 @@
-import React from 'react';
 import { X, ArrowUpDown, Percent, Clock, Package } from 'lucide-react';
 import { PriceRangeFilter } from './price-range-filter';
-import { SortButton } from './sort-button';
+import { SortButton, SortDirection, SortOption } from './sort-button';
 import { DB } from '../../entrypoints/panel/db';
+import { _create, setFn } from "@/lib/utils";
 
-type SortOption = 'price' | 'discount' | 'stock' | 'updateTime';
-type SortDirection = 'asc' | 'desc';
+const FilterDefaultOptions = {
+  priceRange: [0, 250] as [number,number],
+  sortOption:'' as SortOption,
+  sortDirection:'asc' as SortDirection,
+  showOnlyInStock:false,
+  discountRange: 100,
+  updateTimeRange: 7
+}
+const FilterDefaultState = {
+  isOpen: false,
+  skuPriceRange:[NaN,NaN] as [number,number],
+  pending:FilterDefaultOptions,
+  applied:null as typeof FilterDefaultOptions | null
+}
+//全局单例
+export const useGlobalFilterStore = _create((set:setFn<typeof FilterDefaultState>) => ({
+  ...FilterDefaultState,
+  _onDiscountRangeChange:(value:number)=> set(state=>({
+    pending:{...state.pending,discountRange:value}
+  })),
+  _onUpdateTimeRangeChange:(value:number)=> set(state=>({
+    pending:{...state.pending,updateTimeRange:value}
+  })),
+  _toggleShowOnlyInStock:()=> set(state=>({
+    pending:{...state.pending,showOnlyInStock:!state.pending.showOnlyInStock}
+  })),
+  _closeFilter:()=> set(state=>({
+    isOpen:false,
+    // priceRange:state.appliedPriceRange || [0,state.skuPriceRange[1]||250]
+    pending:state.applied || {
+      ...FilterDefaultOptions,
+      priceRange:[0,state.skuPriceRange[1]||250],
+    }
+  })),
+  _resetSkuPriceRange:(min:number,max:number)=> set({
+    skuPriceRange:[min,max],
+  }),
+  _reset:()=>set(state=>({
+    isOpen:false,
+    pending:{
+      ...FilterDefaultOptions,
+      priceRange:[0,state.skuPriceRange[1]||250],
+    },
+    applied:null
+  })),
+  _apply:()=>set(state=>({
+    isOpen:false,
+    applied:state.pending,
+  })),
+  _handleSortChange:(option: SortOption, direction: SortDirection)=>set(state=>({
+    pending:{
+      ...state.pending,
+      sortOption:option,
+      sortDirection:state.pending.sortOption == option ? direction : 'asc',
+    },
+  })),
+}));
 
 interface FilterModalProps {
-  isOpen: boolean;
   skuList: DB.skuItem[] | undefined;
-  skuPriceRange: [number, number];
-  sortOption: SortOption;
-  sortDirection: SortDirection;
-  showOnlyInStock: boolean;
-  priceRange: [number, number];
-  discountRange: number;
-  updateTimeRange: number;
-  onSortOptionChange: (option: SortOption) => void;
-  onSortDirectionChange: (direction: SortDirection) => void;
-  onShowOnlyInStockChange: (value: boolean) => void;
-  onPriceRangeChange: (range: [number, number]) => void;
-  onDiscountRangeChange: (value: number) => void;
-  onUpdateTimeRangeChange: (value: number) => void;
-  onApply: () => void;
-  onReset: () => void;
-  onClose: () => void;
 }
 
 export function FilterModal({
-  isOpen,
   skuList,
-  skuPriceRange,
-  sortOption,
-  sortDirection,
-  showOnlyInStock,
-  priceRange,
-  discountRange,
-  updateTimeRange,
-  onSortOptionChange,
-  onSortDirectionChange,
-  onShowOnlyInStockChange,
-  onPriceRangeChange,
-  onDiscountRangeChange,
-  onUpdateTimeRangeChange,
-  onApply,
-  onReset,
-  onClose
 }: FilterModalProps) {
+  const { 
+    isOpen,pending,skuPriceRange,
+    _closeFilter,_handleSortChange,
+    _onDiscountRangeChange,_onUpdateTimeRangeChange,_toggleShowOnlyInStock,
+    _apply,_reset
+  }  = useGlobalFilterStore();
+  const {priceRange,sortOption,sortDirection,discountRange,updateTimeRange,showOnlyInStock} = pending;
   if (!isOpen) return null;
-
-  const handleSortChange = (option: SortOption, direction: SortDirection) => {
-    if (sortOption === option) {
-      onSortDirectionChange(direction);
-    } else {
-      onSortOptionChange(option);
-      onSortDirectionChange('asc');
-    }
-  };
 
   return (
     <div 
       className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-start justify-center z-50"
-      onClick={onClose}
+      onClick={_closeFilter}
     >
       <div 
         className="mt-8 bg-white/95 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300"
@@ -71,7 +90,7 @@ export function FilterModal({
         <div className="relative p-4 max-h-[88vh] overflow-y-auto">
           {/* 关闭按钮 */}
           <button 
-            onClick={onClose}
+            onClick={_closeFilter}
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
           >
             <X className="h-4 w-4" />
@@ -91,28 +110,28 @@ export function FilterModal({
                 label="价格"
                 currentSortOption={sortOption}
                 currentSortDirection={sortDirection}
-                onSortChange={handleSortChange}
+                onSortChange={_handleSortChange}
               />
               <SortButton
                 option="discount"
                 label="折扣"
                 currentSortOption={sortOption}
                 currentSortDirection={sortDirection}
-                onSortChange={handleSortChange}
+                onSortChange={_handleSortChange}
               />
               <SortButton
                 option="stock"
                 label="库存"
                 currentSortOption={sortOption}
                 currentSortDirection={sortDirection}
-                onSortChange={handleSortChange}
+                onSortChange={_handleSortChange}
               />
               <SortButton
                 option="updateTime"
                 label="更新时间"
                 currentSortOption={sortOption}
                 currentSortDirection={sortDirection}
-                onSortChange={handleSortChange}
+                onSortChange={_handleSortChange}
               />
             </div>
           </div>
@@ -123,7 +142,7 @@ export function FilterModal({
             minPrice={priceRange[0]}
             maxPrice={priceRange[1]}
             maxItemPrice={skuPriceRange[1]}
-            onRangeChange={(min, max) => onPriceRangeChange([min, max])}
+            onRangeChange={(min, max) => useGlobalFilterStore.setState({pending:{...pending,priceRange:[min, max]}})}
           />
           
           <div className="mb-6">
@@ -142,7 +161,7 @@ export function FilterModal({
                 min="0" 
                 max="100" 
                 value={discountRange || 100}
-                onChange={(e) => onDiscountRangeChange(parseInt(e.target.value))}
+                onChange={(e) => _onDiscountRangeChange(parseInt(e.target.value))}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#786DF6]"
               />
               <div className="flex justify-between mt-1 text-xs text-gray-500">
@@ -168,7 +187,7 @@ export function FilterModal({
                 min="0" 
                 max="7" 
                 value={updateTimeRange || 7}
-                onChange={(e) => onUpdateTimeRangeChange(parseInt(e.target.value))}
+                onChange={(e) => _onUpdateTimeRangeChange(parseInt(e.target.value))}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#786DF6]"
               />
               <div className="flex justify-between mt-1 text-xs text-gray-500">
@@ -182,13 +201,13 @@ export function FilterModal({
             <div className="flex items-center mb-2">
               <div 
                 className="relative inline-block w-10 mr-2 align-middle select-none"
-                onClick={() => onShowOnlyInStockChange(!showOnlyInStock)}
+                onClick={() => _toggleShowOnlyInStock()}
               >
                 <input 
                   type="checkbox" 
                   id="showOnlyInStock" 
                   checked={showOnlyInStock}
-                  onChange={(e) => onShowOnlyInStockChange(e.target.checked)}
+                  onChange={(e) => _toggleShowOnlyInStock()}
                   className="sr-only"
                 />
                 <div className="block h-5 w-10 rounded-full bg-gray-300 cursor-pointer"
@@ -214,13 +233,13 @@ export function FilterModal({
           <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
             <button 
               className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 text-xs rounded-lg transition-colors"
-              onClick={onReset}
+              onClick={_reset}
             >
               重置
             </button>
             <button 
               className="bg-[#786DF6] hover:bg-[#6258D4] text-white px-4 py-2 text-xs rounded-lg transition-colors"
-              onClick={onApply}
+              onClick={_apply}
             >
               应用筛选
             </button>
