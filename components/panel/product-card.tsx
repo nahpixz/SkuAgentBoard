@@ -80,19 +80,32 @@ export function ProductCard({
           className="w-full h-full object-contain mix-blend-multiply cursor-pointer" 
         />
         
-        {/* 计数堆叠在图片上 */}
+        {/* 合并的计数和价格标签 */}
         <HoverCard>
           <HoverCardTrigger asChild>
             <div 
               onClick={(e) => isSelectMode ? e.stopPropagation() : ToC2cSearch(item.skuId)}
-              className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-0.5 rounded-full text-xs backdrop-blur-sm cursor-pointer hover:bg-[#786DF6]/90 transition-colors flex items-center gap-1 shadow-sm"
+              className="absolute bottom-2 right-2 bg-gradient-to-r from-black/80 to-black/70 text-white px-2.5 py-1 rounded-full text-xs backdrop-blur-sm cursor-pointer hover:from-[#786DF6]/90 hover:to-[#9B8BF7]/90 transition-all duration-200 flex items-center gap-1.5 shadow-lg border border-white/10"
               title="跳转s-wg搜索库存"
             >
-              <span>x{item.c2cItemsIds.length}</span> 
+              <span className="font-medium">x{item.c2cItemsIds.length}</span>
+              {getLowestPrice(item) && (
+                <>
+                  <div className="w-px h-3 bg-white/30" />
+                  <span className="font-semibold text-yellow-200">¥{getLowestPrice(item)}</span>
+                </>
+              )}
             </div>
           </HoverCardTrigger>
           <HoverCardContent className="w-80 p-3 rounded-lg shadow-lg border border-gray-200">
-            <h4 className="text-sm font-medium mb-2 text-gray-700">可用库存列表</h4>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-medium text-gray-700">可用库存列表</h4>
+              {getLowestPrice(item) && (
+                <span className="text-xs text-[#786DF6] font-semibold bg-[#786DF6]/10 px-2 py-0.5 rounded-full">
+                  最低 ¥{getLowestPrice(item)}
+                </span>
+              )}
+            </div>
             <ul className="text-sm space-y-1 max-h-60 overflow-y-auto">
               {item.c2cLists && item.c2cLists
               .filter(x => !x?.removable)
@@ -137,7 +150,7 @@ export function ProductCard({
           </HoverCardContent>
         </HoverCard>
         
-        {/* 悬浮价格标签 */}
+        {/* 悬浮售价格标签 */}
         <HoverCard>
           <HoverCardTrigger asChild>
             <div className="absolute bottom-1 left-2 z-20">
@@ -152,7 +165,8 @@ export function ProductCard({
                    hover:shadow-xl transition-all duration-200`}
                 >
                   {/* <span>&nbsp;</span>  */}
-                   <span>¥{getLowestPrice(item)}</span>
+                  <span>¥{111.11}</span>
+                   {/* <span>¥{getLowestPrice(item)}</span> */}
                   {/* transparent  #786DF6*/}
                 </div>
               ) : (
@@ -196,20 +210,7 @@ export function ProductCard({
         <div className="flex items-center gap-1.5">
           <HoverCard>
             <HoverCardTrigger asChild>
-              <button 
-                onClick={() => JumpTo(C2C_DETAIL.URL(item.c2cItemsIds[0]))}
-                className={`text-white px-2 py-0.5 rounded-sm text-xs font-medium shadow-sm hover:bg-[#6258D4]  transition-colors cursor-pointer flex items-center gap-1 flex-shrink-0 ${allDisabled ? 'bg-gray-400' : 'bg-[#786DF6]'}`}
-              >
-                <span>{getItemLabel(item)}</span>
-              </button>
-            </HoverCardTrigger>
-            <HoverCardContent className="w-auto p-2 rounded-lg shadow-md">
-              <span className="text-xs">点击跳转市集:{item.c2cItemsIds[0]}</span>
-            </HoverCardContent>
-          </HoverCard>
-          <HoverCard>
-            <HoverCardTrigger asChild>
-              <span className="text-xs font-medium truncate cursor-help max-w-[calc(100%-70px)]">
+              <span className="text-xs font-medium truncate cursor-help">
                 {item.name}
               </span>
             </HoverCardTrigger>
