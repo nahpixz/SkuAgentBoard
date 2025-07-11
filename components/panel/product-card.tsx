@@ -140,24 +140,24 @@ export function ProductCard({
         {/* 悬浮价格标签 */}
         <HoverCard>
           <HoverCardTrigger asChild>
-            <div className="absolute bottom-2 left-2 z-20">
-              {getLowestPrice(item) ? (
-                <div className={`goofish-card-button bg-gradient-to-r from-transparent to-[#FBE650]/50 text-[#786DF6] backdrop-blur-[6px] pl-1 pr-3 py-0.5 rounded-md text-xs font-semibold shadow-lg border border-white/20 flex items-center gap-1.5 hover:shadow-xl transition-all duration-200`}
-                  // style={{backgroundImage: `url(${IMGBGURL})`}} bg-gradient-to-r from-black to-transparent 
+            <div className="absolute bottom-1 left-2 z-20">
+              {true ? (
+                <div className={`h-6 ${true
+                  ?'rounded-md before:opacity-33'
+                  :'rounded-full w-6 before:opacity-100'
+                } 
+                  goofish-card-button bg-gradient-to-r from-[#FBE650]/90 to-[#FBE650]/33 text-[#786DF6]
+                  backdrop-blur-[6px] pl-1.5 pr-5 py-0.5  
+                  text-xs font-semibold shadow-lg border border-white/20 flex items-center gap-1.5
+                   hover:shadow-xl transition-all duration-200`}
                 >
-                  <span>¥{getLowestPrice(item)}</span>
-                  {/* <div 
-                    className="z-21 w-full h-full"
-                    style={{
-                      backgroundImage: `url(${IMGBGURL})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center'
-                    }}
-                  />  */}
+                  {/* <span>&nbsp;</span>  */}
+                   <span>¥{getLowestPrice(item)}</span>
+                  {/* transparent  #786DF6*/}
                 </div>
               ) : (
                 <button 
-                  className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 flex items-center justify-center group"
+                  className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 flex items-center justify-center group"
                   style={{
                     backgroundImage: `url(${IMGBGURL})`,
                     backgroundSize: 'cover',
@@ -198,7 +198,7 @@ export function ProductCard({
             <HoverCardTrigger asChild>
               <button 
                 onClick={() => JumpTo(C2C_DETAIL.URL(item.c2cItemsIds[0]))}
-                className={`text-white px-2 py-0.5 rounded-sm text-xs font-medium shadow-sm hover:bg-red-600 transition-colors cursor-pointer flex items-center gap-1 flex-shrink-0 ${allDisabled ? 'bg-gray-400' : 'bg-[#786DF6]'}`}
+                className={`text-white px-2 py-0.5 rounded-sm text-xs font-medium shadow-sm hover:bg-[#6258D4]  transition-colors cursor-pointer flex items-center gap-1 flex-shrink-0 ${allDisabled ? 'bg-gray-400' : 'bg-[#786DF6]'}`}
               >
                 <span>{getItemLabel(item)}</span>
               </button>
