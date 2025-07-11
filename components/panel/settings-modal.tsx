@@ -23,7 +23,7 @@ export function SettingsModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-start justify-center z-50">
+    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-start justify-center z-50 text-start">
       <div className="relative mt-8 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-md mx-auto border border-white/20 overflow-hidden">
         {/* Header */}
         {/* <div className="relative px-6 py-4 bg-gradient-to-r from-[#786DF6]/5 to-[#786DF6]/10 border-b border-gray-100/50">
@@ -48,7 +48,7 @@ export function SettingsModal({
             <X className="h-4 w-4" />
           </button>
         
-        <div className="p-4 space-y-6 max-h-[70vh] overflow-y-auto">
+        <div className="p-4 space-y-6 max-h-[88vh] overflow-y-auto">
           {/* 自动抓取设置 */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 mb-4">

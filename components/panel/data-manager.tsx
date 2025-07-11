@@ -104,12 +104,12 @@ export function DataManager({ onDataChange }: DataManagerProps) {
 
       {/* 导出数据 */}
       <div className="group flex items-center justify-between p-4 rounded-xl border border-gray-200/60 hover:border-blue-300/50 hover:bg-blue-50/30 transition-all duration-200 hover:shadow-sm">
-        <div className="flex items-center gap-3">
+        <div className="flex items-start gap-3">
           <div className="w-8 h-8 rounded-lg bg-blue-100/80 flex items-center justify-center group-hover:bg-blue-200/80 transition-colors">
             <Download className="h-4 w-4 text-blue-600" />
           </div>
           <div>
-            <div className="text-sm font-medium text-gray-800">导出数据</div>
+            <div className="text-sm font-medium text-gray-800 left">导出数据</div>
             <div className="text-xs text-gray-500 mt-0.5">将所有数据导出为JSON文件</div>
           </div>
         </div>
