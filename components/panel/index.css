@@ -1,0 +1,19 @@
+.goofish-card-button {
+    position: relative;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.goofish-card-button::before {
+  content: "";
+  position: absolute;
+  
+  bottom: 0;
+  right: 0;
+  width: 80%;
+  height: 80%;
+  /* 背景图片置于底层 */
+  opacity: 0.5;
+  background: url('https://gw.alicdn.com/imgextra/i2/O1CN01yQ3RYl1EqAGI2JrGE_!!6000000000402-2-tps-144-144.png_110x10000.jpg_.webp')  right/contain no-repeat;
+  z-index: -1; /* 确保在渐变层下方 */
+}

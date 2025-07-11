@@ -1,12 +1,15 @@
 import React from 'react';
+import './index.css'
 import { Card } from '@/components/ui/card';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Info } from 'lucide-react';
+import { Info, Tag } from 'lucide-react';
 import { C2C_DETAIL, MALL_DETAIL } from '../../entrypoints/panel/api';
 import { JumpTo, ToC2cSearch } from '../../entrypoints/panel/tasks';
 import { DB } from '../../entrypoints/panel/db';
+
+const IMGBGURL = "https://gw.alicdn.com/imgextra/i2/O1CN01yQ3RYl1EqAGI2JrGE_!!6000000000402-2-tps-144-144.png_110x10000.jpg_.webp"
 
 interface ProductCardProps {
   item: DB.skuItem;
@@ -37,6 +40,13 @@ export function ProductCard({
   function getItemLabel(it: DB.skuItem) {
     if (!it.c2cLists) return '¥ ?';
     return `¥ ${it.c2cLists?.sort((a, b) => a!.price - b!.price)?.[0]?.showPrice}`;
+  }
+
+  function getLowestPrice(it: DB.skuItem) {
+    if (!it.c2cLists || it.c2cLists.length === 0) return null;
+    const availableItems = it.c2cLists.filter(c2c => !c2c?.removable);
+    if (availableItems.length === 0) return null;
+    return availableItems.sort((a, b) => a!.price - b!.price)?.[0]?.showPrice;
   }
 
   return (
@@ -127,6 +137,45 @@ export function ProductCard({
           </HoverCardContent>
         </HoverCard>
         
+        {/* 悬浮价格标签 */}
+        <HoverCard>
+          <HoverCardTrigger asChild>
+            <div className="absolute bottom-2 left-2 z-20">
+              {getLowestPrice(item) ? (
+                <div className={`goofish-card-button bg-gradient-to-r from-transparent to-[#FBE650]/50 text-[#786DF6] backdrop-blur-[6px] pl-1 pr-3 py-0.5 rounded-md text-xs font-semibold shadow-lg border border-white/20 flex items-center gap-1.5 hover:shadow-xl transition-all duration-200`}
+                  // style={{backgroundImage: `url(${IMGBGURL})`}} bg-gradient-to-r from-black to-transparent 
+                >
+                  <span>¥{getLowestPrice(item)}</span>
+                  {/* <div 
+                    className="z-21 w-full h-full"
+                    style={{
+                      backgroundImage: `url(${IMGBGURL})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center'
+                    }}
+                  />  */}
+                </div>
+              ) : (
+                <button 
+                  className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 flex items-center justify-center group"
+                  style={{
+                    backgroundImage: `url(${IMGBGURL})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                  }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#786DF6]/20 to-[#9B8BF7]/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                </button>
+              )}
+            </div>
+          </HoverCardTrigger>
+          <HoverCardContent className="w-auto p-2 rounded-lg shadow-md">
+            <span className="text-xs">
+              {getLowestPrice(item) ? `最低价格: ¥${getLowestPrice(item)}` : '暂无价格信息'}
+            </span>
+          </HoverCardContent>
+        </HoverCard>
+
         <HoverCard>
           <HoverCardTrigger asChild>
             <button 
@@ -173,3 +222,4 @@ export function ProductCard({
     </Card>
   );
 }
+

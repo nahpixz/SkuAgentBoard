@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import './App.css';
 import { C2C_DETAIL, C2C_LIST, GOOFISH, MALL_DETAIL, MARKET_SWG } from './api';
-import { ArrowLeft, Search, Settings, Bug, Layers, Check } from 'lucide-react';
+import { ArrowLeft, Search, Settings, Bug, Layers, Check, CircleCheckBig, FunnelPlus, SlidersHorizontal } from 'lucide-react';
 import { DB } from './db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { checkingPromises, HistoryBack, JumpTo, ToC2cSearch, waitForRequest } from './tasks';
@@ -14,6 +14,7 @@ import { SearchModal } from '@/components/panel/search-modal';
 import { SettingsModal } from '@/components/panel/settings-modal';
 import { FilterModal, useGlobalFilterStore } from '@/components/panel/filter-modal';
 import { InventoryCheckModal } from '@/components/panel/inventory-check-modal';
+import AGENT from '@/premium';
 
 let connID = "";
 let connTime = 0;
@@ -248,9 +249,10 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
   
   function handleDebug() {
     console.log("click")
-    console.log('checkingC2Cs',...checkingC2Cs)
-    console.log('skuPriceRange',filterState.skuPriceRange)
-     console.log('sorted',skuList?.sort((a,b)=>b.marketPrice-a.marketPrice).slice(0,5))
+    AGENT.OPT.ScrollToEnd_bilimall();
+    // console.log('checkingC2Cs',...checkingC2Cs)
+    // console.log('skuPriceRange',filterState.skuPriceRange)
+    //  console.log('sorted',skuList?.sort((a,b)=>b.marketPrice-a.marketPrice).slice(0,5))
     // console.log('skuList',...skuList?.filter(it=>it.itemsId===checkingItem?.itemsId)[0].c2cLists)
     
     // browser.devtools.network.getHAR(function (logInfo) {
@@ -587,23 +589,25 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
           {/* 操作工具组 */}
           <div className="flex items-center">
             <ToolButton 
-              icon={<Search className="h-5 w-5" />}
+              icon={<Search/>}
               label="搜索"
               onClick={openSearch}
               active={isSearchModalOpen}
             />
             <ToolButton 
-              icon={<Check className="h-5 w-5" />}
+              icon={<CircleCheckBig />}
               label="选择"
               onClick={toggleSelectMode}
               active={isSelectMode}
             />
             <ToolButton 
-              icon={<Layers className="h-5 w-5" />}
+              icon={<SlidersHorizontal />}
               label="筛选"
               onClick={toggleFilter}
               active={filterState.isOpen}
             />
+            {AGENT.ok && <AGENT.COMP.AgentButton />}
+            
           </div>
           
           {/* 分隔线 */}
