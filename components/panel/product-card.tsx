@@ -146,8 +146,8 @@ export function ProductCard({
                   ?'rounded-md before:opacity-33'
                   :'rounded-full w-6 before:opacity-100'
                 } 
-                  goofish-card-button bg-gradient-to-r from-[#FBE650]/90 to-[#FBE650]/33 text-[#786DF6]
-                  backdrop-blur-[6px] pl-1.5 pr-5 py-0.5  
+                  goofish-card-button bg-gradient-to-r from-[#FBE650]/90 to-[#FBE650]/3 text-[#786DF6]
+                  backdrop-blur-[1px] pl-1.5 pr-5 py-0.5  
                   text-xs font-semibold shadow-lg border border-white/20 flex items-center gap-1.5
                    hover:shadow-xl transition-all duration-200`}
                 >
