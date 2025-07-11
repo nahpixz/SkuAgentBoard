@@ -125,13 +125,9 @@ async function _importData(jsonData: string): Promise<void> {
     }
     
     return db.transaction("rw", db.skus, db.c2cs, async () => {
-      // 清空现有数据
-      await db.skus.clear();
-      await db.c2cs.clear();
-      
       // 导入新数据
-      await db.skus.bulkAdd(importData.data.skus);
-      await db.c2cs.bulkAdd(importData.data.c2cs);
+      await db.skus.bulkPut(importData.data.skus);
+      await db.c2cs.bulkPut(importData.data.c2cs);
     });
   } catch (error) {
     throw new Error(`导入失败: ${error instanceof Error ? error.message : '未知错误'}`);
