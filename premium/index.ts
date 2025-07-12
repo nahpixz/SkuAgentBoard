@@ -1,5 +1,5 @@
 import * as OPT from './opts'
-import * as COMP from './components'
+import * as COMP from './components/index'
 
 export default{
     OPT,
