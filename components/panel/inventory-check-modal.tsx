@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Check } from 'lucide-react';
+import { ModalOverlay } from './modal-overlay';
 import { C2C_DETAIL } from '../../entrypoints/panel/api';
 import { JumpTo } from '../../entrypoints/panel/tasks';
 import { DB } from '../../entrypoints/panel/db';
@@ -65,8 +66,13 @@ export function InventoryCheckModal({
   const transitionClass = 'transition-all duration-500 ease-in-out';
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-60">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden">
+    <ModalOverlay
+      isOpen={true}
+      onClose={onClose}
+      alignment="center"
+      overlayClassName="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-60"
+      contentClassName="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden"
+    >
         <div className="p-4 border-b flex justify-between items-center">
           <h3 className="font-medium text-gray-800">库存检查 - {checkingItem.name}</h3>
           <button 
@@ -205,7 +211,6 @@ export function InventoryCheckModal({
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    </ModalOverlay>
   );
 }

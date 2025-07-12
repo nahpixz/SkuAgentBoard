@@ -1,6 +1,7 @@
 import { X, ArrowUpDown, Percent, Clock, Package } from 'lucide-react';
 import { PriceRangeFilter } from './price-range-filter';
 import { SortButton, SortDirection, SortOption } from './sort-button';
+import { ModalOverlay } from './modal-overlay';
 import { DB } from '../../entrypoints/panel/db';
 import { _create, setFn } from "@/lib/utils";
 
@@ -79,14 +80,11 @@ export function FilterModal({
   if (!isOpen) return null;
 
   return (
-    <div 
-      className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-start justify-center z-50"
-      onClick={_closeFilter}
+    <ModalOverlay
+      isOpen={isOpen}
+      onClose={_closeFilter}
+      contentClassName="mt-8 bg-white/95 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
     >
-      <div 
-        className="mt-8 bg-white/95 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
         <div className="relative p-4 max-h-[88vh] overflow-y-auto">
           {/* 关闭按钮 */}
           <button 
@@ -245,7 +243,6 @@ export function FilterModal({
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </ModalOverlay>
   );
 }

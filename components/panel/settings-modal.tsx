@@ -1,6 +1,7 @@
 import React from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DataManager } from './data-manager';
+import { ModalOverlay } from './modal-overlay';
 import { X } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -23,8 +24,11 @@ export function SettingsModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-start justify-center z-50 text-start">
-      <div className="relative mt-8 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-md mx-auto border border-white/20 overflow-hidden">
+    <ModalOverlay
+      isOpen={isOpen}
+      onClose={onClose}
+      contentClassName="relative mt-8 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-md mx-auto border border-white/20 overflow-hidden text-start"
+    >
         {/* Header */}
         {/* <div className="relative px-6 py-4 bg-gradient-to-r from-[#786DF6]/5 to-[#786DF6]/10 border-b border-gray-100/50">
           <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -101,7 +105,6 @@ export function SettingsModal({
             <DataManager onDataChange={onDataChange} />
           </div>
         </div>
-      </div>
-    </div>
+    </ModalOverlay>
   );
 }
