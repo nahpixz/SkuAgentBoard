@@ -16,6 +16,7 @@ import { FilterModal, useGlobalFilterStore } from '@/components/panel/filter-mod
 import { InventoryCheckModal } from '@/components/panel/inventory-check-modal';
 import AGENT from '@/premium';
 
+
 let connID = "";
 let connTime = 0;
 let c2cNextId = "";
@@ -540,7 +541,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
       )}
       
       {/* 主内容区域 */}
-      <div className={`${isSelectMode||isSearchModalOpen ? 'pt-16' : 'pt-2'} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
+      {false && <div className={`${isSelectMode||isSearchModalOpen ? 'pt-16' : 'pt-2'} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
         {getFilteredAndSortedItems().map((item) => {
           const isSelected = selectedItems[item.itemsId];
           return (
@@ -556,7 +557,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
             />
           );
         })}      
-      </div>
+      </div>}
 
       {/* 底部悬浮工具条 */}
       <div className="fixed bottom-6 left-0 right-0 z-51 flex justify-center">
@@ -629,6 +630,8 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
           </div>
         </div>
       </div>
+
+      <AGENT.COMP.SkuAgentBoard/>
 
       <SearchModal
         isOpen={isSearchModalOpen}

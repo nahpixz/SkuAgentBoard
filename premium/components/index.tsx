@@ -1,6 +1,6 @@
 import { ToolButton } from "@/components/panel/tool-button";
 import { Bot, Drone } from "lucide-react";
-
+import { SkuAgentBoard } from "./skuFetchAgent";
 
 export const AgentButton = ()=>(
 <ToolButton 
@@ -8,3 +8,5 @@ export const AgentButton = ()=>(
     label="Agent"
     onClick={()=>1}
 />)
+
+export { SkuAgentBoard };
