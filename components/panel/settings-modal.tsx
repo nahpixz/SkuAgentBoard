@@ -3,30 +3,21 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { DataManager } from './data-manager';
 import { ModalOverlay } from './modal-overlay';
 import { X } from 'lucide-react';
+import { useSettingsStore } from './settings-store';
 
 interface SettingsModalProps {
-  isOpen: boolean;
-  autoCaptureMall: boolean;
-  autoCaptureDetail: boolean;
-  onToggleAutoCaptureMall: () => void;
   onDataChange?: () => void;
-  onClose: () => void;
 }
 
-export function SettingsModal({
-  isOpen,
-  autoCaptureMall,
-  autoCaptureDetail,
-  onToggleAutoCaptureMall,
-  onDataChange,
-  onClose
-}: SettingsModalProps) {
+export function SettingsModal({ onDataChange }: SettingsModalProps = {}) {
+  const { isOpen, autoCaptureMall, autoCaptureDetail, toggleAutoCaptureMall, closeSettings } = useSettingsStore();
+  
   if (!isOpen) return null;
 
   return (
     <ModalOverlay
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={closeSettings}
       contentClassName="relative mt-8 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-md mx-auto border border-white/20 overflow-hidden text-start"
     >
         {/* Header */}
@@ -36,7 +27,7 @@ export function SettingsModal({
             设置
           </h3>
           <button 
-            onClick={onClose}
+            onClick={closeSettings}
             className="absolute top-4 right-6 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100/50 transition-all duration-200"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,7 +37,7 @@ export function SettingsModal({
         </div> */}
 
         <button 
-            onClick={onClose}
+            onClick={closeSettings}
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
           >
             <X className="h-4 w-4" />
@@ -64,7 +55,7 @@ export function SettingsModal({
             
             <div 
               className="group flex items-center justify-between p-3 rounded-xl border border-gray-200/60 hover:border-[#786DF6]/30 hover:bg-[#786DF6]/5 transition-all duration-200 cursor-pointer"
-              onClick={onToggleAutoCaptureMall}
+              onClick={toggleAutoCaptureMall}
             >
               <div className="flex items-center gap-3">
                 <Checkbox 

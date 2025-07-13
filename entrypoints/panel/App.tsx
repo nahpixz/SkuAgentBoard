@@ -5,7 +5,9 @@ import { ArrowLeft, Search, Settings, Bug, Layers, Check, CircleCheckBig, Funnel
 import { DB } from './db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { checkingPromises, HistoryBack, JumpTo, ToC2cSearch, waitForRequest } from './tasks';
-import { useSettingsStore } from './store';
+import { useSettingsStore as useAppSettingsStore } from './store';
+import { useSettingsStore } from '@/components/panel/settings-store';
+import { useSearchStore } from '@/components/panel/search-store';
 import { useSelectStore } from '@/components/panel/select-store';
 import { ToolButton } from '@/components/panel/tool-button';
 import { Icon } from '@iconify/react';
@@ -46,15 +48,10 @@ function App() {
   const [checkMarketOption, setCheckMarketOption] = useState(true);
   const [searchNewOption, setSearchNewOption] = useState(true);
 
-  // 搜索相关状态
-  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-  const [searchType, setSearchType] = useState<'remote' | 'local'>('local');
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // 设置相关状态
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  // const settingsOptions = useSettingsStore((state) => state);
-  const settingsOptions = useSettingsStore();
+  // 使用 store 管理状态
+  const settingsOptions = useAppSettingsStore();
+  const { openSearch, closeSearch } = useSearchStore();
+  const { openSettings, closeSettings } = useSettingsStore();
 
   // 筛选相关状态
   const filterState = useGlobalFilterStore();
@@ -90,8 +87,8 @@ function App() {
   
   // 关闭所有模态窗
   function closeAllModals() {
-    setIsSearchModalOpen(false);
-    setIsSettingsModalOpen(false);
+    closeSearch();
+    closeSettings();
     filterState._closeFilter();
     
     // 关闭选择模式并清空选择状态
@@ -101,13 +98,9 @@ function App() {
   }
   
   // 打开设置
-  function openSettings() {
-    if (isSettingsModalOpen) {
-      setIsSettingsModalOpen(false);
-    } else {
-      closeAllModals();
-      setIsSettingsModalOpen(true);
-    }
+  function handleOpenSettings() {
+    closeAllModals();
+    openSettings();
   }
 
   function handleDataChange() {
@@ -118,25 +111,9 @@ function App() {
   }
   
   // 打开搜索
-  function openSearch() {
-    if (isSearchModalOpen) {
-      setIsSearchModalOpen(false);
-    } else {
-      closeAllModals();
-      setIsSearchModalOpen(true);
-      setSearchQuery('');
-    }
-  }
-  
-  // 执行搜索
-  function performSearch() {
-    console.log('搜索', searchType, searchQuery);
-    // 本地搜索直接通过状态过滤，远程搜索需要调用API
-    if (searchType === 'remote') {
-      // 这里应该调用远程搜索API，但目前只是模拟
-      console.log('执行远程搜索', searchQuery);
-    }
-    setIsSearchModalOpen(false);
+  function handleOpenSearch() {
+    closeAllModals();
+    openSearch();
   }
   
   // 打开筛选
@@ -193,6 +170,9 @@ function App() {
   // 处理筛选和排序
   const getFilteredAndSortedItems = () => {
     if (!skuList) return [];
+    
+    // 获取搜索状态
+    const { searchQuery, searchType } = useSearchStore();
     
     // 先筛选
     let filteredItems = [...skuList];
@@ -426,7 +406,7 @@ function App() {
       {isSelectMode && <SelectModeToolbar handleSelectAll={()=>selectAll(getFilteredAndSortedItems())} />}
       
       {/* 主内容区域 */}
-      {false && <div className={`${isSelectMode||isSearchModalOpen ? 'pt-16' : 'pt-2'} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
+      {false && <div className={`${isSelectMode || useSearchStore().isOpen ? 'pt-16' : 'pt-2'} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
         {getFilteredAndSortedItems().map((item) => {
           const isSelected = selectedItems[item.itemsId];
           return (
@@ -472,8 +452,8 @@ function App() {
             <ToolButton 
               icon={<Search/>}
               label="搜索"
-              onClick={openSearch}
-              active={isSearchModalOpen}
+              onClick={handleOpenSearch}
+              active={useSearchStore().isOpen}
             />
             <ToolButton 
               icon={<CircleCheckBig />}
@@ -499,8 +479,8 @@ function App() {
             <ToolButton 
               icon={<Settings className="h-5 w-5" />}
               label="设置"
-              onClick={openSettings}
-              active={isSettingsModalOpen}
+              onClick={handleOpenSettings}
+              active={useSettingsStore().isOpen}
             />
             <ToolButton 
               icon={<Bug className="h-5 w-5" />}
@@ -513,23 +493,10 @@ function App() {
 
       <AGENT.COMP.SkuAgentBoard/>
 
-      <SearchModal
-        isOpen={isSearchModalOpen}
-        searchType={searchType}
-        searchQuery={searchQuery}
-        onSearchTypeChange={setSearchType}
-        onSearchQueryChange={setSearchQuery}
-        onSearch={performSearch}
-        onClose={() => setIsSearchModalOpen(false)}
-      />
+      <SearchModal />
       
       <SettingsModal
-        isOpen={isSettingsModalOpen}
-        autoCaptureMall={settingsOptions.autoCaptureMall}
-        autoCaptureDetail={settingsOptions.autoCaptureDetail}
-        onToggleAutoCaptureMall={settingsOptions.toggleAutoCaptureMall}
         onDataChange={handleDataChange}
-        onClose={() => setIsSettingsModalOpen(false)}
       />
       
       <FilterModal skuList={skuList || []} />
