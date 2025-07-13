@@ -8,28 +8,42 @@ import { Info, Tag } from 'lucide-react';
 import { C2C_DETAIL, MALL_DETAIL } from '../../entrypoints/panel/api';
 import { JumpTo, ToC2cSearch } from '../../entrypoints/panel/tasks';
 import { DB } from '../../entrypoints/panel/db';
+import { useSelectStore } from './select-store';
 
 const IMGBGURL = "https://gw.alicdn.com/imgextra/i2/O1CN01yQ3RYl1EqAGI2JrGE_!!6000000000402-2-tps-144-144.png_110x10000.jpg_.webp"
 
 interface ProductCardProps {
   item: DB.skuItem;
-  isSelectMode: boolean;
-  isSelected: boolean;
-  onToggleSelect: (itemId: number, event: React.MouseEvent) => void;
-  onToggleSelectC2C: (c2cItemId: number, event: React.MouseEvent) => void;
   onOpenInventoryCheck: (item: DB.skuItem) => void;
-  selectedC2CItems: {[key: number]: boolean};
 }
 
 export function ProductCard({
   item,
-  isSelectMode,
-  isSelected,
-  onToggleSelect,
-  onToggleSelectC2C,
-  onOpenInventoryCheck,
-  selectedC2CItems
+  onOpenInventoryCheck
 }: ProductCardProps) {
+  // 使用select store
+  const { 
+    isSelectMode, 
+    selectedItems, 
+    selectedC2CItems,
+    toggleSelectItem,
+    toggleSelectC2C
+  } = useSelectStore();
+  
+  // 判断当前商品是否被选中
+  const isSelected = selectedItems[item.itemsId] || false;
+  
+  // 处理选择/取消选择商品的事件包装函数
+  const handleToggleSelect = (itemId: number, event: React.MouseEvent) => {
+    event.stopPropagation(); // 阻止事件冒泡
+    toggleSelectItem(itemId);
+  };
+  
+  // 处理选择/取消选择C2C库存的事件包装函数
+  const handleToggleSelectC2C = (c2cItemId: number, event: React.MouseEvent) => {
+    event.stopPropagation(); // 阻止事件冒泡
+    toggleSelectC2C(c2cItemId);
+  };
   const allDisabled = isAllDisabled(item);
 
   function isAllDisabled(item: DB.skuItem) {
@@ -61,7 +75,7 @@ export function ProductCard({
         {isSelectMode && (
           <div 
             className="absolute top-2 left-2 z-10"
-            onClick={(e) => onToggleSelect(item.itemsId, e)}
+            onClick={(e) => handleToggleSelect(item.itemsId, e)}
           >
             <div className="h-6 w-6 bg-white/90 rounded-full flex items-center justify-center shadow-sm border border-gray-200">
               <Checkbox 
@@ -73,7 +87,7 @@ export function ProductCard({
         )}
         
         <img 
-          onClick={(e) => isSelectMode ? onToggleSelect(item.itemsId, e) : onOpenInventoryCheck(item)}
+          onClick={(e) => isSelectMode ? handleToggleSelect(item.itemsId, e) : onOpenInventoryCheck(item)}
           title={isSelectMode ? "点击选择" : "点击检查库存"}
           src={`https:${item.img}@522w_522h_85q.webp`} 
           alt={item.name} 
@@ -113,7 +127,7 @@ export function ProductCard({
                 const isC2CSelected = c2c?.c2cItemsId && selectedC2CItems[c2c.c2cItemsId];
                 return (
                 <li key={c2c?.c2cItemsId} 
-                  onClick={(e) => isSelectMode && c2c?.c2cItemsId ? onToggleSelectC2C(c2c.c2cItemsId, e) : c2c?.c2cItemsId && JumpTo(C2C_DETAIL.URL(c2c?.c2cItemsId))}
+                  onClick={(e) => isSelectMode && c2c?.c2cItemsId ? handleToggleSelectC2C(c2c.c2cItemsId, e) : c2c?.c2cItemsId && JumpTo(C2C_DETAIL.URL(c2c?.c2cItemsId))}
                   className={`flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-gray-50 
                     ${c2c?.removable ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                     ${isC2CSelected ? 'bg-[#786DF6]/10' : ''}`}

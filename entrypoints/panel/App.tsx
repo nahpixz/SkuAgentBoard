@@ -6,6 +6,7 @@ import { DB } from './db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { checkingPromises, HistoryBack, JumpTo, ToC2cSearch, waitForRequest } from './tasks';
 import { useSettingsStore } from './store';
+import { useSelectStore } from '@/components/panel/select-store';
 import { ToolButton } from '@/components/panel/tool-button';
 import { Icon } from '@iconify/react';
 import { ProductCard } from '@/components/panel/product-card';
@@ -57,12 +58,14 @@ function App() {
 
   // 筛选相关状态
   const filterState = useGlobalFilterStore();
-
-  const [hasSelectedItems, setHasSelectedItems] = useState(false);
-  const [hasSelectedC2C, setHasSelectedC2C] = useState(false);
-  const [isSelectMode, setIsSelectMode] = useState(false);
-  const [selectedItems, setSelectedItems] = useState<{[key: number]: boolean}>({});
-  const [selectedC2CItems, setSelectedC2CItems] = useState<{[key: number]: boolean}>({});
+  
+  // 使用select store
+  const { 
+    isSelectMode, 
+    selectedItems, 
+    selectAll,
+    toggleSelectMode,
+  } = useSelectStore();
 
   useEffect(()=>{
     const prices = skuList?.map(item => item.marketPrice/100) || [0];
@@ -71,79 +74,18 @@ function App() {
     filterState._resetSkuPriceRange(skuMin,skuMax)
   },[skuList])
   
-  // 切换选择模式
-  function toggleSelectMode() {
-    if (isSelectMode) {
-      // 退出选择模式时清空选择
-      setIsSelectMode(false);
-      setSelectedItems({});
-      setSelectedC2CItems({});
-      setHasSelectedItems(false);
-      setHasSelectedC2C(false);
-    } else {
-      // 进入选择模式前关闭其他模态窗
+  // 自定义切换选择模式函数，处理额外的逻辑
+  function handleToggleSelectMode() {
+    // 进入选择模式前关闭其他模态窗
+    if (!isSelectMode) {
       closeAllModals();
-      setIsSelectMode(true);
     }
+    
+    toggleSelectMode();
     
     // 检查完成后，更新状态
     setIsCheckingInProgress(false);
     setIsCheckingComplete(true);
-  }
-  
-  // 选择/取消选择商品
-  function toggleSelectItem(itemId: number, event: React.MouseEvent) {
-    event.stopPropagation(); // 阻止事件冒泡
-    
-    const newSelectedItems = {...selectedItems};
-    newSelectedItems[itemId] = !newSelectedItems[itemId];
-    setSelectedItems(newSelectedItems);
-    
-    // 更新是否有选中商品的状态
-    setHasSelectedItems(Object.values(newSelectedItems).some(v => v));
-  }
-  
-  // 选择/取消选择C2C库存
-  function toggleSelectC2C(c2cItemId: number, event: React.MouseEvent) {
-    event.stopPropagation(); // 阻止事件冒泡
-    
-    const newSelectedC2CItems = {...selectedC2CItems};
-    newSelectedC2CItems[c2cItemId] = !newSelectedC2CItems[c2cItemId];
-    setSelectedC2CItems(newSelectedC2CItems);
-    
-    // 更新是否有选中C2C库存的状态
-    setHasSelectedC2C(Object.values(newSelectedC2CItems).some(v => v));
-  }
-  
-  // 选择所有项目
-  function handleSelectAll() {
-    if (!isSelectMode) {
-      toggleSelectMode();
-      return;
-    }
-    
-    const newSelectedItems:{[key: number]: boolean} = {};
-    skuList?.forEach(item => {
-      newSelectedItems[item.itemsId] = true;
-    });
-    setSelectedItems(newSelectedItems);
-    setHasSelectedItems(Boolean(skuList && skuList.length > 0));
-  }
-  
-  // 删除选中商品
-  function handleDeleteSelected() {
-    // 实现删除选中商品的逻辑
-    console.log('删除选中商品', selectedItems);
-    setSelectedItems({});
-    setHasSelectedItems(false);
-  }
-  
-  // 删除选中c2c库存
-  function handleDeleteSelectedC2C() {
-    // 实现删除选中c2c库存的逻辑
-    console.log('删除选中c2c库存', selectedC2CItems);
-    setSelectedC2CItems({});
-    setHasSelectedC2C(false);
   }
   
   // 关闭所有模态窗
@@ -154,11 +96,7 @@ function App() {
     
     // 关闭选择模式并清空选择状态
     if (isSelectMode) {
-      setIsSelectMode(false);
-      setSelectedItems({});
-      setSelectedC2CItems({});
-      setHasSelectedItems(false);
-      setHasSelectedC2C(false);
+      toggleSelectMode();
     }
   }
   
@@ -176,7 +114,7 @@ function App() {
     // 数据变化后的处理逻辑
     // 由于使用了useLiveQuery，数据会自动更新
     // 这里可以添加额外的处理逻辑，比如重置筛选状态
-    resetFilterSettings();
+    // filterState._reset();
   }
   
   // 打开搜索
@@ -211,43 +149,6 @@ function App() {
     }
   }
   
-  // 应用筛选设置
-  const applyFilterSettings = () => {
-    filterState._apply();
-    filterState._closeFilter();
-  };
-  
-  // 重置筛选设置
-  const resetFilterSettings = () => {
-    filterState._reset();
-  };
-
-  // 在库存检查模态框中使用的状态样式计算
-
-  const getStatusClass = (status: CHECK_STATUS) => {
-    if (status === 'doing') {
-      return 'bg-gradient-to-r from-blue-50 to-blue-100 animate-pulse border-blue-200';
-    } else if (status === 'success') {
-      return 'bg-gradient-to-r from-green-50 to-green-100 border-green-200';
-    } else if (status === 'failed') {
-      return 'bg-gradient-to-r from-red-50 to-red-100 border-red-200 opacity-60';
-    } else if (status === 'disable') {
-      return 'bg-gray-50 border-gray-200 opacity-60';
-    }
-    return '';
-  };
-
-// 计算前置检查项的状态样式
-const marketStatusClass =  getStatusClass('pending')
-// const marketStatusClass = getStatusClass(
-//   checkMarketOption && Object.values(checkStatus).some(s => s === 'doing'),
-//   checkMarketOption && Object.values(checkStatus).every(s => s === 'success'),
-//   checkMarketOption && Object.values(checkStatus).some(s => s === 'failed'),
-//   !checkMarketOption
-// );
-
-const transitionClass = 'transition-all duration-500 ease-in-out';
-  
   function handleDebug() {
     console.log("click")
     AGENT.OPT.ScrollToEnd_bilimall();
@@ -260,13 +161,6 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
     //   console.log('log',logInfo)
     // })
   };
-
-  
-
-  function getItemLabel(it:DB.skuItem){
-    if(!it.c2cLists) return '¥ ?'
-    return `¥ ${it.c2cLists?.sort((a,b)=>a!.price-b!.price)?.[0]?.showPrice}`
-  }
 
   function isAllDisabled(item: DB.skuItem) {
     return item.c2cLists && item.c2cLists.length > 0 && 
@@ -529,16 +423,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
   return (
     <>
       {/* 选择模式下的顶部操作栏 */}
-      {isSelectMode && (
-        <SelectModeToolbar
-          hasSelectedItems={hasSelectedItems}
-          hasSelectedC2C={hasSelectedC2C}
-          onSelectAll={handleSelectAll}
-          onDeleteSelected={handleDeleteSelected}
-          onDeleteSelectedC2C={handleDeleteSelectedC2C}
-          onToggleSelectMode={toggleSelectMode}
-        />
-      )}
+      {isSelectMode && <SelectModeToolbar handleSelectAll={()=>selectAll(getFilteredAndSortedItems())} />}
       
       {/* 主内容区域 */}
       {false && <div className={`${isSelectMode||isSearchModalOpen ? 'pt-16' : 'pt-2'} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
@@ -548,12 +433,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
             <ProductCard
               key={item.itemsId}
               item={item}
-              isSelectMode={isSelectMode}
-              isSelected={isSelected}
-              onToggleSelect={toggleSelectItem}
-              onToggleSelectC2C={toggleSelectC2C}
               onOpenInventoryCheck={opencheckInventory}
-              selectedC2CItems={selectedC2CItems}
             />
           );
         })}      
@@ -598,7 +478,7 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
             <ToolButton 
               icon={<CircleCheckBig />}
               label="选择"
-              onClick={toggleSelectMode}
+              onClick={handleToggleSelectMode}
               active={isSelectMode}
             />
             <ToolButton 
@@ -662,13 +542,10 @@ const transitionClass = 'transition-all duration-500 ease-in-out';
         checkMarketOption={checkMarketOption}
         isCheckingInProgress={isCheckingInProgress}
         isCheckingComplete={isCheckingComplete}
-        // marketStatusClass={marketStatusClass}
-        // transitionClass={transitionClass}
         onSearchNewOptionChange={setSearchNewOption}
         onCheckMarketOptionChange={setCheckMarketOption}
         onStartCheck={startCheck}
         onClose={closeCheckModal}
-        // getStatusClass={getStatusClass}
       />
     </>
   );

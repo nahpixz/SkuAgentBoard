@@ -1,24 +1,27 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Check, Trash, X } from 'lucide-react';
+import { useSelectStore } from './select-store';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { DB } from '@/entrypoints/panel/db';
 
-interface SelectModeToolbarProps {
-  hasSelectedItems: boolean;
-  hasSelectedC2C: boolean;
-  onSelectAll: () => void;
-  onDeleteSelected: () => void;
-  onDeleteSelectedC2C: () => void;
-  onToggleSelectMode: () => void;
-}
 
-export function SelectModeToolbar({
-  hasSelectedItems,
-  hasSelectedC2C,
-  onSelectAll,
-  onDeleteSelected,
-  onDeleteSelectedC2C,
-  onToggleSelectMode
-}: SelectModeToolbarProps) {
+export function SelectModeToolbar({handleSelectAll}:{handleSelectAll: () => void}) {
+  // const skuList = useLiveQuery(() => DB.getSkuList());
+  const {
+    hasSelectedItems,
+    hasSelectedC2C,
+    selectAll,
+    deleteSelected,
+    deleteSelectedC2C,
+    toggleSelectMode
+  } = useSelectStore();
+  
+  // const handleSelectAll = () => {
+  //   if (skuList) {
+  //     selectAll(skuList);
+  //   }
+  // };
   return (
     <div className="fixed top-0 left-0 right-0 z-50 p-2 bg-white/70 backdrop-blur-md shadow-sm border-b flex items-center justify-between">
       <div className="flex items-center gap-2">
@@ -26,7 +29,7 @@ export function SelectModeToolbar({
           variant="outline" 
           size="sm" 
           className="rounded-md text-xs flex items-center gap-1 border-gray-200 bg-white/80"
-          onClick={onSelectAll}
+          onClick={handleSelectAll}
         >
           <Check className="h-3.5 w-3.5" />
           全选
@@ -35,7 +38,7 @@ export function SelectModeToolbar({
           variant="outline" 
           size="sm" 
           className="rounded-md text-xs flex items-center gap-1 border-gray-200 bg-white/80"
-          onClick={onDeleteSelected}
+          onClick={deleteSelected}
           disabled={!hasSelectedItems}
         >
           <Trash className="h-3.5 w-3.5" />
@@ -45,7 +48,7 @@ export function SelectModeToolbar({
           variant="outline" 
           size="sm" 
           className="rounded-md text-xs flex items-center gap-1 border-gray-200 bg-white/80"
-          onClick={onDeleteSelectedC2C}
+          onClick={deleteSelectedC2C}
           disabled={!hasSelectedC2C}
         >
           <X className="h-3.5 w-3.5" />
@@ -56,7 +59,7 @@ export function SelectModeToolbar({
         variant="ghost" 
         size="sm" 
         className="rounded-md text-xs flex items-center gap-1 text-gray-500"
-        onClick={onToggleSelectMode}
+        onClick={toggleSelectMode}
       >
         取消
       </Button>
