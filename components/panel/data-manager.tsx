@@ -79,7 +79,7 @@ export function DataManager({ onDataChange }: DataManagerProps) {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-1">
       {/* 消息提示 */}
       {message && (
         <div className={`p-3 rounded-xl text-sm backdrop-blur-sm transition-all duration-300 ${
@@ -103,7 +103,7 @@ export function DataManager({ onDataChange }: DataManagerProps) {
       )}
 
       {/* 导出数据 */}
-      <div className="group flex items-center justify-between p-4 rounded-xl border border-gray-200/60 hover:border-blue-300/50 hover:bg-blue-50/30 transition-all duration-200 hover:shadow-sm">
+      <div className="group flex items-center justify-between p-3 rounded-xl border border-gray-200/60 hover:border-blue-300/50 hover:bg-blue-50/30 transition-all duration-200 hover:shadow-sm">
         <div className="flex items-start gap-3">
           <div className="w-8 h-8 rounded-lg bg-blue-100/80 flex items-center justify-center group-hover:bg-blue-200/80 transition-colors">
             <Download className="h-4 w-4 text-blue-600" />
@@ -129,7 +129,7 @@ export function DataManager({ onDataChange }: DataManagerProps) {
       </div>
 
       {/* 导入数据 */}
-      <div className="group flex items-center justify-between p-4 rounded-xl border border-gray-200/60 hover:border-emerald-300/50 hover:bg-emerald-50/30 transition-all duration-200 hover:shadow-sm">
+      <div className="group flex items-center justify-between p-3 rounded-xl border border-gray-200/60 hover:border-emerald-300/50 hover:bg-emerald-50/30 transition-all duration-200 hover:shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-emerald-100/80 flex items-center justify-center group-hover:bg-emerald-200/80 transition-colors">
             <Upload className="h-4 w-4 text-emerald-600" />
@@ -164,7 +164,7 @@ export function DataManager({ onDataChange }: DataManagerProps) {
 
       {/* 清空数据 */}
       {!showClearConfirm ? (
-        <div className="group flex items-center justify-between p-4 rounded-xl border border-gray-200/60 hover:border-red-300/50 hover:bg-red-50/30 transition-all duration-200 hover:shadow-sm">
+        <div className="group flex items-center justify-between p-3 rounded-xl border border-gray-200/60 hover:border-red-300/50 hover:bg-red-50/30 transition-all duration-200 hover:shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-red-100/80 flex items-center justify-center group-hover:bg-red-200/80 transition-colors">
               <Trash2 className="h-4 w-4 text-red-600" />

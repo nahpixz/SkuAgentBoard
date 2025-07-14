@@ -1,19 +1,15 @@
 import { _create, setFn } from "@/lib/utils";
 
-type SettingsState = {
-  isOpen: boolean;
-  autoCaptureMall: boolean;
-  autoCaptureDetail: boolean;
-};
 
-const initialState: SettingsState = {
+const SettingsState = {
   isOpen: false,
   autoCaptureMall: false,
   autoCaptureDetail: false,
+  enableLiveQuery: true,
 };
 
-export const useSettingsStore = _create((set: setFn<SettingsState>) => ({
-  ...initialState,
+export const useSettingsStore = _create((set: setFn<typeof SettingsState>) => ({
+  ...SettingsState,
   
   // 打开设置模态框
   openSettings: () => set({ isOpen: true }),
@@ -29,4 +25,7 @@ export const useSettingsStore = _create((set: setFn<SettingsState>) => ({
   
   // 切换自动抓取详情设置
   toggleAutoCaptureDetail: () => set((state) => ({ autoCaptureDetail: !state.autoCaptureDetail })),
+  
+  // 切换实时查询开关
+  toggleLiveQuery: () => set((state) => ({ enableLiveQuery: !state.enableLiveQuery })),
 }));

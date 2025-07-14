@@ -105,7 +105,7 @@ export async function exportData(): Promise<string> {
 }
 
 // 导入数据
-async function importData(jsonData: string): Promise<void> {
+export async function importData(jsonData: string): Promise<void> {
   try {
     const importData = JSON.parse(jsonData);
     
@@ -124,7 +124,7 @@ async function importData(jsonData: string): Promise<void> {
 }
 
 // 清空所有数据
-async function clearAllData(): Promise<void> {
+export async function clearAllData(): Promise<void> {
   return db.transaction("rw", db.skus, db.c2cs, async () => {
     await db.skus.clear();
     await db.c2cs.clear();

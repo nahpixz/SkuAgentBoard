@@ -10,7 +10,7 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ onDataChange }: SettingsModalProps = {}) {
-  const { isOpen, autoCaptureMall, autoCaptureDetail, toggleAutoCaptureMall, closeSettings } = useSettingsStore();
+  const { isOpen, autoCaptureMall, autoCaptureDetail, enableLiveQuery, toggleAutoCaptureMall, toggleLiveQuery, closeSettings } = useSettingsStore();
   
   if (!isOpen) return null;
 
@@ -43,14 +43,14 @@ export function SettingsModal({ onDataChange }: SettingsModalProps = {}) {
             <X className="h-4 w-4" />
           </button>
         
-        <div className="p-4 space-y-6 max-h-[88vh] overflow-y-auto">
+        <div className="p-4 space-y-3 max-h-[88vh] overflow-y-auto">
           {/* 自动抓取设置 */}
-          <div className="space-y-3">
+          <div className="space-y-1">
             <div className="flex items-center gap-2 mb-4">
               <svg className="w-4 h-4 text-[#786DF6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              <h4 className="text-sm font-medium text-gray-700">自动抓取</h4>
+              <h4 className="text-sm font-medium text-gray-700">数据读写</h4>
             </div>
             
             <div 
@@ -83,7 +83,23 @@ export function SettingsModal({ onDataChange }: SettingsModalProps = {}) {
               </div>
               <span className="text-xs px-2 py-1 bg-gray-200/60 text-gray-500 rounded-full">敬请期待</span>
             </div>
-          </div>
+
+            <div
+              className="group flex items-center justify-between p-3 rounded-xl border border-gray-200/60 hover:border-[#786DF6]/30 hover:bg-[#786DF6]/5 transition-all duration-200 cursor-pointer"
+              onClick={toggleLiveQuery}
+            >
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  checked={enableLiveQuery}
+                  className="h-4 w-4 rounded-md data-[state=checked]:bg-[#786DF6] data-[state=checked]:border-[#786DF6] border-gray-300 transition-colors"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-700">实时数据查询</span>
+                  <p className="text-xs text-gray-500 mt-0.5">关闭可减少频繁查询，提升性能</p>
+                </div>
+              </div>
+            </div>
+        </div>
 
           {/* 数据管理 */}
           <div className="space-y-3">

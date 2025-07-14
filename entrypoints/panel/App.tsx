@@ -35,8 +35,34 @@ type C2CCheckView={
 }
 
 function App() {
-  // const [c2cData,setC2cData] = useState<C2C_LIST.c2cItem[]>([])
-  const skuList = useLiveQuery(() => DB.getSkuList());
+  // const [c2cData,setC2cData] = useState<C2C_LIST.c2cItem[]>([]);
+  const { enableLiveQuery } = useSettingsStore();
+  const [cachedSkuList, setCachedSkuList] = useState<DB.skuItem[]>([]);
+  const skuList = useLiveQuery(() => enableLiveQuery ? DB.getSkuList() : cachedSkuList, [enableLiveQuery]);
+  
+  // 当实时查询开启且有数据时，更新缓存
+  useEffect(() => {
+    if (enableLiveQuery && skuList) {
+      setCachedSkuList(skuList);
+    }
+  }, [skuList]);
+  
+  // 初始化时加载一次数据到缓存
+  useEffect(() => {
+    const initializeCache = async () => {
+      try {
+        const initialData = await DB.getSkuList();
+        setCachedSkuList(initialData);
+      } catch (error) {
+        console.error('初始化数据缓存失败:', error);
+      }
+    };
+    
+    if (!enableLiveQuery && cachedSkuList.length === 0) {
+      initializeCache();
+    }
+  }, []);
+  
   
   const [checkingItem, setCheckingItem] = useState<DB.skuItem | null>(null);
   const [checkingC2Cs, setCheckingC2Cs] = useState<(C2CCheckView|undefined)[]>([]);
@@ -150,13 +176,6 @@ function App() {
     setAppMode('filter');
   }
 
-  // === 其他业务逻辑函数 ===
-  function handleDataChange() {
-    // 数据变化后的处理逻辑
-    // 由于使用了useLiveQuery，数据会自动更新
-    // 这里可以添加额外的处理逻辑，比如重置筛选状态
-    // filterState._reset();
-  }
   
   function handleDebug() {
     console.log("click")
@@ -195,7 +214,10 @@ function App() {
     setIsCheckingComplete(false);
   }
   
-  const skuShowList =  useMemo(()=>skuList?FilterAndSort(skuList):[],[skuList,filterState.applied])
+  const skuShowList = useMemo(() => {
+    if (!skuList || skuList.length === 0) return [];
+    return FilterAndSort(skuList);
+  }, [skuList, filterState.applied]);
 
   async function startCheck() {
     if (!checkingItem) return console.error('检查项不存在');
@@ -397,9 +419,7 @@ function App() {
 
       <SearchModal />
       
-      <SettingsModal
-        onDataChange={handleDataChange}
-      />
+      <SettingsModal />
       
       <FilterModal/>
       
