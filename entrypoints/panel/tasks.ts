@@ -1,4 +1,4 @@
-import { C2C_DETAIL, MARKET_SWG } from "./api";
+import { C2C_DETAIL, C2C_LIST, MARKET_SWG } from "./api";
 
 type RequestTypeMap = {
   [MARKET_SWG.JSON_PREFIX]: MARKET_SWG.c2cItem[];
@@ -135,4 +135,61 @@ browser.devtools.inspectedWindow.eval(`history.back();setTimeout(()=>window.hist
     (result, error) => {
     if (error) console.error("跳转失败:", error);
     })
+}
+
+
+
+// let connID = "";
+// let connTime = 0;
+import { DB } from "./db"
+let c2cNextId = "";
+export async function networkListener(
+  req: globalThis.Browser.devtools.network.Request
+) {
+  //   if(!req._connectionId || req._connectionId == connID && req.time == connTime) return //console.debug('reqRet',req._connectionId,req.request.url,req);
+  //   connID = String(req._connectionId) || ""
+  // console.debug('req',req._connectionId,req.request.url,req)
+
+  if (
+    useSettingsStore.getState().autoCaptureMall &&
+    req.request.url == C2C_LIST.URL
+  ) {
+    req.getContent((body, encoding) => {
+      const [data, nextId] = C2C_LIST.parse(JSON.parse(body));
+      if (nextId == c2cNextId) return;
+      c2cNextId = nextId;
+      console.log(req._connectionId, "C2C_LIST", nextId, data);
+
+      DB.putC2CList(data);
+    });
+  } else if (C2C_DETAIL.isDetail(req.request.url)) {
+    // console.debug('req',req._connectionId,req.request.url,req)
+    req.getContent((body, encoding) => {
+      try {
+        const data = JSON.parse(body).data as C2C_DETAIL.c2cItem;
+        console.log(req._connectionId, "C2C_DETAIL", data);
+        checkingPromises[C2C_DETAIL.JSON_PREFIX][data.c2cItemsId]?.resolve(
+          data
+        );
+        DB.putC2CDetail(data);
+      } catch (e) {
+        console.error(e);
+        console.error("req", req._connectionId, req.request.url, req);
+      }
+    });
+  } else if (req.request.url.startsWith(MARKET_SWG.JSON_PREFIX)) {
+    // console.warn('checkingPromises',checkingPromises[MARKET_SWG.JSON_PREFIX])
+    req.getContent((body, encoding) => {
+      try {
+        const data = JSON.parse(body).data as MARKET_SWG.c2cItem[];
+        console.log(req._connectionId, "MARKET_SWG", data);
+        checkingPromises[MARKET_SWG.JSON_PREFIX][
+          "checkbox-search-new"
+        ]?.resolve(data);
+      } catch (e) {
+        console.error(e);
+        console.error("req", req._connectionId, req.request.url, req);
+      }
+    });
+  }
 }
