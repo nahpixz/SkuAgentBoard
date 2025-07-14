@@ -15,7 +15,7 @@ import { ProductCard } from '@/components/panel/product-card';
 import { SelectModeToolbar } from '@/components/panel/select-mode-toolbar';
 import { SearchModal } from '@/components/panel/search-modal';
 import { SettingsModal } from '@/components/panel/settings-modal';
-import { FilterModal, useGlobalFilterStore } from '@/components/panel/filter-modal';
+import { FilterAndSort, FilterModal, useGlobalFilterStore } from '@/components/panel/filter-modal';
 import { InventoryCheckModal } from '@/components/panel/inventory-check-modal';
 import AGENT from '@/premium';
 
@@ -65,12 +65,6 @@ function App() {
     toggleSelectMode,
   } = useSelectStore();
 
-  useEffect(()=>{
-    const prices = skuList?.map(item => item.marketPrice/100) || [0];
-    const skuMin = Math.min(...prices);
-    const skuMax = Math.max(...prices) || 100;
-    filterState._resetSkuPriceRange(skuMin,skuMax)
-  },[skuList])
   
   // 同步mode状态和各个store的状态
   useEffect(() => {
@@ -174,10 +168,6 @@ function App() {
     // })
   };
 
-  function isAllDisabled(item: DB.skuItem) {
-    return item.c2cLists && item.c2cLists.length > 0 && 
-           item.c2cLists.every(c2c => c2c?.removable === true);
-  }
 
   function opencheckInventory(item: DB.skuItem) {
     setCheckingItem(item);
@@ -202,100 +192,7 @@ function App() {
     setIsCheckingComplete(false);
   }
   
-  // 处理筛选和排序
-  const getFilteredAndSortedItems = () => {
-    if (!skuList) return [];
-    
-    // 获取搜索状态
-    const { searchQuery, searchType } = useSearchStore();
-    
-    // 先筛选
-    let filteredItems = [...skuList];
-    
-    // 应用筛选条件（使用已应用的筛选状态）
-    filteredItems = filteredItems.filter(item => {
-      // 只显示有货商品
-      if (filterState.applied?.showOnlyInStock && isAllDisabled(item)) {
-        return false;
-      }
-      
-      // 价格范围筛选
-      const price = item.marketPrice / 100; // 转换为元
-      if (filterState.applied && (price < filterState.applied.priceRange[0] || price > filterState.applied.priceRange[1])) {
-        return false;
-      }
-      
-      // 折扣范围筛选
-      // if (appliedDiscountRange < 100) {
-      //   // 计算折扣率 (1 - 最低价/市场价) * 100
-      //   const lowestPrice = item.c2cLists && item.c2cLists.length > 0 
-      //     ? parseFloat(item.c2cLists.sort((x, y) => (x?.price || 0) - (y?.price || 0))[0]?.showPrice || '0')
-      //     : 0;
-      //   const marketPrice = item.marketPrice / 100;
-      //   const discount = marketPrice > 0 ? (1 - lowestPrice / marketPrice) * 100 : 0;
-        
-      //   if (discount > appliedDiscountRange) return false;
-      // }
-      
-      // 库存更新时间筛选
-      // if (appliedUpdateTimeRange < 7 && item.c2cInfosLastUpdateTime) {
-      //   const updateTime = new Date(item.c2cInfosLastUpdateTime).getTime();
-      //   const now = new Date().getTime();
-      //   const daysDiff = Math.floor((now - updateTime) / (1000 * 60 * 60 * 24));
-        
-      //   if (daysDiff > appliedUpdateTimeRange) return false;
-      // }
-      
-      return true;
-    });
-    
-    // 再排序（使用已应用的排序状态）
-    filteredItems.sort((a, b) => {
-      let valueA, valueB;
-      
-      switch (filterState.applied?.sortOption) {
-        case 'price':
-          valueA = a.marketPrice;
-          valueB = b.marketPrice;
-          break;
-        case 'discount':
-          // 计算折扣率 (1 - 最低价/市场价) * 100
-          const discountA = a.c2cLists && a.c2cLists.length > 0 
-            ? (1 - parseFloat(a.c2cLists.sort((x, y) => (x?.price || 0) - (y?.price || 0))[0]?.showPrice || '0') / (a.marketPrice / 100)) * 100
-            : 0;
-          const discountB = b.c2cLists && b.c2cLists.length > 0 
-            ? (1 - parseFloat(b.c2cLists.sort((x, y) => (x?.price || 0) - (y?.price || 0))[0]?.showPrice || '0') / (b.marketPrice / 100)) * 100
-            : 0;
-          valueA = discountA;
-          valueB = discountB;
-          break;
-        case 'stock':
-          valueA = a.c2cItemsIds.length;
-          valueB = b.c2cItemsIds.length;
-          break;
-        case 'updateTime':
-          valueA = a.c2cInfosLastUpdateTime || 0;
-          valueB = b.c2cInfosLastUpdateTime || 0;
-          break;
-        default:
-          return 0;
-      }
-      
-      // 根据排序方向返回结果
-      return filterState.applied.sortDirection === 'asc' ? valueA - valueB : valueB - valueA;
-    });
-    
-    // 如果有搜索查询且是本地搜索，应用搜索过滤
-    if (searchQuery && searchType === 'local') {
-      const query = searchQuery.toLowerCase();
-      filteredItems = filteredItems.filter(item => 
-        item.name.toLowerCase().includes(query) ||
-        item.skuId.toString().includes(query)
-      );
-    }
-    
-    return filteredItems;
-  };
+  const skuShowList =  useMemo(()=>skuList?FilterAndSort(skuList):[],[skuList,filterState.applied])
 
   async function startCheck() {
     if (!checkingItem) return console.error('检查项不存在');
@@ -395,11 +292,11 @@ function App() {
   return (
     <>
       {/* 选择模式下的顶部操作栏 */}
-      {isSelectMode && <SelectModeToolbar handleSelectAll={()=>selectAll(getFilteredAndSortedItems())} />}
+      {isSelectMode && <SelectModeToolbar handleSelectAll={()=>selectAll(skuShowList)} />}
       
       {/* 主内容区域 */}
-      {false && <div className={`${mode === 'select' || mode === 'search' ? 'pt-16' : 'pt-2'} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
-        {getFilteredAndSortedItems().map((item) => {
+      {true && <div className={`${mode === 'select' || mode === 'search' ? 'pt-16' : 'pt-2'} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
+        {skuShowList.map((item) => {
           const isSelected = selectedItems[item.itemsId];
           return (
             <ProductCard
@@ -491,7 +388,7 @@ function App() {
         onDataChange={handleDataChange}
       />
       
-      <FilterModal skuList={skuList || []} />
+      <FilterModal/>
       
       <InventoryCheckModal
         checkingItem={checkingItem}

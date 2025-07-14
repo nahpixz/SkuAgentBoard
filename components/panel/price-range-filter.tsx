@@ -1,21 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
+import { DB } from '@/entrypoints/panel/db';
 
-interface PriceRangeFilterProps {
-  items: any[];
-  priceUnit?: number;
-  minPrice: number;
-  maxPrice: number;
+// type PriceGroup = 
+export interface PriceRangeFilterProps {
+  minPrice: number; //输入框最小值
+  maxPrice: number; //输入框最大值
   maxItemPrice:number;
+  groupOptions:{
+    priceGroups:{price:number,count:number}[],
+    groupGrowPrice:number
+    priceUnit:number
+  };
   onRangeChange: (min: number, max: number) => void;
 }
-const groupGrowPrice = 250;
+
 export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
-  items,
-  priceUnit = 10,
   minPrice,
   maxPrice,
   maxItemPrice,
+  groupOptions,
   onRangeChange
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -25,68 +29,8 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
   const [localMaxPrice, setLocalMaxPrice] = useState(maxPrice);
   const [containerWidth, setContainerWidth] = useState(280);
   
-  
-  // 计算价格分组数据
-  const priceGroups = React.useMemo(() => {
-    if (!items || items.length === 0) return [];
-    
-    const groups: { [key: number]: number } = {};
-    
-    
-    // 小于groupGrowPrice的均匀分组
-    const groupCount = Math.ceil(groupGrowPrice / priceUnit);
-    for (let i = 0; i <= groupCount; i++) {
-      groups[i * priceUnit] = 0;
-    }
-    
-    // 大于groupGrowPrice的非均匀分组 - 使用指数增长的间隔
-    if (maxItemPrice > groupGrowPrice) {
-      const highPriceItems = items.filter(item => item.marketPrice / 100 > groupGrowPrice);
-      const highPrices = highPriceItems.map(item => item.marketPrice / 100).sort((a, b) => a - b);
-      
-      if (highPrices.length > 0) {
-        const minHighPrice = Math.min(...highPrices);
-        const maxHighPrice = Math.max(...highPrices);
-        const priceRange = maxHighPrice - groupGrowPrice;
-        
-        // 创建8个非均匀分组来覆盖200+的价格范围
-        const groupCount = 8;
-        for (let i = 0; i < groupCount; i++) {
-          // 使用指数函数创建非均匀间隔
-          const ratio = Math.pow(i / (groupCount - 1), 1.5); // 指数为1.5，使间隔逐渐增大
-          const groupPrice = groupGrowPrice + ratio * priceRange;
-          groups[Math.round(groupPrice)] = 0;
-        }
-      }
-    }
-    
-    // 统计每个价格段的商品数量
-    items.forEach(item => {
-      const price = item.marketPrice / 100;
-      let groupKey;
-      
-      if (price <= groupGrowPrice) {
-        groupKey = Math.floor(price / priceUnit) * priceUnit;
-      } else {
-        // 找到最接近的高价分组
-        const highPriceGroups = Object.keys(groups)
-          .map(Number)
-          .filter(p => p > groupGrowPrice)
-          .sort((a, b) => a - b);
-        
-        groupKey = highPriceGroups.reduce((closest, current) => {
-          return Math.abs(current - price) < Math.abs(closest - price) ? current : closest;
-        }, highPriceGroups[0] || groupGrowPrice);
-      }
-      
-      groups[groupKey] = (groups[groupKey] || 0) + 1;
-    });
-    
-    return Object.entries(groups)
-      .map(([price, count]) => ({ price: Number(price), count }))
-      .filter((group) => group.count > 0) // 只保留有数据的分组
-      .sort((a, b) => a.price - b.price);
-  }, [items, priceUnit]);
+  const {priceGroups,groupGrowPrice,priceUnit} = groupOptions;
+
 
   const maxCount = Math.max(...priceGroups.map(g => g.count), 1);
   const totalPriceRange = Math.max(...priceGroups.map(g => g.price)) || 100;

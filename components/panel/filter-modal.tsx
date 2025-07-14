@@ -1,5 +1,5 @@
 import { X, ArrowUpDown, Percent, Clock, Package } from 'lucide-react';
-import { PriceRangeFilter } from './price-range-filter';
+import { PriceRangeFilter,PriceRangeFilterProps } from './price-range-filter';
 import { SortButton, SortDirection, SortOption } from './sort-button';
 import { ModalOverlay } from './modal-overlay';
 import { DB } from '../../entrypoints/panel/db';
@@ -39,9 +39,6 @@ export const useGlobalFilterStore = _create((set:setFn<typeof FilterDefaultState
       priceRange:[0,state.skuPriceRange[1]||250],
     }
   })),
-  _resetSkuPriceRange:(min:number,max:number)=> set({
-    skuPriceRange:[min,max],
-  }),
   _reset:()=>set(state=>({
     isOpen:false,
     pending:{
@@ -63,13 +60,8 @@ export const useGlobalFilterStore = _create((set:setFn<typeof FilterDefaultState
   })),
 }));
 
-interface FilterModalProps {
-  skuList: DB.skuItem[] | undefined;
-}
 
-export function FilterModal({
-  skuList,
-}: FilterModalProps) {
+export function FilterModal() {
   const { 
     isOpen,pending,skuPriceRange,
     _closeFilter,_handleSortChange,
@@ -77,9 +69,24 @@ export function FilterModal({
     _apply,_reset
   }  = useGlobalFilterStore();
   const {priceRange,sortOption,sortDirection,discountRange,updateTimeRange,showOnlyInStock} = pending;
-  if (!isOpen) return null;
+  const [skuGroupOptions,setSkuGroupOptions] = useState<PriceRangeFilterProps['groupOptions']|null>(null);
+  useEffect(()=>{
+    DB.getSkuWithoutC2C().then(skus=>{
+      const prices = skus.map(item => item.marketPrice/100) || [0];
+      const skuMin = Math.min(...prices);
+      const skuMax = Math.max(...prices) || 100;
+      useGlobalFilterStore.setState({
+        skuPriceRange:[skuMin,skuMax]
+      })
+      setSkuGroupOptions({
+        priceGroups:calcPriceGroups(skus,skuMax,250,10),
+        groupGrowPrice:250,
+        priceUnit:10
+      })
+    })
+  },[])
 
-  return (
+  return isOpen && (
     <ModalOverlay
       isOpen={isOpen}
       onClose={_closeFilter}
@@ -135,13 +142,13 @@ export function FilterModal({
           </div>
           
           {/* 筛选部分 */}
-          <PriceRangeFilter
-            items={skuList || []}
+          {skuGroupOptions && <PriceRangeFilter
             minPrice={priceRange[0]}
             maxPrice={priceRange[1]}
-            maxItemPrice={skuPriceRange[1]}
             onRangeChange={(min, max) => useGlobalFilterStore.setState({pending:{...pending,priceRange:[min, max]}})}
-          />
+            maxItemPrice={skuPriceRange[1]}
+            groupOptions={skuGroupOptions}
+          />}
           
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
@@ -245,4 +252,162 @@ export function FilterModal({
         </div>
     </ModalOverlay>
   );
+}
+
+//计算价格区间分组
+function calcPriceGroups(items:DB.skuItem[],maxItemPrice:number,groupGrowPrice:number,priceUnit:number) {
+  const groups: { [key: number]: number } = {};
+  // 小于groupGrowPrice的均匀分组
+  const groupCount = Math.ceil(groupGrowPrice / priceUnit);
+  for (let i = 0; i <= groupCount; i++) {
+    groups[i * priceUnit] = 0;
+  }
+
+  // 大于groupGrowPrice的非均匀分组 - 使用指数增长的间隔
+  if (maxItemPrice > groupGrowPrice) {
+    const highPriceItems = items.filter(item => item.marketPrice / 100 > groupGrowPrice);
+    const highPrices = highPriceItems.map(item => item.marketPrice / 100).sort((a, b) => a - b);
+
+    if (highPrices.length > 0) {
+      const minHighPrice = Math.min(...highPrices);
+      const maxHighPrice = Math.max(...highPrices);
+      const priceRange = maxHighPrice - groupGrowPrice;
+
+      // 创建8个非均匀分组来覆盖200+的价格范围
+      const groupCount = 8;
+      for (let i = 0; i < groupCount; i++) {
+        // 使用指数函数创建非均匀间隔
+        const ratio = Math.pow(i / (groupCount - 1), 1.5); // 指数为1.5，使间隔逐渐增大
+        const groupPrice = groupGrowPrice + ratio * priceRange;
+        groups[Math.round(groupPrice)] = 0;
+      }
+    }
+  }
+
+  // 统计每个价格段的商品数量
+  items.forEach(item => {
+    const price = item.marketPrice / 100;
+    let groupKey;
+
+    if (price <= groupGrowPrice) {
+      groupKey = Math.floor(price / priceUnit) * priceUnit;
+    } else {
+      // 找到最接近的高价分组
+      const highPriceGroups = Object.keys(groups)
+        .map(Number)
+        .filter(p => p > groupGrowPrice)
+        .sort((a, b) => a - b);
+
+      groupKey = highPriceGroups.reduce((closest, current) => {
+        return Math.abs(current - price) < Math.abs(closest - price) ? current : closest;
+      }, highPriceGroups[0] || groupGrowPrice);
+    }
+
+    groups[groupKey] = (groups[groupKey] || 0) + 1;
+  });
+
+  return Object.entries(groups)
+    .map(([price, count]) => ({ price: Number(price), count }))
+    .filter((group) => group.count > 0) // 只保留有数据的分组
+    .sort((a, b) => a.price - b.price);
+}
+
+function isAllDisabled(item: DB.skuItem) {
+  return item.c2cLists && item.c2cLists.length > 0 &&
+    item.c2cLists.every(c2c => c2c?.removable === true);
+}
+export function FilterAndSort(skuList: DB.skuItem[]){
+  // if (!skuList) return [];
+  const appliedOpt = useGlobalFilterStore.getState().applied;
+  if (!appliedOpt) return skuList;
+
+  const filteredItems = skuList.filter(item => {
+    // 只显示有货商品
+    if (appliedOpt?.showOnlyInStock) {
+      return !isAllDisabled(item);
+    }
+
+    // 价格范围筛选
+    const price = item.marketPrice / 100; // 转换为元
+    if ((price < appliedOpt.priceRange[0] || price > appliedOpt.priceRange[1])) {
+      return false;
+    }
+
+    // 折扣范围筛选
+    // if (appliedDiscountRange < 100) {
+    //   // 计算折扣率 (1 - 最低价/市场价) * 100
+    //   const lowestPrice = item.c2cLists && item.c2cLists.length > 0 
+    //     ? parseFloat(item.c2cLists.sort((x, y) => (x?.price || 0) - (y?.price || 0))[0]?.showPrice || '0')
+    //     : 0;
+    //   const marketPrice = item.marketPrice / 100;
+    //   const discount = marketPrice > 0 ? (1 - lowestPrice / marketPrice) * 100 : 0;
+
+    //   if (discount > appliedDiscountRange) return false;
+    // }
+
+    // 库存更新时间筛选
+    // if (appliedUpdateTimeRange < 7 && item.c2cInfosLastUpdateTime) {
+    //   const updateTime = new Date(item.c2cInfosLastUpdateTime).getTime();
+    //   const now = new Date().getTime();
+    //   const daysDiff = Math.floor((now - updateTime) / (1000 * 60 * 60 * 24));
+
+    //   if (daysDiff > appliedUpdateTimeRange) return false;
+    // }
+
+    return true;
+  });
+
+  if (!appliedOpt.sortOption) return filteredItems;
+  // 排序（使用已应用的排序状态） 
+  return filteredItems.sort((a, b) => {
+    let valueA, valueB;
+
+    switch (appliedOpt.sortOption) {
+      case 'price':
+        valueA = a.marketPrice;
+        valueB = b.marketPrice;
+        break;
+      case 'discount':
+        // 计算折扣率 (1 - 最低价/市场价) * 100
+        const discountA = a.c2cLists && a.c2cLists.length > 0
+          ? (1 - parseFloat(a.c2cLists.sort((x, y) => (x?.price || 0) - (y?.price || 0))[0]?.showPrice || '0') / (a.marketPrice / 100)) * 100
+          : 0;
+        const discountB = b.c2cLists && b.c2cLists.length > 0
+          ? (1 - parseFloat(b.c2cLists.sort((x, y) => (x?.price || 0) - (y?.price || 0))[0]?.showPrice || '0') / (b.marketPrice / 100)) * 100
+          : 0;
+        valueA = discountA;
+        valueB = discountB;
+        break;
+      case 'stock':
+        valueA = a.c2cItemsIds.length;
+        valueB = b.c2cItemsIds.length;
+        break;
+      case 'updateTime':
+        valueA = a.c2cInfosLastUpdateTime || 0;
+        valueB = b.c2cInfosLastUpdateTime || 0;
+        break;
+      default:
+        return 0;
+    }
+
+    // 根据排序方向返回结果
+    return appliedOpt.sortDirection === 'asc' ? valueA - valueB : valueB - valueA;
+  });
+};
+
+
+
+export function searchFilter(){
+
+      // 获取搜索状态
+    // const { searchQuery, searchType } = useSearchStore();
+    
+    //   // 如果有搜索查询且是本地搜索，应用搜索过滤
+    // if (searchQuery && searchType === 'local') {
+    //   const query = searchQuery.toLowerCase();
+    //   filteredItems = filteredItems.filter(item => 
+    //     item.name.toLowerCase().includes(query) ||
+    //     item.skuId.toString().includes(query)
+    //   );
+    // }
 }
