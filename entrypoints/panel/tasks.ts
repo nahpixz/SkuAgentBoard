@@ -1,3 +1,4 @@
+import { useSettingsStore } from "@/components/panel/settings-store";
 import { C2C_DETAIL, C2C_LIST, MARKET_SWG } from "./api";
 
 type RequestTypeMap = {

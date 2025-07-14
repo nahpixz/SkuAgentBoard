@@ -5,7 +5,6 @@ import { ArrowLeft, Search, Settings, Bug, Layers, Check, CircleCheckBig, Funnel
 import { DB } from './db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { networkListener, HistoryBack, JumpTo, ToC2cSearch, waitForRequest } from './tasks';
-import { useSettingsStore as useAppSettingsStore } from './store';
 import { useSettingsStore } from '@/components/panel/settings-store';
 import { useSearchStore } from '@/components/panel/search-store';
 import { useSelectStore } from '@/components/panel/select-store';
@@ -50,7 +49,6 @@ function App() {
   const [mode, setMode] = useState<OPT_MODE>('idle');
 
   // 使用 store 管理状态
-  const settingsOptions = useAppSettingsStore();
   const { openSearch, closeSearch } = useSearchStore();
   const { openSettings, closeSettings } = useSettingsStore();
 
