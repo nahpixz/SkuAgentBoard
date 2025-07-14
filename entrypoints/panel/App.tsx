@@ -24,6 +24,8 @@ let connID = "";
 let connTime = 0;
 let c2cNextId = "";
 
+type OPT_MODE = 'idle' | 'search' | 'select' | 'settings' | 'filter';
+
 let searchNewPromise: Promise<MARKET_SWG.c2cItem[]> | null = null;
 type CHECK_STATUS = 'pending' | 'doing' | 'success' | 'failed' | 'disable';
 
@@ -48,6 +50,9 @@ function App() {
   const [checkMarketOption, setCheckMarketOption] = useState(true);
   const [searchNewOption, setSearchNewOption] = useState(true);
 
+  // 统一的操作模式状态管理 - 确保各个功能模块互斥
+  const [mode, setMode] = useState<OPT_MODE>('idle');
+
   // 使用 store 管理状态
   const settingsOptions = useAppSettingsStore();
   const { openSearch, closeSearch } = useSearchStore();
@@ -71,59 +76,93 @@ function App() {
     filterState._resetSkuPriceRange(skuMin,skuMax)
   },[skuList])
   
-  // 自定义切换选择模式函数，处理额外的逻辑
-  function handleToggleSelectMode() {
-    // 进入选择模式前关闭其他模态窗
-    if (!isSelectMode) {
-      closeAllModals();
+  // 同步mode状态和各个store的状态
+  useEffect(() => {
+    const searchState = useSearchStore.getState();
+    const settingsState = useSettingsStore.getState();
+    
+    if (searchState.isOpen && mode !== 'search') {
+      setMode('search');
+    } else if (settingsState.isOpen && mode !== 'settings') {
+      setMode('settings');
+    } else if (filterState.isOpen && mode !== 'filter') {
+      setMode('filter');
+    } else if (isSelectMode && mode !== 'select') {
+      setMode('select');
+    } else if (!searchState.isOpen && !settingsState.isOpen && !filterState.isOpen && !isSelectMode && mode !== 'idle') {
+      setMode('idle');
+    }
+  }, [useSearchStore().isOpen, useSettingsStore().isOpen, filterState.isOpen, isSelectMode, mode])
+  
+  // 统一的模式切换函数 - 核心状态管理逻辑
+  function setAppMode(newMode: OPT_MODE) {
+    // 如果是相同模式，则切换到idle
+    if (mode === newMode) {
+      newMode = 'idle';
     }
     
-    toggleSelectMode();
-    
-    // 检查完成后，更新状态
-    setIsCheckingInProgress(false);
-    setIsCheckingComplete(true);
-  }
-  
-  // 关闭所有模态窗
-  function closeAllModals() {
+    // 关闭所有模态窗和状态，确保互斥性
     closeSearch();
     closeSettings();
     filterState._closeFilter();
     
-    // 关闭选择模式并清空选择状态
-    if (isSelectMode) {
+    // 关闭选择模式
+    if (isSelectMode && newMode !== 'select') {
       toggleSelectMode();
+    }
+    
+    // 设置新模式
+    setMode(newMode);
+    
+    // 根据新模式打开对应的功能
+    switch (newMode) {
+      case 'search':
+        openSearch();
+        break;
+      case 'settings':
+        openSettings();
+        break;
+      case 'select':
+        if (!isSelectMode) {
+          toggleSelectMode();
+        }
+        // 检查完成后，更新状态
+        setIsCheckingInProgress(false);
+        setIsCheckingComplete(true);
+        break;
+      case 'filter':
+        useGlobalFilterStore.setState({isOpen:true});
+        break;
+      case 'idle':
+      default:
+        // 保持idle状态，所有模态窗都已关闭
+        break;
     }
   }
   
-  // 打开设置
+  // === 模式切换处理函数 ===
   function handleOpenSettings() {
-    closeAllModals();
-    openSettings();
+    setAppMode('settings');
+  }
+  
+  function handleOpenSearch() {
+    setAppMode('search');
+  }
+  
+  function handleToggleSelectMode() {
+    setAppMode('select');
+  }
+  
+  function toggleFilter() {
+    setAppMode('filter');
   }
 
+  // === 其他业务逻辑函数 ===
   function handleDataChange() {
     // 数据变化后的处理逻辑
     // 由于使用了useLiveQuery，数据会自动更新
     // 这里可以添加额外的处理逻辑，比如重置筛选状态
     // filterState._reset();
-  }
-  
-  // 打开搜索
-  function handleOpenSearch() {
-    closeAllModals();
-    openSearch();
-  }
-  
-  // 打开筛选
-  function toggleFilter() {
-    if (filterState.isOpen) {
-      filterState._closeFilter();
-    } else {
-      closeAllModals();
-      useGlobalFilterStore.setState({isOpen:true});
-    }
   }
   
   function handleDebug() {
@@ -406,7 +445,7 @@ function App() {
       {isSelectMode && <SelectModeToolbar handleSelectAll={()=>selectAll(getFilteredAndSortedItems())} />}
       
       {/* 主内容区域 */}
-      {false && <div className={`${isSelectMode || useSearchStore().isOpen ? 'pt-16' : 'pt-2'} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
+      {false && <div className={`${mode === 'select' || mode === 'search' ? 'pt-16' : 'pt-2'} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
         {getFilteredAndSortedItems().map((item) => {
           const isSelected = selectedItems[item.itemsId];
           return (
@@ -453,19 +492,19 @@ function App() {
               icon={<Search/>}
               label="搜索"
               onClick={handleOpenSearch}
-              active={useSearchStore().isOpen}
+              active={mode === 'search'}
             />
             <ToolButton 
               icon={<CircleCheckBig />}
               label="选择"
               onClick={handleToggleSelectMode}
-              active={isSelectMode}
+              active={mode === 'select'}
             />
             <ToolButton 
               icon={<SlidersHorizontal />}
               label="筛选"
               onClick={toggleFilter}
-              active={filterState.isOpen}
+              active={mode === 'filter'}
             />
             {AGENT.ok && <AGENT.COMP.AgentButton />}
             
@@ -480,7 +519,7 @@ function App() {
               icon={<Settings className="h-5 w-5" />}
               label="设置"
               onClick={handleOpenSettings}
-              active={useSettingsStore().isOpen}
+              active={mode === 'settings'}
             />
             <ToolButton 
               icon={<Bug className="h-5 w-5" />}
