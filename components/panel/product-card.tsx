@@ -111,7 +111,7 @@ export function ProductCard({
               )}
             </div>
           </HoverCardTrigger>
-          <HoverCardContent className="w-80 p-3 rounded-lg shadow-lg border border-gray-200">
+          <HoverCardContent className="w-80 p-3 rounded-lg shadow-lg border border-gray-200 bg-white/77 backdrop-blur-md">
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-sm font-medium text-gray-700">可用库存列表</h4>
               {getLowestPrice(item) && (
@@ -128,7 +128,7 @@ export function ProductCard({
                 return (
                 <li key={c2c?.c2cItemsId} 
                   onClick={(e) => isSelectMode && c2c?.c2cItemsId ? handleToggleSelectC2C(c2c.c2cItemsId, e) : c2c?.c2cItemsId && JumpTo(C2C_DETAIL.URL(c2c?.c2cItemsId))}
-                  className={`flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-gray-50 
+                  className={`flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-gray-100
                     ${c2c?.removable ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                     ${isC2CSelected ? 'bg-[#786DF6]/10' : ''}`}
                 >

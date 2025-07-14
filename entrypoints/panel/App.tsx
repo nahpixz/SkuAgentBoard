@@ -16,10 +16,12 @@ import { SearchModal } from '@/components/panel/search-modal';
 import { SettingsModal } from '@/components/panel/settings-modal';
 import { FilterAndSort, FilterModal, useGlobalFilterStore } from '@/components/panel/filter-modal';
 import { InventoryCheckModal } from '@/components/panel/inventory-check-modal';
+import { GearSwitcher, type GEAR_MODE } from '@/components/panel/gear-switcher';
 import AGENT from '@/premium';
 
 
 type OPT_MODE = 'idle' | 'search' | 'select' | 'settings' | 'filter';
+
 
 let searchNewPromise: Promise<MARKET_SWG.c2cItem[]> | null = null;
 type CHECK_STATUS = 'pending' | 'doing' | 'success' | 'failed' | 'disable';
@@ -47,6 +49,9 @@ function App() {
 
   // 统一的操作模式状态管理 - 确保各个功能模块互斥
   const [mode, setMode] = useState<OPT_MODE>('idle');
+  
+  // 档位模式状态管理
+  const [gearMode, setGearMode] = useState<GEAR_MODE>('手动');
 
   // 使用 store 管理状态
   const { openSearch, closeSearch } = useSearchStore();
@@ -309,6 +314,16 @@ function App() {
       {/* 底部悬浮工具条 */}
       <div className="fixed bottom-6 left-0 right-0 z-51 flex justify-center">
         <div className="bg-white/77 backdrop-blur-md shadow-lg rounded-full px-3 py-2 border flex items-center">
+          {/* 档位切换器 */}
+          <GearSwitcher 
+            gearMode={gearMode} 
+            onGearChange={setGearMode} 
+          />
+          
+          {/* 分隔线 */}
+          <div className="h-8 w-px bg-gray-200 mx-2"></div>
+          
+
           {/* 导航组 */}
           <div className="flex items-center">
             <ToolButton 
@@ -335,7 +350,7 @@ function App() {
           <div className="h-8 w-px bg-gray-200 mx-2"></div>
           
           {/* 操作工具组 */}
-          <div className="flex items-center">
+          <div className={`flex items-center ${gearMode !== '手动' ? 'opacity-50 pointer-events-none' : ''}`}>
             <ToolButton 
               icon={<Search/>}
               label="搜索"
