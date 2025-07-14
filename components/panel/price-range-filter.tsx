@@ -24,9 +24,9 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const minInputRef = useRef<HTMLInputElement>(null);
+  const maxInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState<'min' | 'max' | null>(null);
-  const [localMinPrice, setLocalMinPrice] = useState(minPrice);
-  const [localMaxPrice, setLocalMaxPrice] = useState(maxPrice);
   const [containerWidth, setContainerWidth] = useState(280);
   
   const {priceGroups,groupGrowPrice,priceUnit} = groupOptions;
@@ -97,8 +97,8 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
   }, [priceGroups, maxCount, chartWidth, chartHeight, height, padding, totalPriceRange]);
 
   // 计算垂线位置
-  const minLineX = getXPosition(localMinPrice);
-  const maxLineX = getXPosition(localMaxPrice);
+  const minLineX = getXPosition(minPrice);
+  const maxLineX = getXPosition(maxPrice);
 
   // 处理拖拽
   const handleMouseDown = (type: 'min' | 'max') => {
@@ -128,13 +128,11 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
     const price = getPriceFromX(x);
     
     if (isDragging === 'min') {
-      const newMin = Math.max(0, Math.min(price, localMaxPrice - priceUnit));
-      setLocalMinPrice(newMin);
-      onRangeChange(newMin, localMaxPrice);
+      const newMin = Math.max(0, Math.min(price, maxPrice - priceUnit));
+      onRangeChange(newMin, maxPrice);
     } else if (isDragging === 'max') {
-      const newMax = Math.min(totalPriceRange, Math.max(price, localMinPrice + priceUnit));
-      setLocalMaxPrice(newMax);
-      onRangeChange(localMinPrice, newMax);
+      const newMax = Math.min(totalPriceRange, Math.max(price, minPrice + priceUnit));
+      onRangeChange(minPrice, newMax);
     }
   };
 
@@ -143,9 +141,17 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
   };
 
   useEffect(() => {
-    setLocalMinPrice(minPrice);
-    setLocalMaxPrice(maxPrice);
+    if(minInputRef.current) minInputRef.current.value = Math.round(minPrice).toString();
+    if(maxInputRef.current) maxInputRef.current.value = Math.round(maxPrice).toString();
   }, [minPrice, maxPrice]);
+  
+  // 当本地状态变化时，也需要更新input值
+  // useEffect(() => {
+  //   const minInput = document.getElementById('price-min') as HTMLInputElement;
+  //   const maxInput = document.getElementById('price-max') as HTMLInputElement;
+  //   if (minInput) minInput.value = Math.round(minPrice).toString();
+  //   if (maxInput) maxInput.value = Math.round(maxPrice).toString();
+  // }, [minPrice, maxPrice]);
 
   return (
     <div className="mb-6">
@@ -161,11 +167,11 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
               type="number" 
               name="price-min" 
               id="price-min" 
-              value={Math.round(localMinPrice)}
-              onChange={(e) => {
-                const newMin = Math.max(0, Math.min(Number(e.target.value), localMaxPrice - 1));
-                setLocalMinPrice(newMin);
-                onRangeChange(newMin, localMaxPrice);
+              ref={minInputRef}
+              defaultValue={Math.round(minPrice)}
+              onBlur={(e) => {
+                const newMin = Math.max(0, Math.min(Number(e.target.value), maxPrice - priceUnit));
+                onRangeChange(newMin, maxPrice);
               }}
               className="block min-w-0 grow  px-1 text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none sm:text-sm/6" placeholder="125" />
           </div>
@@ -177,11 +183,11 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
               type="number" 
               name="price-max" 
               id="price-max" 
-              value={Math.round(localMaxPrice)}
-              onChange={(e) => {
-                const newMax = Math.min(totalPriceRange, Math.max(Number(e.target.value), localMinPrice +1));
-                setLocalMaxPrice(newMax);
-                onRangeChange(localMinPrice, newMax);
+              ref={maxInputRef}
+              defaultValue={Math.round(maxPrice)}
+              onBlur={(e) => {
+                const newMax = Math.min(totalPriceRange, Math.max(Number(e.target.value), minPrice + priceUnit));
+                onRangeChange(minPrice, newMax);
               }}
               
               className="block min-w-0 grow  px-1 text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none sm:text-sm/6" placeholder="125" />
