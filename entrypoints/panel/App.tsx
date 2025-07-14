@@ -349,7 +349,7 @@ function App() {
           {/* 导航组 */}
           <div className="flex items-center">
             <ToolButton 
-              icon={<ArrowLeft className="h-8 w-8" />}
+              icon={<ArrowLeft />}
               label="返回"
               onClick={HistoryBack}
               variant="danger"
@@ -401,13 +401,14 @@ function App() {
           {/* 设置组 */}
           <div className="flex items-center">
             <ToolButton 
-              icon={<Settings className="h-5 w-5" />}
+              icon={<Settings/>}
               label="设置"
+              
               onClick={handleOpenSettings}
               active={mode === 'settings'}
             />
             <ToolButton 
-              icon={<Bug className="h-5 w-5" />}
+              icon={<Bug/>}
               label="调试"
               onClick={handleDebug}
             />

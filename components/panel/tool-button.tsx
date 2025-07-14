@@ -10,7 +10,7 @@ interface ToolButtonProps {
   variant?: 'primary' | 'danger' | 'default';
 }
 
-export const ToolButton = ({ icon, label, onClick, active = false, variant = 'default' }: ToolButtonProps) => {
+export const ToolButton = ({ icon, label, onClick, active = false, variant = 'default'}: ToolButtonProps) => {
   // 根据variant设置不同的颜色
   const getIconColor = () => {
     if (active) return 'text-[#786DF6]';
@@ -26,7 +26,7 @@ export const ToolButton = ({ icon, label, onClick, active = false, variant = 'de
       <HoverCardTrigger asChild>
         <Button
           variant="ghost"
-          className={`flex p-0 items-center justify-center h-10 w-10 rounded-full ${active ? 'bg-[#786DF6]/10' : 'hover:bg-gray-100'}`}
+          className={`[&_svg:not([class*='size-'])]:size-4 flex p-0 items-center justify-center h-12 w-12 rounded-full ${active ? 'bg-[#786DF6]/10 scale-111 hover:bg-[#786DF6]/20' : 'hover:bg-gray-100 hover:scale-111'} `}
           onClick={onClick}
         >
           <div className={getIconColor()}>
