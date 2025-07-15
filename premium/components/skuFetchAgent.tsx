@@ -133,7 +133,7 @@ const AnimatedNumber = ({ value, label, icon: Icon, color = "text-blue-500" }: {
 
   return (
     <motion.div
-      className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
+      className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg text-left"
       whileHover={{ scale: 1.02 }}
       transition={{ type: "spring", stiffness: 300 }}
     >
@@ -274,7 +274,7 @@ export const SkuAgentBoard = ({ className }: { className?: string }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <AnimatedNumber
             value={newSkuCount}
-            label="新增 SKU"
+            label="新获取 SKU (包含重复)"
             icon={TrendingUp}
             color="text-green-500"
           />

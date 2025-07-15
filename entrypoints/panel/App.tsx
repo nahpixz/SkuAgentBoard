@@ -413,7 +413,9 @@ function App() {
 
 
       {gearMode=='Agent'&&(<>
-        <AGENT.COMP.SkuAgentBoard className='mt-10'/>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 p-6">
+        <AGENT.COMP.SkuAgentBoard className='mt-8'/>
+        </div>
       </>)}
 
       
