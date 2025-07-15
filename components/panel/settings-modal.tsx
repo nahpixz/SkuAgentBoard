@@ -6,19 +6,18 @@ import { X } from 'lucide-react';
 import { useSettingsStore } from './settings-store';
 
 interface SettingsModalProps {
+  onClose:()=>void;
   onDataChange?: () => void;
 }
 
-export function SettingsModal({ onDataChange }: SettingsModalProps = {}) {
-  const { isOpen, autoCaptureMall, autoCaptureDetail, enableLiveQuery, toggleAutoCaptureMall, toggleLiveQuery, closeSettings } = useSettingsStore();
+export function SettingsModal({ onClose, onDataChange }: SettingsModalProps) {
+  const { autoCaptureMall, autoCaptureDetail, enableLiveQuery, toggleAutoCaptureMall, toggleLiveQuery } = useSettingsStore();
   
-  if (!isOpen) return null;
+  // if (!isOpen) return null;
 
   return (
-    <ModalOverlay
-      isOpen={isOpen}
-      onClose={closeSettings}
-      contentClassName="relative mt-8 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-md mx-auto border border-white/20 overflow-hidden text-start"
+    <div
+      className="relative mt-8 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-md mx-auto border border-white/20 overflow-hidden text-start"
     >
         {/* Header */}
         {/* <div className="relative px-6 py-4 bg-gradient-to-r from-[#786DF6]/5 to-[#786DF6]/10 border-b border-gray-100/50">
@@ -37,7 +36,7 @@ export function SettingsModal({ onDataChange }: SettingsModalProps = {}) {
         </div> */}
 
         <button 
-            onClick={closeSettings}
+            onClick={onClose}
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
           >
             <X className="h-4 w-4" />
@@ -112,6 +111,6 @@ export function SettingsModal({ onDataChange }: SettingsModalProps = {}) {
             <DataManager onDataChange={onDataChange} />
           </div>
         </div>
-    </ModalOverlay>
+    </div>
   );
 }

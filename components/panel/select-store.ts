@@ -1,44 +1,35 @@
 import { _create, setFn } from "@/lib/utils";
 
-type SelectState = {
-  isSelectMode: boolean;
-  selectedItems: { [key: number]: boolean };
-  selectedC2CItems: { [key: number]: boolean };
-  hasSelectedItems: boolean;
-  hasSelectedC2C: boolean;
-};
-
-const initialState: SelectState = {
-  isSelectMode: false,
-  selectedItems: {},
-  selectedC2CItems: {},
+const initialState = {
+  selectedItems: {} as { [key: number]: boolean },
+  selectedC2CItems: {} as { [key: number]: boolean },
   hasSelectedItems: false,
   hasSelectedC2C: false,
 };
 
-export const useSelectStore = _create((set: setFn<SelectState>) => ({
+export const useSelectStore = _create((set: setFn<typeof initialState>) => ({
   ...initialState,
   
   // 切换选择模式
-  toggleSelectMode: () => {
-    set((state) => {
-      if (state.isSelectMode) {
-        // 退出选择模式时清空选择
-        return {
-          isSelectMode: false,
-          selectedItems: {},
-          selectedC2CItems: {},
-          hasSelectedItems: false,
-          hasSelectedC2C: false,
-        };
-      } else {
-        // 进入选择模式
-        return {
-          isSelectMode: true,
-        };
-      }
-    });
-  },
+  // toggleSelectMode: () => {
+  //   set((state) => {
+  //     if (state.isSelectMode) {
+  //       // 退出选择模式时清空选择
+  //       return {
+  //         isSelectMode: false,
+  //         selectedItems: {},
+  //         selectedC2CItems: {},
+  //         hasSelectedItems: false,
+  //         hasSelectedC2C: false,
+  //       };
+  //     } else {
+  //       // 进入选择模式
+  //       return {
+  //         isSelectMode: true,
+  //       };
+  //     }
+  //   });
+  // },
   
   // 选择/取消选择商品
   toggleSelectItem: (itemId: number) => {

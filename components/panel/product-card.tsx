@@ -13,17 +13,18 @@ import { useSelectStore } from './select-store';
 const IMGBGURL = "https://gw.alicdn.com/imgextra/i2/O1CN01yQ3RYl1EqAGI2JrGE_!!6000000000402-2-tps-144-144.png_110x10000.jpg_.webp"
 
 interface ProductCardProps {
+  mode?: 'select' | string
   item: DB.skuItem;
   onOpenInventoryCheck: (item: DB.skuItem) => void;
 }
 
 export function ProductCard({
+  mode = '',
   item,
   onOpenInventoryCheck
 }: ProductCardProps) {
   // 使用select store
   const { 
-    isSelectMode, 
     selectedItems, 
     selectedC2CItems,
     toggleSelectItem,
@@ -31,6 +32,7 @@ export function ProductCard({
   } = useSelectStore();
   
   // 判断当前商品是否被选中
+  const isSelectMode = mode == 'select';
   const isSelected = selectedItems[item.itemsId] || false;
   
   // 处理选择/取消选择商品的事件包装函数
@@ -72,7 +74,7 @@ export function ProductCard({
     >
       <div className="relative bg-[#F5F5F5] h-36">
         {/* 选择模式下显示复选框 */}
-        {isSelectMode && (
+        {mode=='select' && (
           <div 
             className="absolute top-2 left-2 z-10"
             onClick={(e) => handleToggleSelect(item.itemsId, e)}

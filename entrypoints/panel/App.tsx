@@ -18,6 +18,7 @@ import { FilterAndSort, FilterModal, useGlobalFilterStore } from '@/components/p
 import { InventoryCheckModal } from '@/components/panel/inventory-check-modal';
 import { GearSwitcher, type GEAR_MODE } from '@/components/panel/gear-switcher';
 import AGENT from '@/premium';
+import { ModalOverlay } from '@/components/panel/modal-overlay';
 
 
 type OPT_MODE = 'idle' | 'search' | 'select' | 'settings' | 'filter';
@@ -75,23 +76,20 @@ function App() {
 
   // 统一的操作模式状态管理 - 确保各个功能模块互斥
   const [mode, setMode] = useState<OPT_MODE>('idle');
+  const toggleMode = (newMode:OPT_MODE)=> setMode(prev=> prev==newMode ? 'idle' : newMode);
   
   // 档位模式状态管理
-  const [gearMode, setGearMode] = useState<GEAR_MODE>('手动');
+  const [gearMode, setGearMode] = useState<GEAR_MODE>('Interactive');
+  useEffect(()=>setMode('idle'),[gearMode])
 
-  // 使用 store 管理状态
-  const { openSearch, closeSearch } = useSearchStore();
-  const { openSettings, closeSettings } = useSettingsStore();
 
   // 筛选相关状态
   const filterState = useGlobalFilterStore();
   
   // 使用select store
-  const { 
-    isSelectMode, 
+  const {
     selectedItems, 
     selectAll,
-    toggleSelectMode,
   } = useSelectStore();
 
   
@@ -100,18 +98,14 @@ function App() {
     const searchState = useSearchStore.getState();
     const settingsState = useSettingsStore.getState();
     
-    if (searchState.isOpen && mode !== 'search') {
-      setMode('search');
-    } else if (settingsState.isOpen && mode !== 'settings') {
-      setMode('settings');
-    } else if (filterState.isOpen && mode !== 'filter') {
+    // if (searchState.isOpen && mode !== 'search') {
+    //   setMode('search');
+    // } else if (settingsState.isOpen && mode !== 'settings') {
+    //   setMode('settings');
+    if (filterState.isOpen && mode !== 'filter') {
       setMode('filter');
-    } else if (isSelectMode && mode !== 'select') {
-      setMode('select');
-    } else if (!searchState.isOpen && !settingsState.isOpen && !filterState.isOpen && !isSelectMode && mode !== 'idle') {
-      setMode('idle');
-    }
-  }, [useSearchStore().isOpen, useSettingsStore().isOpen, filterState.isOpen, isSelectMode, mode])
+    } 
+  }, [filterState.isOpen, mode])
   
   // 统一的模式切换函数 - 核心状态管理逻辑
   function setAppMode(newMode: OPT_MODE) {
@@ -121,14 +115,11 @@ function App() {
     }
     
     // 关闭所有模态窗和状态，确保互斥性
-    closeSearch();
-    closeSettings();
-    filterState._closeFilter();
+    // closeSearch();
+    // closeSettings();
     
-    // 关闭选择模式
-    if (isSelectMode && newMode !== 'select') {
-      toggleSelectMode();
-    }
+    filterState._closeFilter();
+  
     
     // 设置新模式
     setMode(newMode);
@@ -136,18 +127,15 @@ function App() {
     // 根据新模式打开对应的功能
     switch (newMode) {
       case 'search':
-        openSearch();
+        // openSearch();
         break;
       case 'settings':
-        openSettings();
+        // openSettings();
         break;
       case 'select':
-        if (!isSelectMode) {
-          toggleSelectMode();
-        }
-        // 检查完成后，更新状态
-        setIsCheckingInProgress(false);
-        setIsCheckingComplete(true);
+        // if (!isSelectMode) {
+        //   toggleSelectMode();
+        // }
         break;
       case 'filter':
         useGlobalFilterStore.setState({isOpen:true});
@@ -160,17 +148,14 @@ function App() {
   }
   
   // === 模式切换处理函数 ===
-  function handleOpenSettings() {
-    setAppMode('settings');
-  }
+  // function handleOpenSettings() {
+  //   setAppMode('settings');
+  // }
   
-  function handleOpenSearch() {
-    setAppMode('search');
-  }
+  // function handleOpenSearch() {
+  //   setAppMode('search');
+  // }
   
-  function handleToggleSelectMode() {
-    setAppMode('select');
-  }
   
   function toggleFilter() {
     setAppMode('filter');
@@ -316,19 +301,20 @@ function App() {
 
   return (
     <>
-      {/* 选择模式下的顶部操作栏 */}
-      {isSelectMode && <SelectModeToolbar handleSelectAll={()=>selectAll(skuShowList)} />}
+      {/* 选择/搜索模式下的顶部操作栏 */}
+      {mode=='select' && <SelectModeToolbar handleSelectAll={()=>selectAll(skuShowList)} />}
+      {mode=='search' && <SearchModal onClose={()=>setMode('idle')} />}
       
-      {/* 主内容区域 */}
-      {true && <div className={`${mode === 'select' || mode === 'search' ? 'pt-16' : 'pt-2'} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
+      {/* 主内容区域  =='Interactive'*/}
+      {gearMode =='Interactive' && 
+      <div className={`${mode === 'select' || mode === 'search' ? 'pt-16' : 'pt-2'} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
         {skuShowList.map((item) => {
           const isSelected = selectedItems[item.itemsId];
           return (
             <ProductCard
               key={item.itemsId}
               item={item}
-              onOpenInventoryCheck={opencheckInventory}
-            />
+              onOpenInventoryCheck={opencheckInventory} mode={mode}            />
           );
         })}      
       </div>}
@@ -372,17 +358,17 @@ function App() {
           <div className="h-8 w-px bg-gray-200 mx-2"></div>
           
           {/* 操作工具组 */}
-          <div className={`flex items-center ${gearMode !== '手动' ? 'opacity-50 pointer-events-none' : ''}`}>
+          <div className={`flex items-center ${gearMode !== 'Interactive' ? 'opacity-50 pointer-events-none' : ''}`}>
             <ToolButton 
               icon={<Search/>}
               label="搜索"
-              onClick={handleOpenSearch}
+              onClick={()=>toggleMode('search')}
               active={mode === 'search'}
             />
             <ToolButton 
               icon={<CircleCheckBig />}
               label="选择"
-              onClick={handleToggleSelectMode}
+              onClick={()=>toggleMode('select')}
               active={mode === 'select'}
             />
             <ToolButton 
@@ -404,7 +390,7 @@ function App() {
               icon={<Settings/>}
               label="设置"
               
-              onClick={handleOpenSettings}
+              onClick={()=>toggleMode('settings')}
               active={mode === 'settings'}
             />
             <ToolButton 
@@ -416,11 +402,28 @@ function App() {
         </div>
       </div>
 
-      <AGENT.COMP.SkuAgentBoard/>
+      {/* <ModalOverlay
+        isOpen={gearMode=='Agent'}
+        onClose={()=>setGearMode('Interactive')}
+        overlayClassName="bg-black/33"
+        contentClassName="w-full h-full p-5"
+      >
+        <AGENT.COMP.SkuAgentBoard />
+      </ModalOverlay> */}
 
-      <SearchModal />
+
+      {gearMode=='Agent'&&(<>
+        <AGENT.COMP.SkuAgentBoard className='mt-10'/>
+      </>)}
+
       
-      <SettingsModal />
+
+      
+      <ModalOverlay isOpen={mode=='settings'} onClose={()=>setMode('idle')}>
+        {mode=='settings' && <SettingsModal onClose={()=>setMode('idle')} />}
+        
+      </ModalOverlay>
+      
       
       <FilterModal/>
       

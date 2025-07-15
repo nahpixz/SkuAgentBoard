@@ -103,7 +103,7 @@ const AnimatedNumber = ({ value, label, icon: Icon, color = "text-blue-500" }: {
   );
 };
 
-export const SkuAgentBoard = () => {
+export const SkuAgentBoard = ({ className }: { className?: string }) => {
   const {
     running,
     newSkuCount,
@@ -147,7 +147,7 @@ export const SkuAgentBoard = () => {
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className={`w-full max-w-2xl mx-auto ${className}`}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -162,9 +162,9 @@ export const SkuAgentBoard = () => {
             >
               <Settings className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="icon">
+            {/* <Button variant="ghost" size="icon">
               <X className="w-4 h-4" />
-            </Button>
+            </Button> */}
           </div>
         </div>
       </CardHeader>

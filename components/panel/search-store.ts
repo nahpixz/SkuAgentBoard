@@ -1,25 +1,18 @@
 import { _create, setFn } from "@/lib/utils";
 
-type SearchState = {
-  isOpen: boolean;
-  searchType: 'remote' | 'local';
-  searchQuery: string;
-};
-
-const initialState: SearchState = {
-  isOpen: false,
-  searchType: 'local',
+const SearchState = {
+  searchType: 'local' as 'remote' | 'local',
   searchQuery: '',
 };
 
-export const useSearchStore = _create((set: setFn<SearchState>) => ({
-  ...initialState,
+export const useSearchStore = _create((set: setFn<typeof SearchState>) => ({
+  ...SearchState,
   
-  // 打开搜索模态框
-  openSearch: () => set({ isOpen: true, searchQuery: '' }),
+  // // 打开搜索模态框
+  // openSearch: () => set({ isOpen: true, searchQuery: '' }),
   
-  // 关闭搜索模态框
-  closeSearch: () => set({ isOpen: false }),
+  // // 关闭搜索模态框
+  // closeSearch: () => set({ isOpen: false }),
   
   // 切换搜索类型
   setSearchType: (searchType: 'remote' | 'local') => set({ searchType }),
@@ -28,5 +21,5 @@ export const useSearchStore = _create((set: setFn<SearchState>) => ({
   setSearchQuery: (searchQuery: string) => set({ searchQuery }),
   
   // 重置搜索状态
-  resetSearch: () => set({ ...initialState }),
+  resetSearch: () => set({ ...SearchState }),
 }));

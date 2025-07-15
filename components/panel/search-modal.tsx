@@ -4,12 +4,13 @@ import { useSearchStore } from './search-store';
 
 interface SearchModalProps {
   onSearch?: () => void;
+  onClose:()=>void;
 }
 
-export function SearchModal({ onSearch }: SearchModalProps = {}) {
-  const { isOpen, searchType, searchQuery, setSearchType, setSearchQuery, closeSearch } = useSearchStore();
+export function SearchModal({ onSearch,onClose }: SearchModalProps) {
+  const { searchType, searchQuery, setSearchType, setSearchQuery } = useSearchStore();
   
-  if (!isOpen) return null;
+  // if (!isOpen) return null;
   
   const handleSearch = () => {
     console.log('搜索', searchType, searchQuery);
@@ -20,11 +21,8 @@ export function SearchModal({ onSearch }: SearchModalProps = {}) {
     }
     
     // 如果传入了自定义搜索函数，则调用
-    if (onSearch) {
-      onSearch();
-    }
-    
-    closeSearch();
+    onSearch && onSearch();
+    onClose();
   };
 
   return (
@@ -85,7 +83,7 @@ export function SearchModal({ onSearch }: SearchModalProps = {}) {
               if (e.key === 'Enter') {
                 handleSearch();
               } else if (e.key === 'Escape') {
-                closeSearch();
+                onClose();
               }
             }}
           />

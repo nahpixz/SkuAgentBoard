@@ -27,8 +27,8 @@ export function ModalOverlay({
     ? 'items-center justify-center' 
     : 'items-start justify-center';
 
-  const defaultOverlayClass = `fixed inset-0 bg-black/20 backdrop-blur-sm flex ${alignmentClass} ${zIndex}`;
-  const finalOverlayClass = overlayClassName || defaultOverlayClass;
+  const defaultOverlayClass = `fixed inset-0 bg-black/20 backdrop-blur-sm flex ${alignmentClass} ${zIndex} ${overlayClassName}`;
+  const finalOverlayClass =  defaultOverlayClass;
 
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (closeOnOverlayClick && e.target === e.currentTarget) {
