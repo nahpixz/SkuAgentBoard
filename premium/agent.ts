@@ -29,3 +29,36 @@ export async function skuAutoScroll(){
   ListenKey.C2C_LIST = "null";
   useSettingsStore.setState({autoCaptureMall}) // revert autoCaptureMall
 }
+
+async function attachDebugger() {
+  const tabId = browser.devtools.inspectedWindow.tabId;
+  try {
+    await browser.debugger.attach({ tabId }, '1.3');
+    return true;
+  } catch (err) {
+    console.error('Attach failed:', err);
+    return false;
+  }
+}
+
+
+async function dispatchTouchEvent() {
+  try {
+    await browser.debugger.sendCommand(
+      { tabId: browser.devtools.inspectedWindow.tabId },
+      'Input.dispatchTouchEvent',
+      {
+        type:'touchStart',
+        touchPoints: [{
+          x: 327,
+          y: 644,
+          radiusX: 11.5,
+          radiusY: 11.5,
+          force: 1
+        }]
+      }
+    );
+  } catch (err) {
+    console.error('Touch event failed:', err);
+  }
+}

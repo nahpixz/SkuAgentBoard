@@ -79,7 +79,7 @@ function App() {
   const toggleMode = (newMode:OPT_MODE)=> setMode(prev=> prev==newMode ? 'idle' : newMode);
   
   // 档位模式状态管理
-  const [gearMode, setGearMode] = useState<GEAR_MODE>('Interactive');
+  const [gearMode, setGearMode] = useState<GEAR_MODE>('Agent');
   useEffect(()=>setMode('idle'),[gearMode])
 
 

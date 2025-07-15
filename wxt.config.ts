@@ -8,7 +8,8 @@ export default defineConfig({
     name: 'biliMall',
     version: '1.0.0',
     permissions: [
-      'webNavigation'
+      'webNavigation',
+      'debugger'
     ],
     host_permissions: [
       "http://*/*",
