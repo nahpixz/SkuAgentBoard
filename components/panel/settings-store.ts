@@ -1,4 +1,4 @@
-import { _create, setFn } from "@/lib/utils";
+import { createT, setFn } from "@/lib/utils";
 
 
 const SettingsState = {
@@ -7,7 +7,7 @@ const SettingsState = {
   enableLiveQuery: true,
 };
 
-export const useSettingsStore = _create((set: setFn<typeof SettingsState>) => ({
+export const useSettingsStore = createT<typeof SettingsState>()((set,get) => ({
   ...SettingsState,
   
   // 打开设置模态框
@@ -18,6 +18,12 @@ export const useSettingsStore = _create((set: setFn<typeof SettingsState>) => ({
   
   // // 切换设置模态框状态
   // toggleSettingsModal: () => set((state) => ({ isOpen: !state.isOpen })),
+
+  getAndOpen_AutoCaptureMall:()=> {
+    const autoCaptureMall = get().autoCaptureMall
+    set({autoCaptureMall: true})
+    return autoCaptureMall
+  },
   
   // 切换自动抓取市集设置
   toggleAutoCaptureMall: () => set((state) => ({ autoCaptureMall: !state.autoCaptureMall })),

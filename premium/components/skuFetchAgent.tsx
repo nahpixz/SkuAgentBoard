@@ -7,6 +7,7 @@ import { Play, Square, RotateCcw, X, Settings, Database, Clock, TrendingUp } fro
 import { useState, useEffect, useRef } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { DB } from "@/entrypoints/panel/db";
+import { skuAutoScroll } from "../agent";
 
 const skuAgentState = {
   running: false,
@@ -35,7 +36,7 @@ export const skuAgentStore = createT<typeof skuAgentState>()((set,get) => ({
   handleStart: async () => {
     const state = get();
     const startMs = new Date();
-    
+
     set({
       running: true,
       startTimeRecent: startMs,
@@ -43,6 +44,7 @@ export const skuAgentStore = createT<typeof skuAgentState>()((set,get) => ({
       startTime: state.startTime || startMs
     });
     // return null;
+    return skuAutoScroll();
     return new Promise((resolve, reject)=>{
       // const ivt = setInterval(()=>{
       //   // set(state => ({ newSkuCount: state.newSkuCount+10 }))

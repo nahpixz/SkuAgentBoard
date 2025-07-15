@@ -4,39 +4,55 @@ import { C2C_DETAIL, C2C_LIST, MARKET_SWG } from "./api";
 type RequestTypeMap = {
   [MARKET_SWG.JSON_PREFIX]: MARKET_SWG.c2cItem[];
   [C2C_DETAIL.JSON_PREFIX]: C2C_DETAIL.c2cItem;
+  [C2C_LIST.URL]: C2C_LIST.c2cItem[];
 };
 type RequestUrl = keyof RequestTypeMap;
 type PromiseResolver = {
   resolve: (data: any) => void;
   reject: (reason?: any) => void;
 } | null;
-export const checkingPromises:Record<RequestUrl,Record<string|number,PromiseResolver>>
+export const pendingPromises:Record<RequestUrl,Map<string|number,PromiseResolver>>
 = {
-  [MARKET_SWG.JSON_PREFIX]:{},
-  [C2C_DETAIL.JSON_PREFIX]:{},
+  [MARKET_SWG.JSON_PREFIX]:new Map(),
+  [C2C_DETAIL.JSON_PREFIX]:new Map(),
+  [C2C_LIST.URL]:new Map(),
 }
 
 export async function waitForRequest<T extends RequestUrl>(requestPrefix:T,key:string|number,timeout=20000):Promise<RequestTypeMap[T]> {
   return new Promise((resolve, reject) => {
-        const cpM = checkingPromises[requestPrefix] as Record<string|number,PromiseResolver>;
+        const cpM = pendingPromises[requestPrefix] as Map<string|number,PromiseResolver>;
         const timer = setTimeout(() => {
-            cpM[key] = null;
+            cpM.delete(key);
             reject(new Error("Timeout waiting for response"));
         }, timeout);
 
-        cpM[key]={
+        cpM.set(key,{
             resolve:(x => {
                 clearTimeout(timer);
-                cpM[key]=null;
+                cpM.delete(key);
                 resolve(x);
             }),
             reject:(x => {
                 clearTimeout(timer);
-                cpM[key]=null;
+                cpM.delete(key);
                 reject(x);
             }),
-        };
+        });
     });
+}
+
+export function requestDispatcher<T extends RequestUrl>(requestPrefix:T,key:string|number) {
+  const pMap:Map<string|number, PromiseResolver> = pendingPromises[requestPrefix];
+  const prom = pMap.get(key);
+  if(!prom) return null;
+  return {
+    dispatch(data:RequestTypeMap[T],error?:any) {
+      if(error) prom.reject(error);
+      else prom.resolve(data);
+      pMap.delete(key);
+    },
+    ...prom
+  } 
 }
 
 export async function ListerSearchNew(timeout=10000):Promise<MARKET_SWG.c2cItem[]> {
@@ -106,7 +122,10 @@ export function JumpToComplete(url: string){
   })
 }
 
-
+export async function getInspectedUrl() {
+  const tab = await browser.tabs.get(browser.devtools.inspectedWindow.tabId)
+  return tab.url;
+}
 
 export function JumpTo(url: string) {
     return new Promise<void>((resolve,reject)=>{
@@ -132,9 +151,9 @@ export function JumpTo(url: string) {
   }
 
 export function HistoryBack() {
-browser.devtools.inspectedWindow.eval(`history.back();setTimeout(()=>window.history.go(), 200);`,
+  browser.devtools.inspectedWindow.eval(`history.back();setTimeout(()=>window.history.go(), 200);`,
     (result, error) => {
-    if (error) console.error("跳转失败:", error);
+      if (error) console.error("跳转失败:", error);
     })
 }
 
@@ -144,6 +163,9 @@ browser.devtools.inspectedWindow.eval(`history.back();setTimeout(()=>window.hist
 // let connTime = 0;
 import { DB } from "./db"
 let c2cNextId = "";
+export const ListenKey = {
+  C2C_LIST:"null",
+}
 export async function networkListener(
   req: globalThis.Browser.devtools.network.Request
 ) {
@@ -160,7 +182,7 @@ export async function networkListener(
       if (nextId == c2cNextId) return;
       c2cNextId = nextId;
       console.log(req._connectionId, "C2C_LIST", nextId, data);
-
+      requestDispatcher(C2C_LIST.URL,ListenKey.C2C_LIST)?.dispatch(data);
       DB.putC2CList(data);
     });
   } else if (C2C_DETAIL.isDetail(req.request.url)) {
@@ -169,12 +191,12 @@ export async function networkListener(
       try {
         const data = JSON.parse(body).data as C2C_DETAIL.c2cItem;
         console.log(req._connectionId, "C2C_DETAIL", data);
-        checkingPromises[C2C_DETAIL.JSON_PREFIX][data.c2cItemsId]?.resolve(
-          data
-        );
+        requestDispatcher(C2C_DETAIL.JSON_PREFIX,data.c2cItemsId)?.dispatch(data);
+
         DB.putC2CDetail(data);
       } catch (e) {
         console.error(e);
+        // requestDispatcher(C2C_DETAIL.JSON_PREFIX,data.c2cItemsId)?.reject(e);
         console.error("req", req._connectionId, req.request.url, req);
       }
     });
@@ -184,11 +206,10 @@ export async function networkListener(
       try {
         const data = JSON.parse(body).data as MARKET_SWG.c2cItem[];
         console.log(req._connectionId, "MARKET_SWG", data);
-        checkingPromises[MARKET_SWG.JSON_PREFIX][
-          "checkbox-search-new"
-        ]?.resolve(data);
+        requestDispatcher(MARKET_SWG.JSON_PREFIX,"checkbox-search-new")?.dispatch(data);
       } catch (e) {
         console.error(e);
+        requestDispatcher(MARKET_SWG.JSON_PREFIX,"checkbox-search-new")?.reject(e);
         console.error("req", req._connectionId, req.request.url, req);
       }
     });
