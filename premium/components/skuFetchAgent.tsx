@@ -1,31 +1,73 @@
-import { _create, setFn } from "@/lib/utils";
+import { createT, getFn, setFn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "motion/react";
 import { Play, Square, RotateCcw, X, Settings, Database, Clock, TrendingUp } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import { DB } from "@/entrypoints/panel/db";
 
 const skuAgentState = {
   running: false,
   newSkuCount: 0,
-  totalSkuCount: 0,
   startTime: null as Date | null,
+  startTimeRecent: null as Date | null,
+  accumulatedTime: 0, // 累计运行时间（毫秒）
   initialStorageSize: 0,
   currentStorageSize: 0,
   freezeView: false,
+  STORAGE_SIZE_QUERY_INTERVAL: 30,
 }
 
-export const skuAgentStore = _create((set: setFn<typeof skuAgentState>) => ({
+export const skuAgentStore = createT<typeof skuAgentState>()((set,get) => ({
   ...skuAgentState,
   stepCount: (stepNew: number) => set(state => ({ newSkuCount: state.newSkuCount + stepNew })),
-  setRunning: (running: boolean) => set({ running }),
-  setTotalSkuCount: (count: number) => set({ totalSkuCount: count }),
-  setStartTime: (time: Date | null) => set({ startTime: time }),
-  setStorageSize: (initial: number, current: number) => set({ initialStorageSize: initial, currentStorageSize: current }),
   setFreezeView: (freeze: boolean) => set({ freezeView: freeze }),
-  reset: () => set({ newSkuCount: 0, startTime: null, running: false })
+  reset: async() => {
+    const sSize = await fetchStorageSize();
+    set({ newSkuCount: 0, startTime: null, startTimeRecent: null, accumulatedTime: 0, running: false, initialStorageSize: sSize, currentStorageSize: sSize })
+  },
+  updateStorageSize:async () => {
+    const sSize = await fetchStorageSize();
+    set({ currentStorageSize: sSize });
+  },
+  handleStart: async () => {
+    const state = get();
+    const startMs = new Date();
+    
+    set({
+      running: true,
+      startTimeRecent: startMs,
+      // 如果没有startTime（首次启动或重置后），设置startTime
+      startTime: state.startTime || startMs
+    });
+    // return null;
+    return new Promise((resolve, reject)=>{
+      // const ivt = setInterval(()=>{
+      //   // set(state => ({ newSkuCount: state.newSkuCount+10 }))
+      // }, 666)
+      
+      setTimeout(()=>{
+        // clearInterval(ivt);
+        // const sessionTime = new Date().getTime() - state.startTimeRecent!.getTime();
+        const sessionTime = new Date().getTime() - startMs.getTime();
+        set({ running: false, accumulatedTime: state.accumulatedTime + sessionTime, startTimeRecent: null });
+        resolve(0);
+      },5000)
+    })
+  },
+  handleStop: () => {
+    const state = get();
+    const sessionTime = new Date().getTime() - state.startTimeRecent!.getTime();
+    set({ running: false, accumulatedTime: state.accumulatedTime + sessionTime, startTimeRecent: null });
+  },
 }));
+
+const fetchStorageSize = async () => {
+  const est:StorageEstimate&{usageDetails?:{indexedDB:number}} =  await navigator.storage.estimate();
+  return est?.usageDetails?.indexedDB || est.usage 
+}
 
 // 格式化存储大小
 const formatStorageSize = (bytes: number): string => {
@@ -37,13 +79,20 @@ const formatStorageSize = (bytes: number): string => {
 };
 
 // 格式化运行时间
-const formatRuntime = (startTime: Date | null): string => {
-  if (!startTime) return '00:00:00';
-  const now = new Date();
-  const diff = now.getTime() - startTime.getTime();
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+const formatRuntime = (accumulatedTime: number, startTimeRecent: Date | null): string => {
+  let totalTime = accumulatedTime;
+  
+  // 如果当前正在运行，加上本次运行时间
+  if (startTimeRecent) {
+    const currentSessionTime = new Date().getTime() - startTimeRecent.getTime();
+    totalTime += currentSessionTime;
+  }
+  
+  if (totalTime === 0) return '00:00:00';
+  
+  const hours = Math.floor(totalTime / (1000 * 60 * 60));
+  const minutes = Math.floor((totalTime % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((totalTime % (1000 * 60)) / 1000);
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 };
 
@@ -91,8 +140,8 @@ const AnimatedNumber = ({ value, label, icon: Icon, color = "text-blue-500" }: {
         <motion.div
           key={displayValue}
           className="text-2xl font-bold"
-          initial={{ scale: 1.2, color: "#3b82f6" }}
-          animate={{ scale: 1, color: "inherit" }}
+          initial={{ scale: 1.2 ,color: "#3b82f6"}}
+          animate={{ scale: 1, color: "#000" }}
           transition={{ duration: 0.3 }}
         >
           {displayValue.toLocaleString()}
@@ -107,39 +156,40 @@ export const SkuAgentBoard = ({ className }: { className?: string }) => {
   const {
     running,
     newSkuCount,
-    totalSkuCount,
+    // totalSkuCount,
     startTime,
+    startTimeRecent,
+    accumulatedTime,
     initialStorageSize,
     currentStorageSize,
     freezeView,
-    setRunning,
-    setStartTime,
+    handleStop,
     setFreezeView,
-    reset
+    reset,
+    handleStart,
+    updateStorageSize,
+    STORAGE_SIZE_QUERY_INTERVAL
   } = skuAgentStore();
 
   const [runtime, setRuntime] = useState('00:00:00');
   const [showSettings, setShowSettings] = useState(false);
-
+  const totalSkuCount = useLiveQuery(DB.countSku) || 0;
+  useEffect(()=>{reset()},[])
   // 更新运行时间
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (running && startTime) {
+    if (running && startTimeRecent) {
+      let intervalCot = 0;
       interval = setInterval(() => {
-        setRuntime(formatRuntime(startTime));
+        setRuntime(formatRuntime(accumulatedTime, startTimeRecent));
+        (++intervalCot) % STORAGE_SIZE_QUERY_INTERVAL === 0 && updateStorageSize();
       }, 1000);
-    }
+      // 立即更新一次
+      setRuntime(formatRuntime(accumulatedTime, startTimeRecent));
+    } 
     return () => clearInterval(interval);
-  }, [running, startTime]);
+  }, [running]);
 
-  const handleStart = () => {
-    setRunning(true);
-    setStartTime(new Date());
-  };
-
-  const handleStop = () => {
-    setRunning(false);
-  };
 
   const handleReset = () => {
     reset();
@@ -206,7 +256,7 @@ export const SkuAgentBoard = ({ className }: { className?: string }) => {
               停止
             </Button>
           )}
-          <Button onClick={handleReset} variant="outline" className="flex items-center gap-2">
+          <Button disabled={running} onClick={handleReset} variant="outline" className="flex items-center gap-2">
             <RotateCcw className="w-4 h-4" />
             重置
           </Button>
