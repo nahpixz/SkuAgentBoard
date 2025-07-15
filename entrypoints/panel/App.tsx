@@ -358,7 +358,7 @@ function App() {
           <div className="h-8 w-px bg-gray-200 mx-2"></div>
           
           {/* 操作工具组 */}
-          <div className={`flex items-center ${gearMode !== 'Interactive' ? 'opacity-50 pointer-events-none' : ''}`}>
+          <div className={`flex items-center ${gearMode == 'Agent' ? 'opacity-50 pointer-events-none' : ''}`}>
             <ToolButton 
               icon={<Search/>}
               label="搜索"

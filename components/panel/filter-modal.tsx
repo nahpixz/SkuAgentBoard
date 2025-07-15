@@ -84,7 +84,7 @@ export function FilterModal() {
         priceUnit:10
       })
     })
-  },[])
+  },[isOpen])
 
   return isOpen && (
     <ModalOverlay
