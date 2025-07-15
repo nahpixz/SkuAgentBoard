@@ -57,6 +57,10 @@ export async function getSkuWithoutC2C(): Promise<StoredSkuItem[]> {
   return db.skus.toArray();
 }
 
+export async function countSku(): Promise<number> {
+  return db.skus.count();
+}
+
 export async function putC2CList(data: C2C_LIST.c2cItem[]): Promise<void> {
   return db.transaction("rw", db.c2cs, db.skus, async () => {
     for (const c2cIt of data) {
