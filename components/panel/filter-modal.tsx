@@ -1,9 +1,12 @@
-import { X, ArrowUpDown, Percent, Clock, Package } from 'lucide-react';
+import React, { useState, useEffect, JSX, ComponentType } from 'react';
+import { X, ArrowUpDown, Percent, Clock, Package, Tag, Gift, Gamepad2, Smartphone } from 'lucide-react';
 import { PriceRangeFilter,PriceRangeFilterProps } from './price-range-filter';
 import { SortButton, SortDirection, SortOption } from './sort-button';
 import { ModalOverlay } from './modal-overlay';
 import { DB } from '../../entrypoints/panel/db';
 import { _create, setFn } from "@/lib/utils";
+import { C2C_LIST } from '@/entrypoints/panel/api';
+type selectAbleCategory  =  C2C_LIST.CategoryType | ''
 
 const FilterDefaultOptions = {
   priceRange: [0, 50] as [number,number],
@@ -11,7 +14,8 @@ const FilterDefaultOptions = {
   sortDirection:'asc' as SortDirection,
   showOnlyInStock:false,
   discountRange: 100,
-  updateTimeRange: 7
+  updateTimeRange: 7,
+  selectedCategory: '' as selectAbleCategory // 空字符串表示不筛选分类
 }
 const FilterDefaultState = {
   isOpen: false,
@@ -30,6 +34,9 @@ export const useGlobalFilterStore = _create((set:setFn<typeof FilterDefaultState
   })),
   _toggleShowOnlyInStock:()=> set(state=>({
     pending:{...state.pending,showOnlyInStock:!state.pending.showOnlyInStock}
+  })),
+  _onCategoryChange:(category:selectAbleCategory)=> set(state=>({
+    pending:{...state.pending,selectedCategory:category}
   })),
   _closeFilter:()=> set(state=>({
     isOpen:false,
@@ -66,9 +73,10 @@ export function FilterModal() {
     isOpen,pending,skuPriceRange,
     _closeFilter,_handleSortChange,
     _onDiscountRangeChange,_onUpdateTimeRangeChange,_toggleShowOnlyInStock,
+    _onCategoryChange,
     _apply,_reset
   }  = useGlobalFilterStore();
-  const {priceRange,sortOption,sortDirection,discountRange,updateTimeRange,showOnlyInStock} = pending;
+  const {priceRange,sortOption,sortDirection,discountRange,updateTimeRange,showOnlyInStock,selectedCategory} = pending;
   const [skuGroupOptions,setSkuGroupOptions] = useState<PriceRangeFilterProps['groupOptions']|null>(null);
   useEffect(()=>{
     DB.getSkuWithoutC2C().then(skus=>{
@@ -100,10 +108,27 @@ export function FilterModal() {
           >
             <X className="h-4 w-4" />
           </button>
+
+          {/* 分类筛选 */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                <Tag className="h-3.5 w-3.5" />
+                商品分类
+              </span>
+            </div>
+            <div className="grid grid-cols-5 gap-2">
+              <CategoryButton category={''} onClick={_onCategoryChange} selected={selectedCategory}/>
+              <CategoryButton category={C2C_LIST.CategoryType.Figure} onClick={_onCategoryChange} selected={selectedCategory}/>
+              <CategoryButton category={C2C_LIST.CategoryType.Goods} onClick={_onCategoryChange} selected={selectedCategory}/>
+              <CategoryButton category={C2C_LIST.CategoryType.Model} onClick={_onCategoryChange} selected={selectedCategory}/>
+              <CategoryButton category={C2C_LIST.CategoryType._3C} onClick={_onCategoryChange} selected={selectedCategory}/>
+            </div>
+          </div>
           
           {/* 排序部分 */}
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
                 <ArrowUpDown className="h-3.5 w-3.5" />
                 排序方式
@@ -150,8 +175,8 @@ export function FilterModal() {
             groupOptions={skuGroupOptions}
           />}
           
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-3">
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
                 <Percent className="h-3.5 w-3.5" />
                 折扣范围
@@ -176,8 +201,8 @@ export function FilterModal() {
             </div>
           </div>
           
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-3">
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5" />
                 库存更新时间
@@ -202,7 +227,7 @@ export function FilterModal() {
             </div>
           </div>
           
-          <div className="mb-6">
+          <div className="mb-4">
             <div className="flex items-center mb-2">
               <div 
                 className="relative inline-block w-10 mr-2 align-middle select-none"
@@ -252,6 +277,36 @@ export function FilterModal() {
         </div>
     </ModalOverlay>
   );
+}
+
+function CategoryButton({category,selected,onClick}:{category:selectAbleCategory,selected:selectAbleCategory,onClick:(category:selectAbleCategory)=>void}){
+
+  const passProps = <T extends {}>(Comp: ComponentType<T>) => 
+                      (props: T) => <Comp {...props}/>;
+  const isSelected = selected === category;
+  function slots():[string,(prop:any)=>JSX.Element,string]{
+    switch (category) {
+      case C2C_LIST.CategoryType.Figure:
+              return ['手办',passProps(Gift)      ,isSelected ? 'bg-pink-500 text-white' : 'bg-pink-100 text-pink-600 hover:bg-pink-200'];
+      case C2C_LIST.CategoryType.Goods:
+              return ['周边',passProps(Package)   ,isSelected ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-600 hover:bg-purple-200'];
+      case C2C_LIST.CategoryType.Model:
+              return ['模型',passProps(Gamepad2)  ,isSelected ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-600 hover:bg-blue-200'];
+      case C2C_LIST.CategoryType._3C:
+              return ['数码',passProps(Smartphone),isSelected ? 'bg-green-500 text-white' : 'bg-green-100 text-green-600 hover:bg-green-200'];
+      default:return ['全部',passProps(Tag)       , isSelected ? 'bg-[#786DF6] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'];
+    }
+  }
+
+  const [title,GIcon,bgColor] = slots();
+
+  return (<button
+      className={`py-1 rounded-lg text-xs font-medium transition-colors flex flex-row items-center justify-center gap-1 ${bgColor}`}
+      onClick={() => onClick(category)}
+    >
+      <GIcon className="h-3.5 w-3.5" />
+      <span>{title}</span>
+  </button>);
 }
 
 //计算价格区间分组
@@ -324,12 +379,17 @@ export function FilterAndSort(skuList: DB.skuItem[]){
   const filteredItems = skuList.filter(item => {
     // 只显示有货商品
     if (appliedOpt?.showOnlyInStock) {
-      return !isAllDisabled(item);
+      if (isAllDisabled(item)) return false;
     }
 
     // 价格范围筛选
     const price = item.marketPrice / 100; // 转换为元
     if ((price < appliedOpt.priceRange[0] || price > appliedOpt.priceRange[1])) {
+      return false;
+    }
+    
+    // 分类筛选
+    if (appliedOpt.selectedCategory && item.category !== appliedOpt.selectedCategory) {
       return false;
     }
 

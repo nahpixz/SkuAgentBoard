@@ -154,8 +154,8 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
   // }, [minPrice, maxPrice]);
 
   return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-3">
+    <div className="mb-4">
+      <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
           <SlidersHorizontal className="h-3.5 w-3.5" />
           价格范围

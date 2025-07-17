@@ -31,7 +31,7 @@ export function SortButton({
 
   return (
     <button 
-      className={`px-3 py-2 text-xs rounded-lg flex items-center justify-between transition-all ${
+      className={`px-3 py-1 text-xs rounded-lg font-medium flex items-center justify-between transition-all ${
         isActive 
           ? 'bg-[#786DF6] text-white' 
           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'

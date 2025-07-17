@@ -4,10 +4,10 @@ export namespace C2C_LIST{
     export const HTML_URL = "https://mall.bilibili.com/neul-next/index.html?page=magic-market_index"
     export const URL = "https://mall.bilibili.com/mall-magic-c/internet/c2c/v2/list"
     export enum CategoryType{
-        Figure = '2312',
-        Goods = '2331',
-        Model= '2066', //一般都是高达
-        _3C = '2273', //
+        Figure = '2312', //手办
+        Goods = '2331', //周边
+        Model= '2066', //模型，一般都是高达
+        _3C = '2273', //数码
     }
     export type skuItem = {
         blindBoxId:number

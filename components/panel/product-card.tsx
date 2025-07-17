@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Info, Tag } from 'lucide-react';
+import { Info, Tag, Package, Gamepad2, Smartphone, Gift } from 'lucide-react';
 import { C2C_DETAIL, MALL_DETAIL } from '../../entrypoints/panel/api';
 import { JumpTo, ToC2cSearch } from '../../entrypoints/panel/tasks';
 import { DB } from '../../entrypoints/panel/db';
@@ -63,6 +63,52 @@ export function ProductCard({
     const availableItems = it.c2cLists.filter(c2c => !c2c?.removable);
     if (availableItems.length === 0) return null;
     return availableItems.sort((a, b) => a!.price - b!.price)?.[0]?.showPrice;
+  }
+
+  // 获取分类名称
+  function getCategoryName(category?: string) {
+    if (!category) return '未分类';
+    switch (category) {
+      case '2312': return '手办';
+      case '2331': return '周边';
+      case '2066': return '模型';
+      case '2273': return '数码';
+      default: return '其他';
+    }
+  }
+
+  // 获取分类图标
+  function getCategoryIcon(category?: string) {
+    if (!category) return <Tag className="h-2.5 w-2.5 opacity-70" />;
+    switch (category) {
+      case '2312': // 手办
+        return <Gift className="h-2.5 w-2.5 opacity-70" />;
+      case '2331': // 周边
+        return <Package className="h-2.5 w-2.5 opacity-70" />;
+      case '2066': // 模型
+        return <Gamepad2 className="h-2.5 w-2.5 opacity-70" />;
+      case '2273': // 数码
+        return <Smartphone className="h-2.5 w-2.5 opacity-70" />;
+      default:
+        return <Tag className="h-2.5 w-2.5 opacity-70" />;
+    }
+  }
+
+  // 获取分类样式
+  function getCategoryStyle(category?: string) {
+    if (!category) return { bgColor: 'bg-gray-100 text-gray-600' };
+    switch (category) {
+      case '2312': // 手办
+        return { bgColor: 'bg-pink-100 text-pink-600' };
+      case '2331': // 周边
+        return { bgColor: 'bg-purple-100 text-purple-600' };
+      case '2066': // 模型
+        return { bgColor: 'bg-blue-100 text-blue-600' };
+      case '2273': // 数码
+        return { bgColor: 'bg-green-100 text-green-600' };
+      default:
+        return { bgColor: 'bg-gray-100 text-gray-600' };
+    }
   }
 
   return (
@@ -206,6 +252,24 @@ export function ProductCard({
           </HoverCardContent>
         </HoverCard>
 
+        {/* 商品分类标签 */}
+        <HoverCard>
+          <HoverCardTrigger asChild>
+            <div className={`absolute ${mode=='select' ? 'top-2 left-10' : 'top-2 left-2'} z-10`}>
+              {item.category && (
+                <div className={`h-5 px-1.5 rounded-md flex items-center gap-1 text-[10px] font-medium shadow-sm ${getCategoryStyle(item.category).bgColor}`}>
+                  {getCategoryIcon(item.category)}
+                  <span>{getCategoryName(item.category)}</span>
+                </div>
+              )}
+            </div>
+          </HoverCardTrigger>
+          <HoverCardContent className="w-auto p-2 rounded-lg shadow-md">
+            <span className="text-xs">商品分类: {getCategoryName(item.category) || '未分类'}</span>
+          </HoverCardContent>
+        </HoverCard>
+
+        {/* 价格信息 */}
         <HoverCard>
           <HoverCardTrigger asChild>
             <button 
