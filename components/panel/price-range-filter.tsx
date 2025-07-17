@@ -9,7 +9,9 @@ export interface PriceRangeFilterProps {
   maxItemPrice:number;
   groupOptions:{
     priceGroups:{price:number,count:number}[],
-    groupGrowPrice:number
+    groupGrowStart:number
+    groupGrowEnd:number
+    groupGrowCout:number
     priceUnit:number
   };
   onRangeChange: (min: number, max: number) => void;
@@ -29,17 +31,24 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
   const [isDragging, setIsDragging] = useState<'min' | 'max' | null>(null);
   const [containerWidth, setContainerWidth] = useState(280);
   
-  const {priceGroups,groupGrowPrice,priceUnit} = groupOptions;
+  const {priceGroups,groupGrowStart,groupGrowEnd,groupGrowCout,priceUnit} = groupOptions;
 
 
   const maxCount = Math.max(...priceGroups.map(g => g.count), 1);
   const totalPriceRange = Math.max(...priceGroups.map(g => g.price)) || 100;
+  
+  // 计算选中价格范围内的商品数量
+  const selectedItemCount = React.useMemo(() => {
+    return priceGroups
+      .filter(group => group.price >= minPrice && group.price <= maxPrice)
+      .reduce((sum, group) => sum + group.count, 0);
+  }, [priceGroups, minPrice, maxPrice]);
 
   // SVG 尺寸
   const width = containerWidth;
   const height = 80;
-  const padding = 20;
-  const chartWidth = width - padding * 2;
+  const padding = 15;
+  const chartWidth = width - padding*2;
   const chartHeight = height - padding;
 
   useEffect(() => {
@@ -58,15 +67,19 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
 
   // 计算非均匀X轴位置
   const getXPosition = (price: number) => {
-    if (price <= groupGrowPrice) {
+    if(price > groupGrowEnd)
+      return (price-groupGrowEnd)/(maxItemPrice-groupGrowEnd) * padding + chartWidth;
+
+    if (price <= groupGrowStart) {
       // 前2/3空间用于0-200的价格
-      return padding + (price / groupGrowPrice) * (chartWidth * 2 / 3);
-    } else {
+      return padding + (price / groupGrowStart) * (chartWidth * 2 / 3);
+    } else { //if(price <= groupGrowEnd)
       // 后1/3空间用于200+的价格
       const highPriceStart = padding + chartWidth * 2 / 3;
-      const highPriceWidth = chartWidth / 3;
-      const normalizedPrice = (price - groupGrowPrice) / (totalPriceRange - groupGrowPrice);
-      return highPriceStart + normalizedPrice * highPriceWidth;
+      const pows = Math.log((groupGrowEnd - groupGrowStart)/priceUnit)/Math.log(groupGrowCout)
+      const normalizedX = (price - groupGrowStart) / (groupGrowEnd - groupGrowStart);
+      const ratio = Math.pow(normalizedX,1/pows);
+      return highPriceStart + ratio * (chartWidth / 3 -padding);
     }
   };
 
@@ -79,7 +92,7 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
       const y = height - padding - (group.count / maxCount) * chartHeight;
       return `${x},${y}`;
     });
-    
+
     // 创建平滑曲线
     let path = `M ${points[0]}`;
     for (let i = 1; i < points.length; i++) {
@@ -109,14 +122,17 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
   const getPriceFromX = (x: number) => {
     const relativeX = Math.max(padding, Math.min(x, width - padding));
     const highPriceStart = padding + chartWidth * 2 / 3;
-    
+    if(relativeX >= chartWidth)
+      return (relativeX-chartWidth)/padding*(maxItemPrice-groupGrowEnd)+groupGrowEnd ; // return (price-groupGrowEnd)/(maxItemPrice-groupGrowEnd) * padding + chartWidth
     if (relativeX <= highPriceStart) {
       // 前2/3区域：0-200价格
-      return ((relativeX - padding) / (chartWidth * 2 / 3)) * groupGrowPrice;
+      return ((relativeX - padding) / (chartWidth * 2 / 3)) * groupGrowStart;
     } else {
       // 后1/3区域：200+价格
-      const normalizedX = (relativeX - highPriceStart) / (chartWidth / 3);
-      return groupGrowPrice + normalizedX * (totalPriceRange - groupGrowPrice);
+      const ratio = (relativeX - highPriceStart) / (chartWidth / 3 - padding);
+      const pows = Math.log((groupGrowEnd - groupGrowStart)/priceUnit)/Math.log(groupGrowCout)
+      const normalizedX = Math.pow(ratio,pows);
+      return groupGrowStart + normalizedX * (groupGrowEnd - groupGrowStart);
     }
   };
 
@@ -128,10 +144,14 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
     const price = getPriceFromX(x);
     
     if (isDragging === 'min') {
-      const newMin = Math.max(0, Math.min(price, maxPrice - priceUnit));
+      // 将价格调整为priceUnit的整数倍
+      const roundedPrice = Math.round(price / priceUnit) * priceUnit;
+      const newMin = Math.max(0, Math.min(roundedPrice, maxPrice - priceUnit));
       onRangeChange(newMin, maxPrice);
     } else if (isDragging === 'max') {
-      const newMax = Math.min(totalPriceRange, Math.max(price, minPrice + priceUnit));
+      // 将价格调整为priceUnit的整数倍
+      const roundedPrice = Math.round(price / priceUnit) * priceUnit;
+      const newMax = Math.min(totalPriceRange, Math.max(roundedPrice, minPrice + priceUnit));
       onRangeChange(minPrice, newMax);
     }
   };
@@ -159,9 +179,12 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
         <span className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
           <SlidersHorizontal className="h-3.5 w-3.5" />
           价格范围
+          <span className="ml-1.5 text-xs font-normal text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-full">
+            约{selectedItemCount}件
+          </span>
         </span>
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <div className="w-14 flex items-center rounded bg-gray-100 pl-1.5 outline-1 -outline-offset-1 outline-gray-300  has-[input:focus-within]:outline-indigo-600">
+        <div className="flex items-center gap-1 text-xs text-gray-500">
+          <div className="w-15 flex items-center rounded bg-gray-100 pl-1.5 outline-1 -outline-offset-1 outline-gray-300  has-[input:focus-within]:outline-indigo-600">
             <div className="shrink-0 text-base text-gray-500 select-none sm:text-sm/6">¥</div>
             <input 
               type="number" 
@@ -170,14 +193,17 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
               ref={minInputRef}
               defaultValue={Math.round(minPrice)}
               onBlur={(e) => {
-                const newMin = Math.max(0, Math.min(Number(e.target.value), maxPrice - priceUnit));
+                // 将输入值调整为priceUnit的整数倍
+                const inputValue = Number(e.target.value);
+                const roundedValue = Math.round(inputValue / priceUnit) * priceUnit;
+                const newMin = Math.max(0, Math.min(roundedValue, maxPrice - priceUnit));
                 onRangeChange(newMin, maxPrice);
               }}
               className="block min-w-0 grow  px-1 text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none sm:text-sm/6" placeholder="125" />
           </div>
-          <span>-</span>
+          <span>~</span>
           
-          <div className="w-14 flex items-center rounded bg-gray-100 pl-1.5 outline-1 -outline-offset-1 outline-gray-300  has-[input:focus-within]:outline-indigo-600">
+          <div className="w-15 flex items-center rounded bg-gray-100 pl-1.5 outline-1 -outline-offset-1 outline-gray-300  has-[input:focus-within]:outline-indigo-600">
             <div className="shrink-0 text-base text-gray-500 select-none sm:text-sm/6">¥</div>
             <input 
               type="number" 
@@ -288,8 +314,10 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
           {/* {priceGroups.filter((_, i) => i % Math.ceil(priceGroups.length / 6) === 0 || i ==priceGroups.length-1).map(({price}) => { */}
           {/* {[0,20,50,100,150,200,250,maxItemPrice].map( */}
           {[20,
-            ...Array.from({length: groupGrowPrice/50}, (_, i) => i*50),
-            ...Array.from({length:2}, (_, i) => Math.ceil((maxItemPrice -groupGrowPrice)/2 /50) * 50 * i + groupGrowPrice),
+            ...Array.from({length: groupGrowStart/50 +1}, (_, i) => i*50),
+            // ...priceGroups.filter((_, i) => i>25 && (i-25) % Math.ceil((priceGroups.length-25)/ 2) === 0).map(({price}) => price),
+            // ...Array.from({length:2}, (_, i) => Math.ceil((maxItemPrice -groupGrowPrice)/2 /50) * 50 * i + groupGrowPrice),
+            ...[12,23].map(i => Math.round(Math.pow(i /30,Math.log((groupGrowEnd -groupGrowStart)/priceUnit)/Math.log(groupGrowCout)) * (groupGrowEnd -groupGrowStart) + groupGrowStart)).map(x=>x-x%100),
             maxItemPrice
           ].map(price=>{
             const x = getXPosition(price);
@@ -297,7 +325,7 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
               <text
                 key={price}
                 x={x}
-                y={height - 5}
+                y={height}
                 textAnchor="middle"
                 fontSize="10"
                 fill="#6b7280"

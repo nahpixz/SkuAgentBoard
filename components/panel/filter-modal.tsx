@@ -41,18 +41,12 @@ export const useGlobalFilterStore = _create((set:setFn<typeof FilterDefaultState
   _closeFilter:()=> set(state=>({
     isOpen:false,
     // priceRange:state.appliedPriceRange || [0,state.skuPriceRange[1]||250]
-    pending:state.applied || {
-      ...FilterDefaultOptions,
-      priceRange:[0,state.skuPriceRange[1]||250],
-    }
+    pending:state.applied || FilterDefaultOptions
   })),
   _reset:()=>set(state=>({
     isOpen:false,
-    pending:{
-      ...FilterDefaultOptions,
-      priceRange:[0,state.skuPriceRange[1]||250],
-    },
-    applied:null
+    pending:FilterDefaultOptions,
+    applied:FilterDefaultOptions
   })),
   _apply:()=>set(state=>({
     isOpen:false,
@@ -80,16 +74,24 @@ export function FilterModal() {
   const [skuGroupOptions,setSkuGroupOptions] = useState<PriceRangeFilterProps['groupOptions']|null>(null);
   useEffect(()=>{
     DB.getSkuWithoutC2C().then(skus=>{
-      const prices = skus.map(item => item.marketPrice/100) || [0];
-      const skuMin = Math.min(...prices);
-      const skuMax = Math.max(...prices) || 100;
+      const prices = skus.map(item => item.marketPrice/100).sort((a, b) => a - b) || [0];
+      const skuMin = prices[0]                //Math.min(...prices);
+      const skuMax = prices[prices.length-1] //Math.max(...prices) || 100;
       useGlobalFilterStore.setState({
         skuPriceRange:[skuMin,skuMax]
       })
+
+      const groupOpt:PriceRangeFilterProps['groupOptions'] = {
+        priceGroups: [],
+        groupGrowStart: 250,
+        groupGrowEnd: 3000,
+        groupGrowCout: 12,
+        priceUnit: 10
+      }
+      const priceGroups = calcPriceGroups(prices,skuMax,groupOpt);
       setSkuGroupOptions({
-        priceGroups:calcPriceGroups(skus,skuMax,250,10),
-        groupGrowPrice:250,
-        priceUnit:10
+        ...groupOpt,
+        priceGroups,
       })
     })
   },[isOpen])
@@ -98,7 +100,7 @@ export function FilterModal() {
     <ModalOverlay
       isOpen={isOpen}
       onClose={_closeFilter}
-      contentClassName="mt-8 bg-white/95 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+      contentClassName="mt-8 bg-white/95 rounded-xl shadow-2xl w-full md:max-w-md lg:max-w-lg xl:max-w-xl mx-4 overflow-hidden"
     >
         <div className="relative p-4 max-h-[88vh] overflow-y-auto">
           {/* 关闭按钮 */}
@@ -310,52 +312,55 @@ function CategoryButton({category,selected,onClick}:{category:selectAbleCategory
 }
 
 //计算价格区间分组
-function calcPriceGroups(items:DB.skuItem[],maxItemPrice:number,groupGrowPrice:number,priceUnit:number) {
+function calcPriceGroups(sortedPrices:number[],maxItemPrice:number,groupOpt:PriceRangeFilterProps['groupOptions']) {
+  const {groupGrowStart,groupGrowEnd,groupGrowCout,priceUnit} = groupOpt;
   const groups: { [key: number]: number } = {};
   // 小于groupGrowPrice的均匀分组
-  const groupCount = Math.ceil(groupGrowPrice / priceUnit);
+  const groupCount = Math.ceil(groupGrowStart / priceUnit);
   for (let i = 0; i <= groupCount; i++) {
     groups[i * priceUnit] = 0;
   }
 
   // 大于groupGrowPrice的非均匀分组 - 使用指数增长的间隔
-  if (maxItemPrice > groupGrowPrice) {
-    const highPriceItems = items.filter(item => item.marketPrice / 100 > groupGrowPrice);
-    const highPrices = highPriceItems.map(item => item.marketPrice / 100).sort((a, b) => a - b);
+  if (maxItemPrice > groupGrowStart) {
+    const highPrices = sortedPrices;
 
     if (highPrices.length > 0) {
-      const minHighPrice = Math.min(...highPrices);
-      const maxHighPrice = Math.max(...highPrices);
-      const priceRange = maxHighPrice - groupGrowPrice;
+      // const maxHighPrice = highPrices[highPrices.length-1];
+      groups[Math.round(highPrices[highPrices.length-1])] = 0;
+      const priceRange = groupGrowEnd - groupGrowStart;
 
       // 创建8个非均匀分组来覆盖200+的价格范围
-      const groupCount = 8;
+      const groupCount = groupGrowCout;
       for (let i = 0; i < groupCount; i++) {
         // 使用指数函数创建非均匀间隔
-        const ratio = Math.pow(i / (groupCount - 1), 1.5); // 指数为1.5，使间隔逐渐增大
-        const groupPrice = groupGrowPrice + ratio * priceRange;
+        const pows = Math.log(priceRange/priceUnit)/Math.log(groupGrowCout); // 最小间距为priceUnit
+        const ratio = Math.pow(i / (groupCount - 1),pows); 
+        const groupPrice = groupGrowStart + ratio * priceRange;
+        // console.log('ratio,prices',ratio,groupPrice)
         groups[Math.round(groupPrice)] = 0;
       }
+      // console.log('groups',Object.keys(groups).filter(x=> x>240 ))
     }
   }
+  
 
   // 统计每个价格段的商品数量
-  items.forEach(item => {
-    const price = item.marketPrice / 100;
+  sortedPrices.forEach(price => {
     let groupKey;
 
-    if (price <= groupGrowPrice) {
+    if (price <= groupGrowStart) {
       groupKey = Math.floor(price / priceUnit) * priceUnit;
     } else {
       // 找到最接近的高价分组
       const highPriceGroups = Object.keys(groups)
         .map(Number)
-        .filter(p => p > groupGrowPrice)
+        .filter(p => p > groupGrowStart)
         .sort((a, b) => a - b);
 
       groupKey = highPriceGroups.reduce((closest, current) => {
         return Math.abs(current - price) < Math.abs(closest - price) ? current : closest;
-      }, highPriceGroups[0] || groupGrowPrice);
+      }, highPriceGroups[0] || groupGrowStart);
     }
 
     groups[groupKey] = (groups[groupKey] || 0) + 1;
