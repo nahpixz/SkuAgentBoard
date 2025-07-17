@@ -1,8 +1,9 @@
 import { useSettingsStore } from "@/components/panel/settings-store";
 import { C2C_LIST } from "@/entrypoints/panel/api";
-import { getInspectedUrl, JumpToComplete, ListenKey, waitForRequest } from "@/entrypoints/panel/tasks";
+import { getInspectedUrl, JumpToComplete, waitForRequest } from "@/entrypoints/panel/tasks";
 import { skuAgentStore } from "./components/skuFetchAgent";
 import { ScrollToEnd_bilimall } from "./opts";
+import { ListenKey } from "@/entrypoints/panel/networkListener";
 
 export async function skuAutoScroll(){
   const autoCaptureMall = useSettingsStore.getState().getAndOpen_AutoCaptureMall() //缓存旧autoCaptureMall

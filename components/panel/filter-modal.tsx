@@ -6,7 +6,7 @@ import { DB } from '../../entrypoints/panel/db';
 import { _create, setFn } from "@/lib/utils";
 
 const FilterDefaultOptions = {
-  priceRange: [0, 250] as [number,number],
+  priceRange: [0, 50] as [number,number],
   sortOption:'' as SortOption,
   sortDirection:'asc' as SortDirection,
   showOnlyInStock:false,
@@ -17,7 +17,7 @@ const FilterDefaultState = {
   isOpen: false,
   skuPriceRange:[NaN,NaN] as [number,number],
   pending:FilterDefaultOptions,
-  applied:null as typeof FilterDefaultOptions | null
+  applied:FilterDefaultOptions as typeof FilterDefaultOptions | null
 }
 //全局单例
 export const useGlobalFilterStore = _create((set:setFn<typeof FilterDefaultState>) => ({
