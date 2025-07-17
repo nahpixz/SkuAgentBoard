@@ -4,7 +4,7 @@ import { C2C_DETAIL, C2C_LIST, GOOFISH, MALL_DETAIL, MARKET_SWG } from './api';
 import { ArrowLeft, Search, Settings, Bug, Layers, Check, CircleCheckBig, FunnelPlus, SlidersHorizontal } from 'lucide-react';
 import { DB } from './db';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { networkListener, HistoryBack, JumpTo, ToC2cSearch, waitForRequest } from './tasks';
+import { HistoryBack, JumpTo, ToC2cSearch, waitForRequest } from './tasks';
 import { useSettingsStore } from '@/components/panel/settings-store';
 import { useSearchStore } from '@/components/panel/search-store';
 import { useSelectStore } from '@/components/panel/select-store';
@@ -19,6 +19,7 @@ import { InventoryCheckModal } from '@/components/panel/inventory-check-modal';
 import { GearSwitcher, type GEAR_MODE } from '@/components/panel/gear-switcher';
 import AGENT from '@/premium';
 import { ModalOverlay } from '@/components/panel/modal-overlay';
+import { networkListener } from './networkListener';
 
 
 type OPT_MODE = 'idle' | 'search' | 'select' | 'settings' | 'filter';
@@ -164,9 +165,10 @@ function App() {
   
   function handleDebug() {
     console.log("click")
-    AGENT.OPT.ScrollToEnd_bilimall();
+    // AGENT.OPT.ScrollToEnd_bilimall();
+
     // console.log('checkingC2Cs',...checkingC2Cs)
-    // console.log('skuPriceRange',filterState.skuPriceRange)
+    console.log('filterState',filterState)
     //  console.log('sorted',skuList?.sort((a,b)=>b.marketPrice-a.marketPrice).slice(0,5))
     // console.log('skuList',...skuList?.filter(it=>it.itemsId===checkingItem?.itemsId)[0].c2cLists)
     
@@ -414,8 +416,8 @@ function App() {
 
       {gearMode=='Agent'&&(<>
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 p-6">
-        <AGENT.COMP.SkuAgentBoard className='mt-8'/>
-        </div>
+        <AGENT.COMP.SkuAgentBoard className='mt-4'/>
+      </div>
       </>)}
 
       

@@ -3,6 +3,12 @@
 export namespace C2C_LIST{
     export const HTML_URL = "https://mall.bilibili.com/neul-next/index.html?page=magic-market_index"
     export const URL = "https://mall.bilibili.com/mall-magic-c/internet/c2c/v2/list"
+    export enum CategoryType{
+        Figure = '2312',
+        Goods = '2331',
+        Model= '2066', //一般都是高达
+        _3C = '2273', //
+    }
     export type skuItem = {
         blindBoxId:number
         img:string
@@ -28,11 +34,20 @@ export namespace C2C_LIST{
         uid: string
         uname: string
         uspaceJumpUrl: string | null
+
+        category?:CategoryType
     }
 
     export function parse(jsonBody:any):[c2cItem[],string]{
         const c2cs:c2cItem[] = jsonBody.data.data;
         return [c2cs.filter(x => !x.detailDtoList[0].type),jsonBody.data.nextId]
+    }
+
+    export function appendCategory(c2cs:c2cItem[],category:CategoryType){
+        // if(!Object.values(CategoryType).includes(category)) return;
+        c2cs.forEach(x => {
+            x.category = category
+        })
     }
 }
 
