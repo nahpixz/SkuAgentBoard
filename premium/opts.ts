@@ -32,3 +32,230 @@ export async function ScrollToEnd_bilimall() {
   })
 }
 
+
+/**
+ * 对指定的HTML节点进行截图
+ * @param selector 传递给document.querySelector的选择器字符串
+ * @returns 返回截图的Blob对象
+ */
+export async function captureElementScreenshot(selector: string): Promise<Base64URLString> {
+  // 定义元素位置和尺寸的接口
+  interface ElementRect {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    devicePixelRatio: number;
+  }
+
+  return new Promise((resolve, reject) => {
+    const tabId = browser.devtools.inspectedWindow.tabId;
+    
+    // 连接到调试器
+    browser.debugger.attach({ tabId }, "1.3", async () => {
+
+      await new Promise( (resolve,reject)=>setTimeout(resolve, 3000));
+      try {
+        // 使用eval获取元素的位置和尺寸信息
+        browser.devtools.inspectedWindow.eval(
+          `(function() {
+            const element = document.querySelector('${selector}');
+            if (!element) return null;
+            const rect = element.getBoundingClientRect();
+            return {
+              x: rect.x,
+              y: rect.y,
+              width: rect.width,
+              height: rect.height,
+              devicePixelRatio: window.devicePixelRatio || 1
+            };
+          })()`,
+          async (result: ElementRect | null, error) => {
+            if (error || !result) {
+              browser.debugger.detach({ tabId });
+              reject(error || new Error(`Element not found: ${selector}`));
+              return;
+            }
+            console.log('result',result)
+            await new Promise( (resolve,reject)=>setTimeout(resolve, 3000));
+            try {
+              // 捕获屏幕截图
+              const captureResult = await browser.debugger.sendCommand(
+                { tabId },
+                "Page.captureScreenshot",
+                {
+                  format: "png",
+                  // clip: {
+                  //   x: result.x * result.devicePixelRatio,
+                  //   y: result.y * result.devicePixelRatio,
+                  //   width: result.width * result.devicePixelRatio,
+                  //   height: result.height * result.devicePixelRatio,
+                  //   scale: 1
+                  // }
+                }
+              ) as { data: string };
+              
+              // 确保captureResult存在并且有data属性
+              if (!captureResult || typeof captureResult.data !== 'string') {
+                throw new Error('截图失败：未获取到有效的图像数据');
+              }
+              
+              const screenshot = `data:image/png;base64,${captureResult.data}`
+              console.log('screenshot',screenshot)
+              
+              resolve(screenshot);
+            } catch (err) {
+              reject(err);
+            } finally {
+              // 断开调试器连接
+              setTimeout(() => {
+                browser.debugger.detach({ tabId });
+              }, 5000);
+            }
+          }
+        );
+      } catch (err) {
+        browser.debugger.detach({ tabId });
+        reject(err);
+      }
+    });
+  });
+}
+
+/**
+ * 使用browser.tabs.captureVisibleTab对当前可见标签页进行截图
+ * @param format 可选，指定截图的格式，默认为'png'
+ * @param quality 可选，当format为'jpeg'时，指定图片质量，取值范围0-100
+ * @returns 返回base64编码的图片数据URL
+ */
+export async function captureVisibleTab(selector: string,format: 'jpeg' | 'png' = 'png', quality?: number): Promise<Base64URLString> {
+  const rect = await evalInConsole((selector)=>{
+      const element = document.querySelector(selector);
+      if (!element) return null;
+      return element.getBoundingClientRect();
+    },[selector])
+  
+  return new Promise((resolve, reject) => {
+    // 准备截图选项
+    const options: Browser.extensionTypes.ImageDetails = { format };
+    if (format === 'jpeg' && quality !== undefined) {
+      options.quality = quality;
+    }
+    
+    
+    // 使用browser.tabs API捕获当前可见标签页
+    browser.tabs.captureVisibleTab(options, (dataUrl) => {
+      if (browser.runtime.lastError) {
+        console.error('截图失败:', browser.runtime.lastError.message);
+        reject(new Error(`截图失败: ${browser.runtime.lastError.message}`));
+        return;
+      }
+      
+      if (!dataUrl) {
+        reject(new Error('截图失败：未获取到有效的图像数据'));
+        return;
+      }
+      
+      console.log('截图成功');
+      resolve(dataUrl);
+    });
+  });
+}
+
+
+// scrollIntoView
+// devicePixelRatio: window.devicePixelRatio || 1
+export async function captureVisibleElement(selector: string,fmt: 'jpeg' | 'png' = 'png', quality?: number): Promise<Base64URLString> {
+   const rect = await evalInConsole((selector)=>{
+      const element = document.querySelector(selector);
+      if (!element) return null;
+      const rect = element.getBoundingClientRect(); //属性来自DOMRect对象原型链，不能{...DOMRect}
+      return {
+        x:rect.x,
+        y:rect.y,
+        width: rect.width,
+        height: rect.height,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        left: rect.left,
+        isInViewport:(
+          rect.top >= 0 &&
+          rect.left >= 0 &&
+          rect.bottom <= window.innerHeight &&
+          rect.right <= window.innerWidth
+        ),
+        devicePixelRatio: window.devicePixelRatio || 1
+      };
+    },[selector])
+  if(!rect) throw new Error(`selector not found:${selector}`,)
+  if(!rect.isInViewport) throw new Error(`selector not in viewport,${rect}`)
+  const dataUrl = await captureVisibleTab(selector);
+
+  // return dataUrl;
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      console.warn('onload',rect)
+      try {
+        // 创建Canvas元素
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          return reject(new Error('无法创建Canvas上下文'));
+        }
+        
+        const ratio = 2
+        // 设置Canvas尺寸为元素尺寸
+        canvas.width = rect.width * ratio;
+        canvas.height = rect.height * ratio;
+        
+        // 在Canvas上绘制裁切后的图像
+        ctx.drawImage(
+          img,
+          rect.x * ratio,
+          rect.y * ratio,
+          rect.width * ratio,
+          rect.height * ratio,
+          0, 0,
+          rect.width * ratio,
+          rect.height * ratio
+        );
+        
+        // 将Canvas转换为DataURL
+        const croppedDataUrl = canvas.toDataURL(`image/${fmt}`, fmt === 'jpeg' ? (quality !== undefined ? quality : 90) / 100 : undefined);
+        resolve(croppedDataUrl);
+      } catch (err) {
+        console.error('裁切图片失败:', err);
+        resolve(dataUrl);
+      }
+    };
+      
+      img.onerror = () => {
+        console.error('加载图片失败');
+        resolve(dataUrl);
+      };
+      
+      img.src = dataUrl;
+      // console.warn('img',img)
+  })
+
+
+}
+
+async function evalInConsole<T = string|number,R=any>(fnWithoutSideEffect: (...fnArgs:T[])=>R,fnArgs:T[]):Promise<R>{
+  return new Promise((resolve, reject) => {
+    browser.devtools.inspectedWindow.eval(
+      `(${fnWithoutSideEffect.toString()})(${fnArgs.map(x=>JSON.stringify(x)).join(',')})`,
+      (result:R, e) => {
+        if (e) {
+          console.error("evalInConsole:", e)
+          reject(e)
+        }
+        resolve(result)
+      }
+    );
+  })
+}
+

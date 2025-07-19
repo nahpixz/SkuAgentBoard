@@ -9,13 +9,9 @@ export default defineConfig({
     version: '1.0.0',
     permissions: [
       'webNavigation',
-      'debugger'
+      'debugger',
     ],
-    host_permissions: [
-      "http://*/*",
-      "https://*/*",
-      "*://*/*"
-    ],
+    host_permissions: ['<all_urls>'],
     web_accessible_resources: [{
       matches: ['*://*.goofish.com/*'],
       resources: ['/inject.js'],
