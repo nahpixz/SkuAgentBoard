@@ -20,6 +20,7 @@ import { GearSwitcher, type GEAR_MODE } from '@/components/panel/gear-switcher';
 import AGENT from '@/premium';
 import { ModalOverlay } from '@/components/panel/modal-overlay';
 import { networkListener } from './networkListener';
+import DebugOverlay,{DebugOverlayRef} from '@/components/panel/debug-overlay';
 
 
 type OPT_MODE = 'idle' | 'search' | 'select' | 'settings' | 'filter';
@@ -164,26 +165,26 @@ function App() {
 
   
   // 创建调试组件的引用
-  const debugImageRef = useRef<HTMLImageElement>(null);
+  const debugOverlayRef = useRef<DebugOverlayRef>(null);
   
   async function handleDebug() {
+    // 显示加载状态或提示
+    debugOverlayRef.current && debugOverlayRef.current.setIsVisible(true);
+    console.log('正在获取调试数据...');
     
-    // const screenshot = await AGENT.OPT.captureElementScreenshot('.good-info-module'); //'.good-info-module'
-    const {detail} = await AGENT.TASK.captureSkuScreenshot(10919349);
-    const screenshot = await AGENT.TASK.captureOrderScreenshot(detail);
-    //  // 通过ref更新调试组件中的图片
-    // //  console.log('detail',detail)
-    if (debugImageRef.current) {
-      debugImageRef.current.src = screenshot||'';
+    // 获取商品详情和截图
+    const {detail, screenshot} = await AGENT.TASK.captureSkuScreenshot(10919349);
+    // 获取订单截图
+    const screenshotB = await AGENT.TASK.captureOrderScreenshot(detail);
+    
+    // 使用调试悬浮层显示数据
+    if (debugOverlayRef.current) {
+      debugOverlayRef.current.set({
+        details:[detail,detail],
+        screenshot,
+        screenshotB
+      });
     }
-    // console.log("click")
-    // AGENT.OPT.ScrollToEnd_bilimall();
-
-    // console.log('checkingC2Cs',...checkingC2Cs)
-    // console.log('filterState',filterState)
-    //  console.log('sorted',skuList?.sort((a,b)=>b.marketPrice-a.marketPrice).slice(0,5))
-    // console.log('skuList',...skuList?.filter(it=>it.itemsId===checkingItem?.itemsId)[0].c2cLists)
-    
   };
 
 
@@ -334,11 +335,8 @@ function App() {
         
       </>}
 
-      {/* 调试组件 */}
-      <div className="min-w-[500px] fixed top-2 right-2 z-50 bg-black/80 text-white shadow-lg rounded-lg p-2 border border-gray-200" style={{ maxWidth: '300px', maxHeight: '300px', overflow: 'auto' }}>
-        <div className="text-xs font-semibold mb-1">调试截图</div>
-        <img ref={debugImageRef} className="w-full h-auto" alt="调试截图" />
-      </div>
+      {/* 调试悬浮层组件 */}
+      <DebugOverlay ref={debugOverlayRef} />
       
       {/* 底部悬浮工具条 */}
       <div className="fixed bottom-6 left-0 right-0 z-51 flex justify-center">

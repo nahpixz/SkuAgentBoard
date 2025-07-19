@@ -1,6 +1,6 @@
 import { useSettingsStore } from "@/components/panel/settings-store";
 import { DB } from "./db"
-import { C2C_LIST, C2C_DETAIL, MARKET_SWG, MALL_DETAIL } from "./api";
+import { C2C_LIST, C2C_DETAIL, MARKET_SWG, MALL_DETAIL, ORDER_DETAIL } from "./api";
 import { requestDispatcher } from "./tasks";
 
 // let connID = "";
@@ -8,6 +8,7 @@ import { requestDispatcher } from "./tasks";
 let c2cNextId = "";
 export const ListenKey = {
   C2C_LIST:"null",
+  ORDER_DETAIL:"null",
 }
 export async function networkListener(
   req: globalThis.Browser.devtools.network.Request
@@ -76,5 +77,7 @@ export async function networkListener(
         console.error("req", req._connectionId, req.request.url, req);
       }
     });
-  }
+  } else if (req.request.url.startsWith(ORDER_DETAIL.JSON_PREFIX)) {
+     requestDispatcher(ORDER_DETAIL.JSON_PREFIX, ListenKey.ORDER_DETAIL)?.dispatch(true)
+  } 
 }

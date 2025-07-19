@@ -1,5 +1,5 @@
 import { useSettingsStore } from "@/components/panel/settings-store";
-import { C2C_LIST, MALL_DETAIL } from "@/entrypoints/panel/api";
+import { C2C_LIST, MALL_DETAIL, ORDER_DETAIL } from "@/entrypoints/panel/api";
 import { getInspectedUrl, JumpToComplete, waitForRequest } from "@/entrypoints/panel/tasks";
 import { skuAgentStore } from "./components/skuFetchAgent";
 import { ScrollToEnd_bilimall, evalInConsole, captureVisibleTab, waitForFrame, evalGetBoundingClientRect, captureWithRect } from "./opts";
@@ -40,11 +40,7 @@ export async function captureSkuScreenshot(skuid: number) {
   await JumpToComplete(MALL_DETAIL.URL(skuid));
   // 等待获取商品详情数据
   const skuDetail = await detailPromise;
-  return {
-    detail: skuDetail,
-    screenshot:'',
-  };
-  
+
   // // 等待页面加载完成
   await new Promise(resolve => setTimeout(resolve, 1000));
   
@@ -75,7 +71,12 @@ export async function captureSkuScreenshot(skuid: number) {
 
 const ORDER_PAGE_URL = 'https://mall.bilibili.com/orderdetail.html?orderId=4000366603358272&noTitleBar=1';
 export async function captureOrderScreenshot(skuDetail:MALL_DETAIL.ItemDetail) {
+  ListenKey.ORDER_DETAIL = 'captureOrderScreenshot'
+  const detailPromise = waitForRequest(ORDER_DETAIL.JSON_PREFIX, ListenKey.ORDER_DETAIL);
   await JumpToComplete(ORDER_PAGE_URL);
+  await detailPromise;
+  ListenKey.ORDER_DETAIL = 'null'
+  
   type MOD = {
     itemsImg: string;
     itemsName: string;
@@ -98,7 +99,7 @@ export async function captureOrderScreenshot(skuDetail:MALL_DETAIL.ItemDetail) {
   // await new Promise(resolve => setTimeout(resolve, 1000));
   await waitForFrame();
   console.warn('newM',newM)
-  const ok = await evalInConsole(({itemsImg,itemsName,skuSpec,price}:MOD) => {
+  const [ok,err]:[boolean,any] = await evalInConsole(({itemsImg,itemsName,skuSpec,price}:MOD) => {
     try {
       const v = (document.querySelector('.order-detail') as any).__vue__
       v.orderDeliver = null;
@@ -120,19 +121,19 @@ export async function captureOrderScreenshot(skuDetail:MALL_DETAIL.ItemDetail) {
       try {
         document.querySelector('#orderIdText')!.parentElement!.parentElement!.style.visibility = 'hidden';
       } catch (error) {
-        return 'hide orderIdText failed.'
+        return [false,'hide orderIdText failed.']
       }
     } catch (e) {
-      return false;
+      return [false,e];
     }
-    return true;
+    return [true,null];
   }, [newM]);
   if(!ok) {
-    console.error('captureOrderScreenshot failed', skuDetail);
+    console.error('captureOrderScreenshot failed',err, skuDetail);
     return null;
   }
 
-  await waitForFrame();
+  await waitForFrame(666);
   console.warn('OrderModDone:',ok)
 
   const rectL = await evalGetBoundingClientRect('.item-card')

@@ -151,7 +151,10 @@ export namespace MALL_DETAIL{
     }
 }
 
-
+export namespace ORDER_DETAIL{
+    export const JSON_PREFIX = 'https://mall.bilibili.com/mall-c/order/detail'
+    //https://mall.bilibili.com/mall-c/order/detail?mVersion=116&orderId=4000366603358272&platform=h5&time=1752945830522
+}
 
 export namespace MARKET_SWG{
     export const JSON_PREFIX = "https://api.s-wg.net/market/searchItemHistory"

@@ -271,10 +271,10 @@ export async function evalInConsole<T = string|number,R=any>(fnWithoutSideEffect
   })
 }
 
-export async function waitForFrame() {
+export async function waitForFrame(timeout=0) {
   return new Promise(resolve => {
     requestAnimationFrame(() => {
-      setTimeout(resolve, 0); // 确保在布局/绘制之后
+      setTimeout(resolve, timeout); // 确保在布局/绘制之后
     });
   });
 }
