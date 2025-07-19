@@ -1,6 +1,6 @@
 import { useSettingsStore } from "@/components/panel/settings-store";
 import { DB } from "./db"
-import { C2C_LIST, C2C_DETAIL, MARKET_SWG } from "./api";
+import { C2C_LIST, C2C_DETAIL, MARKET_SWG, MALL_DETAIL } from "./api";
 import { requestDispatcher } from "./tasks";
 
 // let connID = "";
@@ -55,6 +55,24 @@ export async function networkListener(
       } catch (e) {
         console.error(e);
         requestDispatcher(MARKET_SWG.JSON_PREFIX,"checkbox-search-new")?.reject(e);
+        console.error("req", req._connectionId, req.request.url, req);
+      }
+    });
+  } else if (MALL_DETAIL.isDetail(req.request.url)) {
+    req.getContent((body, encoding) => {
+      try {
+        const data = JSON.parse(body).data as MALL_DETAIL.ItemDetail;
+        console.log(req._connectionId, "MALL_DETAIL", data);
+        // 从URL中提取itemsId
+        const urlParams = new URLSearchParams(req.request.url.split('?')[1]);
+        const itemsId = Number(urlParams.get('itemsId'));
+        if (itemsId) {
+          requestDispatcher(MALL_DETAIL.JSON_PREFIX, itemsId)?.dispatch(data);
+          // 可以考虑添加DB存储逻辑
+          // DB.putMallDetail(data);
+        }
+      } catch (e) {
+        console.error(e);
         console.error("req", req._connectionId, req.request.url, req);
       }
     });

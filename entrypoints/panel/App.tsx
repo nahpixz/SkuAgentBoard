@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import './App.css';
 import { C2C_DETAIL, C2C_LIST, GOOFISH, MALL_DETAIL, MARKET_SWG } from './api';
 import { ArrowLeft, Search, Settings, Bug, Layers, Check, CircleCheckBig, FunnelPlus, SlidersHorizontal } from 'lucide-react';
@@ -163,18 +163,27 @@ function App() {
   }
 
   
-  function handleDebug() {
-    console.log("click")
+  // 创建调试组件的引用
+  const debugImageRef = useRef<HTMLImageElement>(null);
+  
+  async function handleDebug() {
+    
+    // const screenshot = await AGENT.OPT.captureElementScreenshot('.good-info-module'); //'.good-info-module'
+    const {detail} = await AGENT.TASK.captureSkuScreenshot(10919349);
+    const screenshot = await AGENT.TASK.captureOrderScreenshot(detail);
+    //  // 通过ref更新调试组件中的图片
+    // //  console.log('detail',detail)
+    if (debugImageRef.current) {
+      debugImageRef.current.src = screenshot||'';
+    }
+    // console.log("click")
     // AGENT.OPT.ScrollToEnd_bilimall();
 
     // console.log('checkingC2Cs',...checkingC2Cs)
-    console.log('filterState',filterState)
+    // console.log('filterState',filterState)
     //  console.log('sorted',skuList?.sort((a,b)=>b.marketPrice-a.marketPrice).slice(0,5))
     // console.log('skuList',...skuList?.filter(it=>it.itemsId===checkingItem?.itemsId)[0].c2cLists)
     
-    // browser.devtools.network.getHAR(function (logInfo) {
-    //   console.log('log',logInfo)
-    // })
   };
 
 
@@ -321,6 +330,16 @@ function App() {
         })}      
       </div>}
 
+      {gearMode =='Auto' &&<>
+        
+      </>}
+
+      {/* 调试组件 */}
+      <div className="min-w-[500px] fixed top-2 right-2 z-50 bg-black/80 text-white shadow-lg rounded-lg p-2 border border-gray-200" style={{ maxWidth: '300px', maxHeight: '300px', overflow: 'auto' }}>
+        <div className="text-xs font-semibold mb-1">调试截图</div>
+        <img ref={debugImageRef} className="w-full h-auto" alt="调试截图" />
+      </div>
+      
       {/* 底部悬浮工具条 */}
       <div className="fixed bottom-6 left-0 right-0 z-51 flex justify-center">
         <div className="bg-white/77 backdrop-blur-md shadow-lg rounded-full px-3 py-2 border flex items-center">

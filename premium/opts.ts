@@ -67,7 +67,7 @@ export async function captureElementScreenshot(selector: string): Promise<Base64
               y: rect.y,
               width: rect.width,
               height: rect.height,
-              devicePixelRatio: window.devicePixelRatio || 1
+              devicePixelRatio: window.devicePixelRati
             };
           })()`,
           async (result: ElementRect | null, error) => {
@@ -77,6 +77,18 @@ export async function captureElementScreenshot(selector: string): Promise<Base64
               return;
             }
             console.log('result',result)
+
+            await browser.debugger.sendCommand(
+              { tabId},
+              "Emulation.setDeviceMetricsOverride",
+              {
+                width: 430,
+                height: 932,
+                deviceScaleFactor: 3, // 强制 DPR=3
+                mobile: true
+              }
+            );
+
             await new Promise( (resolve,reject)=>setTimeout(resolve, 3000));
             try {
               // 捕获屏幕截图
@@ -136,14 +148,13 @@ export async function captureVisibleTab(format: 'jpeg' | 'png' = 'png', quality?
       options.quality = quality;
     }
     
-    
     // 使用browser.tabs API捕获当前可见标签页
     browser.tabs.captureVisibleTab(options, (dataUrl) => {
-      if (browser.runtime.lastError) {
-        console.error('截图失败:', browser.runtime.lastError.message);
-        reject(new Error(`截图失败: ${browser.runtime.lastError.message}`));
-        return;
-      }
+      // if (browser.runtime.lastError) {
+      //   console.error('截图失败:', browser.runtime.lastError.message);
+      //   reject(new Error(`截图失败: ${browser.runtime.lastError.message}`));
+      //   return;
+      // }
       
       if (!dataUrl) {
         reject(new Error('截图失败：未获取到有效的图像数据'));
@@ -160,34 +171,11 @@ export async function captureVisibleTab(format: 'jpeg' | 'png' = 'png', quality?
 // scrollIntoView
 // devicePixelRatio: window.devicePixelRatio || 1
 export async function captureVisibleElement(selector: string,fmt: 'jpeg' | 'png' = 'png', quality?: number): Promise<Base64URLString> {
-   const rect = await evalInConsole((selector)=>{
-      const element = document.querySelector(selector);
-      if (!element) return null;
-      const rect = element.getBoundingClientRect(); //属性来自DOMRect对象原型链，不能{...DOMRect}
-      return {
-        x:rect.x,
-        y:rect.y,
-        width: rect.width,
-        height: rect.height,
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom,
-        left: rect.left,
-        isInViewport:(
-          rect.top >= 0 &&
-          rect.left >= 0 &&
-          rect.bottom <= window.innerHeight &&
-          rect.right <= window.innerWidth
-        ),
-        devicePixelRatio: window.devicePixelRatio || 1
-      };
-    },[selector])
-  if(!rect) throw new Error(`selector not found:${selector}`,)
-  if(!rect.isInViewport) throw new Error(`selector not in viewport,${rect}`)
+  const rect = await evalGetBoundingClientRect(selector);
+  return captureWithRect(rect,fmt,quality)
+}
+export async function captureWithRect(rect: Rect,fmt: 'jpeg' | 'png' = 'png', quality?: number): Promise<Base64URLString> {
   const dataUrl = await captureVisibleTab();
-
-  // return dataUrl;
-
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -232,13 +220,43 @@ export async function captureVisibleElement(selector: string,fmt: 'jpeg' | 'png'
       };
       
       img.src = dataUrl;
-      // console.warn('img',img)
   })
 
 
 }
 
+export async function evalGetBoundingClientRect(selector:string) {
+  const rect = await evalInConsole((selector)=>{
+      const element = document.querySelector(selector);
+      if (!element) return null;
+      const rect = element.getBoundingClientRect(); //属性来自DOMRect对象原型链，不能{...DOMRect}
+      return {
+        x:rect.x,
+        y:rect.y,
+        width: rect.width,
+        height: rect.height,
+        // top: rect.top,
+        // right: rect.right,
+        // bottom: rect.bottom,
+        // left: rect.left,
+        isInViewport:(
+          rect.top >= 0 &&
+          rect.left >= 0 &&
+          rect.bottom <= window.innerHeight &&
+          rect.right <= window.innerWidth
+        ),
+        devicePixelRatio: window.devicePixelRatio || 1
+      };
+    },[selector])
+  if(!rect) throw new Error(`selector not found:${selector}`,)
+  if(!rect.isInViewport) throw new Error(`selector not in viewport,${rect}`)
+  return rect;
+}
+type UnpackPromise<T> = T extends Promise<infer U> ? U : T;
+type Rect = UnpackPromise<ReturnType<typeof evalGetBoundingClientRect>>
+
 export async function evalInConsole<T = string|number,R=any>(fnWithoutSideEffect: (...fnArgs:T[])=>R,fnArgs:T[]):Promise<R>{
+  // console.warn(`(${fnWithoutSideEffect.toString()})(${fnArgs.map(x=>JSON.stringify(x)).join(',')})`)
   return new Promise((resolve, reject) => {
     browser.devtools.inspectedWindow.eval(
       `(${fnWithoutSideEffect.toString()})(${fnArgs.map(x=>JSON.stringify(x)).join(',')})`,
@@ -251,6 +269,14 @@ export async function evalInConsole<T = string|number,R=any>(fnWithoutSideEffect
       }
     );
   })
+}
+
+export async function waitForFrame() {
+  return new Promise(resolve => {
+    requestAnimationFrame(() => {
+      setTimeout(resolve, 0); // 确保在布局/绘制之后
+    });
+  });
 }
 
 

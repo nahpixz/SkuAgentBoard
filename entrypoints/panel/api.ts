@@ -92,7 +92,66 @@ export namespace C2C_DETAIL{
 
 export namespace MALL_DETAIL{
     export const URL = (skuItemsId:number) => `https://mall.bilibili.com/detail.html?from=draw-items&jumpLinkType=0&loadingShow=1&noTitleBar=1#goFrom=na&noReffer=true&itemsId=${skuItemsId}`
+    export const JSON_PREFIX = 'https://mall.bilibili.com/mall-c-search/items/info'
+    
+    export function isDetail(url:string){
+        return url.startsWith(JSON_PREFIX)
+    }
+    
+    export type AttrItem = {
+        attrName: string;
+        attrValue: string | string[];
+    }
+    
+    export type SkuItem = {
+        id: number;
+        price: string;
+        stock: number;
+        img: string;
+        specValues: string[];
+        status: number;
+        subStatus: number;
+    }
+    
+    export type ItemDetail = {
+        itemsId: number;
+        name: string;
+        brief: string;
+        shopId: number;
+        merchantId: number;
+        img: string[];
+        price: string;
+        maxPrice: string;
+        brandId: number;
+        brandName: string;
+        brandLogo: string;
+        mobileDesc: string;
+        status: number;
+        itemsStatus: number;
+        saleStatus: number;
+        attrList: AttrItem[];
+        itemsDepositVO:{
+            img:string;
+        }
+        itemsSkuListVO: {
+            itemsId: number;
+            specs: string[];
+            itemsSkuList: SkuItem[];
+            specInfoList: {
+                specName: string;
+                specId: number;
+                specValueVOList: {
+                    specId: number,
+                    specValueName: string,
+                    specValueImg: string
+                }[]
+            }[];
+        };
+        sales: number;
+    }
 }
+
+
 
 export namespace MARKET_SWG{
     export const JSON_PREFIX = "https://api.s-wg.net/market/searchItemHistory"
