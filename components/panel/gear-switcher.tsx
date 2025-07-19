@@ -2,7 +2,7 @@
 import { Hand, Zap, Bot } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 
-export type GEAR_MODE = '自动' | 'Agent'|'Interactive';
+export type GEAR_MODE = 'Auto' | 'Agent'|'Interactive';
 
 interface GearSwitcherProps {
   gearMode: GEAR_MODE;
@@ -10,13 +10,13 @@ interface GearSwitcherProps {
   className?: string;
 }
 
-const GEAR_OPTIONS: GEAR_MODE[] = ['自动', 'Agent','Interactive'];
+const GEAR_OPTIONS: GEAR_MODE[] = ['Auto', 'Agent','Interactive'];
 
 const getGearIcon = (gear: GEAR_MODE, size: string = 'h-5 w-5') => {
   switch (gear) {
     case 'Interactive':
       return <Hand className={size} />;
-    case '自动':
+    case 'Auto':
       return <Zap className={size} />;
     case 'Agent':
       return <Bot className={size} />;
