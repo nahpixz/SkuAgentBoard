@@ -128,13 +128,7 @@ export async function captureElementScreenshot(selector: string): Promise<Base64
  * @param quality 可选，当format为'jpeg'时，指定图片质量，取值范围0-100
  * @returns 返回base64编码的图片数据URL
  */
-export async function captureVisibleTab(selector: string,format: 'jpeg' | 'png' = 'png', quality?: number): Promise<Base64URLString> {
-  const rect = await evalInConsole((selector)=>{
-      const element = document.querySelector(selector);
-      if (!element) return null;
-      return element.getBoundingClientRect();
-    },[selector])
-  
+export async function captureVisibleTab(format: 'jpeg' | 'png' = 'png', quality?: number): Promise<Base64URLString> {
   return new Promise((resolve, reject) => {
     // 准备截图选项
     const options: Browser.extensionTypes.ImageDetails = { format };
@@ -190,7 +184,7 @@ export async function captureVisibleElement(selector: string,fmt: 'jpeg' | 'png'
     },[selector])
   if(!rect) throw new Error(`selector not found:${selector}`,)
   if(!rect.isInViewport) throw new Error(`selector not in viewport,${rect}`)
-  const dataUrl = await captureVisibleTab(selector);
+  const dataUrl = await captureVisibleTab();
 
   // return dataUrl;
 
@@ -244,7 +238,7 @@ export async function captureVisibleElement(selector: string,fmt: 'jpeg' | 'png'
 
 }
 
-async function evalInConsole<T = string|number,R=any>(fnWithoutSideEffect: (...fnArgs:T[])=>R,fnArgs:T[]):Promise<R>{
+export async function evalInConsole<T = string|number,R=any>(fnWithoutSideEffect: (...fnArgs:T[])=>R,fnArgs:T[]):Promise<R>{
   return new Promise((resolve, reject) => {
     browser.devtools.inspectedWindow.eval(
       `(${fnWithoutSideEffect.toString()})(${fnArgs.map(x=>JSON.stringify(x)).join(',')})`,
@@ -259,3 +253,36 @@ async function evalInConsole<T = string|number,R=any>(fnWithoutSideEffect: (...f
   })
 }
 
+
+async function attachDebugger() {
+  const tabId = browser.devtools.inspectedWindow.tabId;
+  try {
+    await browser.debugger.attach({ tabId }, '1.3');
+    return true;
+  } catch (err) {
+    console.error('Attach failed:', err);
+    return false;
+  }
+}
+
+
+async function dispatchTouchEvent() {
+  try {
+    await browser.debugger.sendCommand(
+      { tabId: browser.devtools.inspectedWindow.tabId },
+      'Input.dispatchTouchEvent',
+      {
+        type:'touchStart',
+        touchPoints: [{
+          x: 327,
+          y: 644,
+          radiusX: 11.5,
+          radiusY: 11.5,
+          force: 1
+        }]
+      }
+    );
+  } catch (err) {
+    console.error('Touch event failed:', err);
+  }
+}
