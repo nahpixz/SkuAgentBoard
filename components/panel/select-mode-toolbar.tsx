@@ -53,8 +53,55 @@ export function SelectModeToolbar({items,onClose}:{items:DB.skuItem[],onClose:()
     };
   }, [onClose, resetSelection]);
 
-  function debug() {
-    AGENT.STORE.skuProcessStore.getState().init(items.filter(x=>selectedItems[x.itemsId]))
+  // 定义处理步骤
+  const processSteps = [
+    {
+      id: 'fetch-details',
+      name: '获取详情',
+      description: '从API获取SKU详细信息',
+      process: async (item: DB.skuItem) => {
+        console.log(`获取SKU详情: ${item.skuName || item.itemsId}`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return;
+      }
+    },
+    {
+      id: 'update-price',
+      name: '更新价格',
+      description: '更新SKU的最新价格信息',
+      process: async (item: DB.skuItem) => {
+        console.log(`更新价格: ${item.skuName || item.itemsId}`);
+        await new Promise(resolve => setTimeout(resolve, 800));
+        return;
+      }
+    },
+    {
+      id: 'check-inventory',
+      name: '检查库存',
+      description: '检查SKU的库存状态',
+      process: async (item: DB.skuItem) => {
+        console.log(`检查库存: ${item.skuName || item.itemsId}`);
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        return;
+      }
+    },
+    {
+      id: 'update-database',
+      name: '更新数据库',
+      description: '将处理结果保存到数据库',
+      process: async (item: DB.skuItem) => {
+        console.log(`更新数据库: ${item.skuName || item.itemsId}`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return;
+      }
+    }
+  ];
+
+  function processSelected() {
+    // 获取选中的SKU项目
+    const selectedSkuItems = items.filter(x => selectedItems[x.itemsId]);
+    // 初始化处理队列
+    AGENT.STORE.skuProcessStore.getState().init(selectedSkuItems, processSteps);
   }
   
   return (
@@ -246,6 +293,18 @@ export function SelectModeToolbar({items,onClose}:{items:DB.skuItem[],onClose:()
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            
+            {/* 处理队列按钮 */}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="rounded-md text-xs h-7 px-2 border-blue-100 bg-white hover:bg-blue-50 text-blue-600 shadow-sm"
+              disabled={!hasSelectedItems}
+              onClick={processSelected}
+            >
+              <CheckCircle className="h-3 w-3 mr-1" />
+              处理队列
+            </Button>
           </div>
           
           {/* 右侧：设置和退出按钮 */}
