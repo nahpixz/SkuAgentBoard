@@ -33,7 +33,7 @@ export function ProductCard({
   
   // 判断当前商品是否被选中
   const isSelectMode = mode == 'select';
-  const isSelected = selectedItems[item.itemsId] || false;
+  const isSelected = isSelectMode && selectedItems[item.itemsId] || false;
   
   // 处理选择/取消选择商品的事件包装函数
   const handleToggleSelect = (itemId: number, event: React.MouseEvent) => {

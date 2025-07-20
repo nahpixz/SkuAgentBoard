@@ -1,4 +1,4 @@
-import React from 'react';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   Check, Trash, X, Bug, ShoppingCart, Search, Upload, Download, 
@@ -6,8 +6,6 @@ import {
   Filter, RefreshCw, Clipboard, Tag, Package, Hash, CheckCircle
 } from 'lucide-react';
 import { useSelectStore } from './select-store';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { DB } from '@/entrypoints/panel/db';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,9 +20,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 
-export function SelectModeToolbar({handleSelectAll,onClose}:{handleSelectAll: () => void,onClose:()=>void}) {
+export function SelectModeToolbar({items,onClose}:{items: {itemsId:number}[],onClose:()=>void}) {
   // const skuList = useLiveQuery(() => DB.getSkuList());
   const {
+    selectedItems,
     hasSelectedItems,
     hasSelectedC2C,
     selectAll,
@@ -32,6 +31,26 @@ export function SelectModeToolbar({handleSelectAll,onClose}:{handleSelectAll: ()
     deleteSelectedC2C,
     resetSelection,
   } = useSelectStore();
+
+  // useEffect(()=>{
+  //   resetSelection();
+  // },[])
+  
+  // 添加ESC按键监听
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        resetSelection();
+        onClose();
+      }
+    };
+    // 添加事件监听
+    window.addEventListener('keydown', handleKeyDown);
+    // 组件卸载时移除事件监听
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose, resetSelection]);
   
   return (
     <div className="fixed top-0 left-0 right-0 z-50 py-1.5 bg-gradient-to-b from-white to-white/95 backdrop-blur-md shadow-sm border-b">
@@ -50,8 +69,10 @@ export function SelectModeToolbar({handleSelectAll,onClose}:{handleSelectAll: ()
                   {hasSelectedItems ? (
                     <div className="flex items-center">
                       <CheckCircle className="h-3 w-3 mr-1 fill-blue-100" />
-                      <span className="font-semibold mr-0.5">3</span>
-                      <span>已选</span>
+                      <span className="font-semibold mr-0.5">{Object.values(selectedItems).filter(x=>x).length}</span>
+                      {/* <span>已选</span> */}
+                      
+              
                     </div>
                   ) : (
                     <>
@@ -67,6 +88,7 @@ export function SelectModeToolbar({handleSelectAll,onClose}:{handleSelectAll: ()
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   className="text-xs flex items-center gap-2"
+                  onClick={()=>selectAll(items)}
                 >
                   <Check className="h-3.5 w-3.5" />
                   全选
@@ -74,13 +96,14 @@ export function SelectModeToolbar({handleSelectAll,onClose}:{handleSelectAll: ()
                 <DropdownMenuItem 
                   className="text-xs flex items-center gap-2"
                   disabled={!hasSelectedItems}
+                  onClick={resetSelection}
                 >
                   <X className="h-3.5 w-3.5" />
                   取消选择
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   className="text-xs flex items-center gap-2"
-                  disabled={!hasSelectedItems}
+                  disabled={true}
                 >
                   <Hash className="h-3.5 w-3.5" />
                   反选
@@ -91,7 +114,7 @@ export function SelectModeToolbar({handleSelectAll,onClose}:{handleSelectAll: ()
           </div>
           
           {/* 中间：功能按钮组 */}
-          <div className="flex-1 flex items-start justify-start space-x-1.5 px-2 max-w-3xl mx-auto">
+          <div className="flex-1 flex items-start justify-start space-x-2 px-2 max-w-3xl mx-auto">
             {/* 删除操作下拉菜单 */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -101,9 +124,9 @@ export function SelectModeToolbar({handleSelectAll,onClose}:{handleSelectAll: ()
                   className="rounded-md text-xs h-7 px-2 border-red-100 bg-white hover:bg-red-50 text-red-600 shadow-sm"
                   disabled={!hasSelectedItems}
                 >
-                  <Trash className="h-3 w-3 mr-1" />
+                  <Trash className="h-3 w-3" />
                   删除
-                  <ChevronDown className="h-3 w-3 ml-0.5" />
+                  <ChevronDown className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-40">
@@ -132,9 +155,9 @@ export function SelectModeToolbar({handleSelectAll,onClose}:{handleSelectAll: ()
                   className="rounded-md text-xs h-7 px-2 border-purple-100 bg-white hover:bg-purple-50 text-purple-600 shadow-sm"
                   disabled={!hasSelectedItems}
                 >
-                  <Search className="h-3 w-3 mr-1" />
+                  <Search className="h-3 w-3" />
                   检索
-                  <ChevronDown className="h-3 w-3 ml-0.5" />
+                  <ChevronDown className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-48">
@@ -164,9 +187,9 @@ export function SelectModeToolbar({handleSelectAll,onClose}:{handleSelectAll: ()
                   className="rounded-md text-xs h-7 px-2 border-emerald-100 bg-white hover:bg-emerald-50 text-emerald-600 shadow-sm"
                   disabled={!hasSelectedItems}
                 >
-                  <Upload className="h-3 w-3 mr-1" />
+                  <Upload className="h-3 w-3" />
                   上架
-                  <ChevronDown className="h-3 w-3 ml-0.5" />
+                  <ChevronDown className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-48">
@@ -200,9 +223,9 @@ export function SelectModeToolbar({handleSelectAll,onClose}:{handleSelectAll: ()
                   className="rounded-md text-xs h-7 px-2 border-amber-100 bg-white hover:bg-amber-50 text-amber-600 shadow-sm"
                   disabled={!hasSelectedItems}
                 >
-                  <Star className="h-3 w-3 mr-1" />
+                  <Star className="h-3 w-3" />
                   收藏
-                  <ChevronDown className="h-3 w-3 ml-0.5" />
+                  <ChevronDown className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-40">
@@ -280,7 +303,8 @@ export function SelectModeToolbar({handleSelectAll,onClose}:{handleSelectAll: ()
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button 
+            <Button
+              onClick={()=>{resetSelection();onClose()}} 
               variant="ghost" 
               size="sm" 
               className="rounded-md text-xs h-8 w-8 p-0 m-0 text-gray-500 hover:bg-gray-100 hover:text-gray-700"

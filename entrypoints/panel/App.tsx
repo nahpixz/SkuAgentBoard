@@ -88,13 +88,6 @@ function App() {
   // 筛选相关状态
   const filterState = useGlobalFilterStore();
   
-  // 使用select store
-  const {
-    selectedItems, 
-    selectAll,
-  } = useSelectStore();
-
-  
   // 同步mode状态和各个store的状态
   useEffect(() => {
     const searchState = useSearchStore.getState();
@@ -168,21 +161,21 @@ function App() {
   async function handleDebug() {
     // 显示加载状态或提示
     debugOverlayRef.current && debugOverlayRef.current.setIsVisible(true);
-    console.log('正在获取调试数据...');
+    // console.log('正在获取调试数据...');
     
-    // 获取商品详情和截图
-    const {detail, screenshot} = await AGENT.TASK.captureSkuScreenshot(10919349);
-    // 获取订单截图
-    const screenshotB = await AGENT.TASK.captureOrderScreenshot(detail);
+    // // 获取商品详情和截图
+    // const {detail, screenshot} = await AGENT.TASK.captureSkuScreenshot(10919349);
+    // // 获取订单截图
+    // const screenshotB = await AGENT.TASK.captureOrderScreenshot(detail);
     
-    // 使用调试悬浮层显示数据
-    if (debugOverlayRef.current) {
-      debugOverlayRef.current.set({
-        details:[detail,detail],
-        screenshot,
-        screenshotB
-      });
-    }
+    // // 使用调试悬浮层显示数据
+    // if (debugOverlayRef.current) {
+    //   debugOverlayRef.current.set({
+    //     details:[detail,detail],
+    //     screenshot,
+    //     screenshotB
+    //   });
+    // }
   };
 
 
@@ -312,7 +305,7 @@ function App() {
   return (
     <>
       {/* 选择/搜索模式下的顶部操作栏 */}
-      {mode=='select' && <SelectModeToolbar handleSelectAll={()=>selectAll(skuShowList)} onClose={()=>setMode('idle')} />}
+      {mode=='select' && <SelectModeToolbar items={skuShowList} onClose={()=>setMode('idle')} />}
       {mode=='search' && <SearchModal onClose={()=>setMode('idle')} />}
       
       {/* 主内容区域  =='Interactive'*/}

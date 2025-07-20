@@ -64,7 +64,7 @@ export const useSelectStore = _create((set: setFn<typeof initialState>) => ({
   },
   
   // 选择所有项目
-  selectAll: (skuList: any[]) => {
+  selectAll: (skuList: {itemsId:number}[]) => {
     set((state) => {
       const newSelectedItems: { [key: number]: boolean } = {};
       skuList?.forEach(item => {
