@@ -146,10 +146,11 @@ export function ProductCard({
             <div 
               onClick={(e) => isSelectMode ? e.stopPropagation() : ToC2cSearch(item.skuId)}
               className="absolute bottom-0 right-0 h-6
-              bg-gradient-to-tl from-[#786DF6]/39 via-[#786DF6]/3 to-transparent backdrop-blur-[1px]
+              bg-gradient-to-l from-[#786DF6]/39 via-[#786DF6]/3 to-transparent backdrop-blur-[1px]
               text-[#786DF6] px-1.5 py-0.5 text-xs cursor-pointer 
-               hover:bg-[#9B8BF7] hover:text-white hover:shadow-xl rounded-md transition-all 
-              duration-200 flex items-center gap-1.5 " //border 
+              hover:from-[#786DF6]/99 hover:via-[#786DF6]/66  hover:via-77% 
+              hover:text-white hover:shadow-xl  transition-all 
+              duration-200 flex items-center gap-1.5 " //border rounded-md
               title="跳转s-wg搜索库存"
             >
               {getLowestPrice(item) && (
