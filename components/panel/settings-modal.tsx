@@ -53,7 +53,7 @@ export function SettingsModal({ onClose, onDataChange }: SettingsModalProps) {
             </div>
             
             <div 
-              className="group flex items-center justify-between p-3 rounded-xl border border-gray-200/60 hover:border-[#786DF6]/30 hover:bg-[#786DF6]/5 transition-all duration-200 cursor-pointer"
+              className={`group flex items-center justify-between p-3 rounded-xl border border-gray-200/60  ${autoCaptureMall?'bg-[#786DF6]/10':'hover:bg-[#786DF6]/5'} hover:border-[#786DF6]/30 transition-all duration-200 cursor-pointer`}
               onClick={toggleAutoCaptureMall}
             >
               <div className="flex items-center gap-3">

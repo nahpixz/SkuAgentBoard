@@ -79,18 +79,18 @@ export function ProductCard({
 
   // 获取分类图标
   function getCategoryIcon(category?: string) {
-    if (!category) return <Tag className="h-2.5 w-2.5 opacity-70" />;
+    if (!category) return <Info className="h-3.5 w-3.5" />;
     switch (category) {
       case '2312': // 手办
-        return <Gift className="h-2.5 w-2.5 opacity-70" />;
+        return <Gift className="h-3.5 w-3.5" />;
       case '2331': // 周边
-        return <Package className="h-2.5 w-2.5 opacity-70" />;
+        return <Package className="h-3.5 w-3.5" />;
       case '2066': // 模型
-        return <Gamepad2 className="h-2.5 w-2.5 opacity-70" />;
+        return <Gamepad2 className="h-3.5 w-3.5" />;
       case '2273': // 数码
-        return <Smartphone className="h-2.5 w-2.5 opacity-70" />;
+        return <Smartphone className="h-3.5 w-3.5" />;
       default:
-        return <Tag className="h-2.5 w-2.5 opacity-70" />;
+        return <Tag className="h-3.5 w-3.5" />;
     }
   }
 
@@ -99,15 +99,15 @@ export function ProductCard({
     if (!category) return { bgColor: 'bg-gray-100 text-gray-600' };
     switch (category) {
       case '2312': // 手办
-        return { bgColor: 'bg-pink-100 text-pink-600' };
+        return { bgColor: 'bg-pink-100/40 text-pink-600' };
       case '2331': // 周边
-        return { bgColor: 'bg-purple-100 text-purple-600' };
+        return { bgColor: 'bg-purple-100/40 text-purple-600' };
       case '2066': // 模型
-        return { bgColor: 'bg-blue-100 text-blue-600' };
+        return { bgColor: 'bg-blue-100/40 text-blue-600' };
       case '2273': // 数码
-        return { bgColor: 'bg-green-100 text-green-600' };
+        return { bgColor: 'bg-green-100/40 text-green-600' };
       default:
-        return { bgColor: 'bg-gray-100 text-gray-600' };
+        return { bgColor: 'bg-gray-100/40 text-gray-600' };
     }
   }
 
@@ -125,12 +125,10 @@ export function ProductCard({
             className="absolute top-2 left-2 z-10"
             onClick={(e) => handleToggleSelect(item.itemsId, e)}
           >
-            <div className="h-6 w-6 bg-white/90 rounded-full flex items-center justify-center shadow-sm border border-gray-200">
               <Checkbox 
                 checked={isSelected}
-                className="h-4 w-4 rounded-full data-[state=checked]:bg-[#786DF6] border-gray-300"
+                className="h-5 w-5 rounded-full data-[state=checked]:bg-[#786DF6] data-[state=checked]:border-[#786DF6] border-gray-300"
               />
-            </div>
           </div>
         )}
         
@@ -147,16 +145,20 @@ export function ProductCard({
           <HoverCardTrigger asChild>
             <div 
               onClick={(e) => isSelectMode ? e.stopPropagation() : ToC2cSearch(item.skuId)}
-              className="absolute bottom-2 right-2 bg-gradient-to-r from-black/80 to-black/70 text-white px-2.5 py-1 rounded-full text-xs backdrop-blur-sm cursor-pointer hover:from-[#786DF6]/90 hover:to-[#9B8BF7]/90 transition-all duration-200 flex items-center gap-1.5 shadow-lg border border-white/10"
+              className="absolute bottom-0 right-0 h-6
+              bg-gradient-to-tl from-[#786DF6]/39 via-[#786DF6]/3 to-transparent backdrop-blur-[1px]
+              text-[#786DF6] px-1.5 py-0.5 text-xs cursor-pointer 
+               hover:bg-[#9B8BF7] hover:text-white hover:shadow-xl rounded-md transition-all 
+              duration-200 flex items-center gap-1.5 " //border 
               title="跳转s-wg搜索库存"
             >
-              <span className="font-medium">x{item.c2cItemsIds.length}</span>
               {getLowestPrice(item) && (
                 <>
-                  <div className="w-px h-3 bg-white/30" />
-                  <span className="font-semibold text-yellow-200">¥{getLowestPrice(item)}</span>
+                  <span className="font-semibold">¥{getLowestPrice(item)}</span>
+                  |
                 </>
               )}
+              <span className="font-medium">x{item.c2cItemsIds.length}</span>
             </div>
           </HoverCardTrigger>
           <HoverCardContent className="w-80 p-3 rounded-lg shadow-lg border border-gray-200 bg-white/77 backdrop-blur-md">
@@ -215,16 +217,16 @@ export function ProductCard({
         {/* 悬浮售价格标签 */}
         <HoverCard>
           <HoverCardTrigger asChild>
-            <div className="absolute bottom-1 left-2 z-20">
-              {true ? (
-                <div className={`h-6 ${true
-                  ?'rounded-md before:opacity-33'
-                  :'rounded-full w-6 before:opacity-100'
+            <div className="absolute bottom-0 left-0 z-20">
+              {true ? ( //老组件切换
+                <div className={`h-6 ${true //新的变形组件
+                  ?' before:opacity-33'  //rounded-md
+                  :'rounded-full w-6 before:opacity-100 cursor-pointer'
                 } 
                   goofish-card-button bg-gradient-to-r from-[#FBE650]/90 to-[#FBE650]/3 text-[#786DF6]
                   backdrop-blur-[1px] pl-1.5 pr-5 py-0.5  
-                  text-xs font-semibold shadow-lg border border-white/20 flex items-center gap-1.5
-                   hover:shadow-xl transition-all duration-200`}
+                  text-xs font-semibold  flex items-center gap-1.5  
+                   hover:shadow-xl transition-all duration-200`} //border border-white/20 shadow-lg
                 >
                   {/* <span>&nbsp;</span>  */}
                   <span>¥{111.11}</span>
@@ -233,14 +235,14 @@ export function ProductCard({
                 </div>
               ) : (
                 <button 
-                  className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 flex items-center justify-center group"
+                  className="w-8 h-8  rounded-full backdrop-blur-sm border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110 flex items-center justify-center group"
                   style={{
-                    backgroundImage: `url(${IMGBGURL})`,
+                    backgroundImage: `url(${IMGBGURL}),`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center'
                   }}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#786DF6]/20 to-[#9B8BF7]/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                  {/* <div className="absolute inset-0 bg-gradient-to-br from-[#786DF6]/20 to-[#9B8BF7]/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200" /> */}
                 </button>
               )}
             </div>
@@ -252,36 +254,39 @@ export function ProductCard({
           </HoverCardContent>
         </HoverCard>
 
-        {/* 商品分类标签 */}
-        <HoverCard>
-          <HoverCardTrigger asChild>
-            <div className={`absolute ${mode=='select' ? 'top-2 left-10' : 'top-2 left-2'} z-10`}>
-              {item.category && (
-                <div className={`h-5 px-1.5 rounded-md flex items-center gap-1 text-[10px] font-medium shadow-sm ${getCategoryStyle(item.category).bgColor}`}>
-                  {getCategoryIcon(item.category)}
-                  <span>{getCategoryName(item.category)}</span>
-                </div>
-              )}
-            </div>
-          </HoverCardTrigger>
-          <HoverCardContent className="w-auto p-2 rounded-lg shadow-md">
-            <span className="text-xs">商品分类: {getCategoryName(item.category) || '未分类'}</span>
-          </HoverCardContent>
-        </HoverCard>
-
-        {/* 价格信息 */}
+        {/* 合并的商品分类和价格信息 */}
         <HoverCard>
           <HoverCardTrigger asChild>
             <button 
               onClick={() => JumpTo(MALL_DETAIL.URL(item.itemsId))}
-              className="absolute top-2 right-2 bg-black/50 text-white/90 px-1.5 py-0.5 text-[10px] rounded-sm backdrop-blur-sm hover:bg-black/70 transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+              className={`absolute top-0 right-0 z-10 ${item.category?getCategoryStyle(item.category).bgColor:'bg-black/40 text-white'} backdrop-blur-sm hover:bg-black/75 hover:text-white transition-all duration-200 px-2 py-1 rounded-md  flex items-center gap-2 group`}
             >
-              <Info className="h-2.5 w-2.5 opacity-70" />
-              <span>¥{item.marketPrice/100}</span>
+              <div className="flex items-center gap-1">
+                {getCategoryIcon(item.category)}
+                <span className={`font-medium text-xs`}>¥{item.marketPrice/100}</span>
+                {/* {item.category && (
+                  <div className="flex items-center gap-1 text-xs mt-0.5">
+                    
+                    <span>{getCategoryName(item.category)}</span>
+                  </div>
+                )} */}
+              </div>
             </button>
           </HoverCardTrigger>
-          <HoverCardContent className="w-auto p-2 rounded-lg shadow-md">
-            <span className="text-xs">点击跳转会员购:{item.itemsId}</span>
+          <HoverCardContent className="w-auto p-3 rounded-lg shadow-md border border-gray-100">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium">价格:</span>
+                <span className="text-sm font-bold text-[#786DF6]">¥{item.marketPrice/100}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium">分类:</span>
+                <span className={`text-xs px-1.5 py-0.5 rounded-full ${getCategoryStyle(item.category).bgColor}`}>
+                  {getCategoryName(item.category) || '未分类'}
+                </span>
+              </div>
+              <div className="text-[10px] text-gray-500 mt-1">点击跳转会员购 ID: {item.itemsId}</div>
+            </div>
           </HoverCardContent>
         </HoverCard>
       </div>

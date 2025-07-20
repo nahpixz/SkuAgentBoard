@@ -317,9 +317,10 @@ function App() {
       
       {/* 主内容区域  =='Interactive'*/}
       {gearMode =='Interactive' && 
-      <div className={`${mode === 'select' || mode === 'search' ? 'pt-16' : 'pt-2'} grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2 pb-16`}>
+      <div className={`h-screen overflow-y-auto ${mode === 'select' || mode === 'search' ? 'pt-16' : 'pt-2'}`}>
+        <div className={` grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2`}>
         {skuShowList.map((item) => {
-          const isSelected = selectedItems[item.itemsId];
+          // const isSelected = selectedItems[item.itemsId];
           return (
             <ProductCard
               key={item.itemsId}
@@ -327,6 +328,7 @@ function App() {
               onOpenInventoryCheck={opencheckInventory} mode={mode}            />
           );
         })}      
+        </div>
       </div>}
 
       {gearMode =='Auto' &&<>
