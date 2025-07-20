@@ -38,7 +38,6 @@ type C2CCheckView={
 }
 
 function App() {
-  // const [c2cData,setC2cData] = useState<C2C_LIST.c2cItem[]>([]);
   const { enableLiveQuery } = useSettingsStore();
   const [cachedSkuList, setCachedSkuList] = useState<DB.skuItem[]>([]);
   const skuList = useLiveQuery(() => enableLiveQuery ? DB.getSkuList() : cachedSkuList, [enableLiveQuery]);
@@ -88,73 +87,7 @@ function App() {
   // 筛选相关状态
   const filterState = useGlobalFilterStore();
   
-  // 同步mode状态和各个store的状态
-  useEffect(() => {
-    const searchState = useSearchStore.getState();
-    const settingsState = useSettingsStore.getState();
-    
-    // if (searchState.isOpen && mode !== 'search') {
-    //   setMode('search');
-    // } else if (settingsState.isOpen && mode !== 'settings') {
-    //   setMode('settings');
-    // }
-    // 所有模态框的开关逻辑现在完全通过 mode 状态控制
-  }, [mode])
-  
-  // 统一的模式切换函数 - 核心状态管理逻辑
-  function setAppMode(newMode: OPT_MODE) {
-    // 如果是相同模式，则切换到idle
-    if (mode === newMode) {
-      newMode = 'idle';
-    }
-    
-    // 关闭所有模态窗和状态，确保互斥性
-    // closeSearch();
-    // closeSettings();
-    
-    // 不再需要调用 filterState._closeFilter()，因为现在通过 mode 状态控制
-    
-    // 设置新模式
-    setMode(newMode);
-    
-    // 根据新模式打开对应的功能
-    switch (newMode) {
-      case 'search':
-        // openSearch();
-        break;
-      case 'settings':
-        // openSettings();
-        break;
-      case 'select':
-        // if (!isSelectMode) {
-        //   toggleSelectMode();
-        // }
-        break;
-      case 'filter':
-        // 不再需要设置 isOpen 状态，因为现在通过 mode 状态控制
-        break;
-      case 'idle':
-      default:
-        // 保持idle状态，所有模态窗都已关闭
-        break;
-    }
-  }
-  
-  // === 模式切换处理函数 ===
-  // function handleOpenSettings() {
-  //   setAppMode('settings');
-  // }
-  
-  // function handleOpenSearch() {
-  //   setAppMode('search');
-  // }
-  
-  
-  function toggleFilter() {
-    setAppMode('filter');
-  }
 
-  
   // 创建调试组件的引用
   const debugOverlayRef = useRef<DebugOverlayRef>(null);
   
@@ -386,7 +319,7 @@ function App() {
             <ToolButton 
               icon={<SlidersHorizontal />}
               label="筛选"
-              onClick={toggleFilter}
+              onClick={()=>toggleMode('filter')}
               active={mode === 'filter'}
             />
             {AGENT.ok && <AGENT.COMP.AgentButton />}
