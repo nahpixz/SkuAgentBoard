@@ -18,9 +18,10 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu';
+import AGENT from '@/premium';
+import { DB } from '@/entrypoints/panel/db';
 
-
-export function SelectModeToolbar({items,onClose}:{items: {itemsId:number}[],onClose:()=>void}) {
+export function SelectModeToolbar({items,onClose}:{items:DB.skuItem[],onClose:()=>void}) {
   // const skuList = useLiveQuery(() => DB.getSkuList());
   const {
     selectedItems,
@@ -51,6 +52,10 @@ export function SelectModeToolbar({items,onClose}:{items: {itemsId:number}[],onC
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose, resetSelection]);
+
+  function debug() {
+    AGENT.STORE.skuProcessStore.getState().init(items.filter(x=>selectedItems[x.itemsId]))
+  }
   
   return (
     <div className="fixed top-0 left-0 right-0 z-50 py-1.5 bg-gradient-to-b from-white to-white/95 backdrop-blur-md shadow-sm border-b">
