@@ -251,37 +251,52 @@ const SkuInfoCard = ({ item }: { item: DB.skuItem }) => {
   }
 
   return (
-    <div className="flex items-start space-x-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
-      <div className="relative w-16 h-16 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
+    <div className="flex items-center p-2 bg-white rounded-lg border border-gray-200">
+      {/* 商品图片 */}
+      <div className="relative w-12 h-12 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden mr-2">
         <img 
           src={`https:${item.img}@144w_144h_85q.webp`} 
-          alt={item.name} 
+          alt={item.name || `商品 #${item.itemsId}`} 
           className="w-full h-full object-contain mix-blend-multiply" 
         />
+        {/* 分类标签移到右上角 */}
         {item.category && (
-          <div className={`absolute top-0 right-0 ${getCategoryStyle(item.category).bgColor} px-1 py-0.5 text-[10px] rounded-bl-md flex items-center`}>
+          <div className={`absolute top-0 right-0 ${getCategoryStyle(item.category).bgColor} px-1 py-0.5 text-[8px] rounded-bl-md flex items-center`}>
             {getCategoryIcon(item.category)}
           </div>
         )}
       </div>
-      <div className="flex-1 min-w-0">
-        <h4 className="text-sm font-medium text-gray-900 truncate">{item.name}</h4>
-        <div className="mt-1 flex items-center text-xs text-gray-500 space-x-2">
-          <span>ID: {item.itemsId}</span>
-          {item.marketPrice && (
-            <span className="font-medium text-blue-600">¥{item.marketPrice/100}</span>
-          )}
+      
+      {/* 商品信息 */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        <div className="flex items-center justify-between">
+          {/* 商品名称 */}
+          <h4 className="text-xs font-medium text-gray-900 truncate pr-1">
+            {item.name || `商品 #${item.itemsId}`}
+          </h4>
+          
+          {/* 分类标签 */}
           {item.category && (
-            <Badge variant="outline" className={`text-[10px] ${getCategoryStyle(item.category).bgColor}`}>
+            <Badge variant="outline" className={`text-[8px] h-4 ${getCategoryStyle(item.category).bgColor}`}>
               {getCategoryName(item.category)}
             </Badge>
           )}
         </div>
-        {item.c2cItemsIds && item.c2cItemsIds.length > 0 && (
-          <div className="mt-1 text-xs text-gray-500">
-            库存: {item.c2cItemsIds.length} 个
+        
+        {/* 商品详情 */}
+        <div className="flex items-center justify-between mt-0.5">
+          <div className="flex items-center space-x-2 text-[10px] text-gray-500">
+            <span>ID: {item.itemsId}</span>
+            {item.c2cItemsIds && item.c2cItemsIds.length > 0 && (
+              <span>库存: {item.c2cItemsIds.length}</span>
+            )}
           </div>
-        )}
+          
+          {/* 价格信息 */}
+          {item.marketPrice && (
+            <span className="text-[10px] font-medium text-blue-600">¥{item.marketPrice/100}</span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -507,33 +522,36 @@ export const skuProcessBoard = () => {
       contentClassName="w-full max-w-2xl p-0 rounded-lg overflow-hidden shadow-xl"
       alignment="center"
     >
-      <Card className="border-0 shadow-none">
-        <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-base font-bold">SKU处理队列</CardTitle>
-            <CardDescription className="text-xs text-white/80 mt-0.5">
-              {running 
-                ? paused 
-                  ? "处理已暂停" 
-                  : "正在处理队列中的SKU项目..."
-                : showPreview 
-                  ? "处理步骤预览" 
-                  : completedItems.length === totalItems 
-                    ? "所有项目处理完成" 
-                    : "准备开始处理"}
-            </CardDescription>
+      <Card className="border-0 shadow-none py-2 gap-2">
+        <div className="border-b border-gray-100 px-3 py-0 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">SKU处理队列</span>
+            <div className="flex items-center gap-1.5">
+              <div className={`w-2 h-2 rounded-full ${running ? paused ? 'bg-amber-400' : 'bg-green-500 animate-pulse' : completedItems.length === totalItems ? 'bg-blue-500' : 'bg-gray-400'}`} />
+              <span className="text-xs text-gray-500">
+                {running 
+                  ? paused 
+                    ? "已暂停" 
+                    : "处理中"
+                  : showPreview 
+                    ? "预览" 
+                    : completedItems.length === totalItems 
+                      ? "已完成" 
+                      : "待处理"}
+              </span>
+            </div>
           </div>
           {!running && (
             <Button 
               variant="ghost" 
               size="icon" 
               onClick={clear}
-              className="text-white hover:bg-white/20 h-8 w-8"
+              className="text-gray-400 hover:text-gray-600 hover:bg-gray-100/50 h-6 w-6 p-0"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3 w-3" />
             </Button>
           )}
-        </CardHeader>
+        </div>
         
         <CardContent className="p-4 space-y-4">
           {/* 总体进度与已处理项目合并 */}
