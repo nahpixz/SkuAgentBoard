@@ -104,10 +104,9 @@ function App() {
     //   setMode('search');
     // } else if (settingsState.isOpen && mode !== 'settings') {
     //   setMode('settings');
-    if (filterState.isOpen && mode !== 'filter') {
-      setMode('filter');
-    } 
-  }, [filterState.isOpen, mode])
+    // }
+    // 所有模态框的开关逻辑现在完全通过 mode 状态控制
+  }, [mode])
   
   // 统一的模式切换函数 - 核心状态管理逻辑
   function setAppMode(newMode: OPT_MODE) {
@@ -120,8 +119,7 @@ function App() {
     // closeSearch();
     // closeSettings();
     
-    filterState._closeFilter();
-  
+    // 不再需要调用 filterState._closeFilter()，因为现在通过 mode 状态控制
     
     // 设置新模式
     setMode(newMode);
@@ -140,7 +138,7 @@ function App() {
         // }
         break;
       case 'filter':
-        useGlobalFilterStore.setState({isOpen:true});
+        // 不再需要设置 isOpen 状态，因为现在通过 mode 状态控制
         break;
       case 'idle':
       default:
@@ -314,7 +312,7 @@ function App() {
   return (
     <>
       {/* 选择/搜索模式下的顶部操作栏 */}
-      {mode=='select' && <SelectModeToolbar handleSelectAll={()=>selectAll(skuShowList)} />}
+      {mode=='select' && <SelectModeToolbar handleSelectAll={()=>selectAll(skuShowList)} onClose={()=>setMode('idle')} />}
       {mode=='search' && <SearchModal onClose={()=>setMode('idle')} />}
       
       {/* 主内容区域  =='Interactive'*/}
@@ -446,7 +444,10 @@ function App() {
       </ModalOverlay>
       
       
-      <FilterModal/>
+      <FilterModal 
+        isOpen={mode === 'filter'} 
+        onClose={() => setMode('idle')}
+      />
       
       <InventoryCheckModal
         checkingItem={checkingItem}

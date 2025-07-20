@@ -18,12 +18,12 @@ const FilterDefaultOptions = {
   selectedCategory: '' as selectAbleCategory // 空字符串表示不筛选分类
 }
 const FilterDefaultState = {
-  isOpen: false,
   skuPriceRange:[NaN,NaN] as [number,number],
   pending:FilterDefaultOptions,
   applied:FilterDefaultOptions as typeof FilterDefaultOptions | null
 }
-//全局单例
+//全局单例 - 不再包含开关逻辑
+//完全通过isOpen和onClose属性控制，不再通过内部store状态控制开关
 export const useGlobalFilterStore = _create((set:setFn<typeof FilterDefaultState>) => ({
   ...FilterDefaultState,
   _onDiscountRangeChange:(value:number)=> set(state=>({
@@ -38,18 +38,14 @@ export const useGlobalFilterStore = _create((set:setFn<typeof FilterDefaultState
   _onCategoryChange:(category:selectAbleCategory)=> set(state=>({
     pending:{...state.pending,selectedCategory:category}
   })),
-  _closeFilter:()=> set(state=>({
-    isOpen:false,
-    // priceRange:state.appliedPriceRange || [0,state.skuPriceRange[1]||250]
+  _resetPending:()=>set(state=>({
     pending:state.applied || FilterDefaultOptions
   })),
   _reset:()=>set(state=>({
-    isOpen:false,
     pending:FilterDefaultOptions,
     applied:FilterDefaultOptions
   })),
   _apply:()=>set(state=>({
-    isOpen:false,
     applied:state.pending,
   })),
   _handleSortChange:(option: SortOption, direction: SortDirection)=>set(state=>({
@@ -58,54 +54,87 @@ export const useGlobalFilterStore = _create((set:setFn<typeof FilterDefaultState
       sortOption:option,
       sortDirection:state.pending.sortOption == option ? direction : 'asc',
     },
-  })),
+  }))
 }));
 
 
-export function FilterModal() {
+export interface FilterModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function FilterModal({ isOpen, onClose }: FilterModalProps) {
   const { 
-    isOpen,pending,skuPriceRange,
-    _closeFilter,_handleSortChange,
+    pending,skuPriceRange,
+    _handleSortChange,
     _onDiscountRangeChange,_onUpdateTimeRangeChange,_toggleShowOnlyInStock,
     _onCategoryChange,
-    _apply,_reset
+    _apply,_reset,_resetPending
   }  = useGlobalFilterStore();
   const {priceRange,sortOption,sortDirection,discountRange,updateTimeRange,showOnlyInStock,selectedCategory} = pending;
   const [skuGroupOptions,setSkuGroupOptions] = useState<PriceRangeFilterProps['groupOptions']|null>(null);
+  
+  // 当模态框打开时，重置pending状态为上次应用的状态
+  useEffect(() => {
+    if (isOpen) {
+      _resetPending();
+    }
+  }, [isOpen]);
+  
   useEffect(()=>{
-    DB.getSkuWithoutC2C().then(skus=>{
-      const prices = skus.map(item => item.marketPrice/100).sort((a, b) => a - b) || [0];
-      const skuMin = prices[0]                //Math.min(...prices);
-      const skuMax = prices[prices.length-1] //Math.max(...prices) || 100;
-      useGlobalFilterStore.setState({
-        skuPriceRange:[skuMin,skuMax]
-      })
+    if (isOpen) {
+      DB.getSkuWithoutC2C().then(skus=>{
+        const prices = skus.map(item => item.marketPrice/100).sort((a, b) => a - b) || [0];
+        const skuMin = prices[0]                //Math.min(...prices);
+        const skuMax = prices[prices.length-1] //Math.max(...prices) || 100;
+        useGlobalFilterStore.setState({
+          skuPriceRange:[skuMin,skuMax]
+        })
 
-      const groupOpt:PriceRangeFilterProps['groupOptions'] = {
-        priceGroups: [],
-        groupGrowStart: 250,
-        groupGrowEnd: 3000,
-        groupGrowCout: 12,
-        priceUnit: 10
-      }
-      const priceGroups = calcPriceGroups(prices,skuMax,groupOpt);
-      setSkuGroupOptions({
-        ...groupOpt,
-        priceGroups,
+        const groupOpt:PriceRangeFilterProps['groupOptions'] = {
+          priceGroups: [],
+          groupGrowStart: 250,
+          groupGrowEnd: 3000,
+          groupGrowCout: 12,
+          priceUnit: 10
+        }
+        const priceGroups = calcPriceGroups(prices,skuMax,groupOpt);
+        setSkuGroupOptions({
+          ...groupOpt,
+          priceGroups,
+        })
       })
-    })
+    }
   },[isOpen])
+  
+  // 处理关闭
+  const handleClose = () => {
+    _resetPending();
+    onClose();
+  };
+  
+  // 处理应用
+  const handleApply = () => {
+    _apply();
+    onClose();
+  };
+  
+  // 处理重置
+  const handleReset = () => {
+    _reset();
+    onClose();
+  };
 
-  return isOpen && (
+  return (
     <ModalOverlay
       isOpen={isOpen}
-      onClose={_closeFilter}
+      onClose={handleClose}
       contentClassName="mt-8 bg-white/95 rounded-xl shadow-2xl w-full md:max-w-md lg:max-w-lg xl:max-w-xl mx-4 overflow-hidden"
     >
         <div className="relative p-4 max-h-[88vh] overflow-y-auto">
           {/* 关闭按钮 */}
           <button 
-            onClick={_closeFilter}
+            onClick={handleClose}
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
           >
             <X className="h-4 w-4" />
@@ -265,13 +294,13 @@ export function FilterModal() {
           <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
             <button 
               className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 text-xs rounded-lg transition-colors"
-              onClick={_reset}
+              onClick={handleReset}
             >
               重置
             </button>
             <button 
               className="bg-[#786DF6] hover:bg-[#6258D4] text-white px-4 py-2 text-xs rounded-lg transition-colors"
-              onClick={_apply}
+              onClick={handleApply}
             >
               应用筛选
             </button>
