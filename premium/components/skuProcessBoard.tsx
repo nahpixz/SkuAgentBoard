@@ -364,35 +364,56 @@ const StepIndicator = ({
 };
 
 // 处理结果组件
-const ProcessResultItem = ({ result }: { result: ProcessResult }) => {
+const ProcessResultItem = ({ result, isPending, item, index }: { result?: ProcessResult, isPending?: boolean, item?: DB.skuItem, index?: number }) => {
   const [isOpen, setIsOpen] = useState(false);
+  
+  // 如果是待处理项目，使用传入的item
+  const displayItem = isPending ? item! : result!.item;
+  
+  // 根据isPending属性调整组件的显示样式
+  const cardClassName = cn(
+    "mb-3 border rounded-lg overflow-hidden shadow-sm",
+    isPending ? "border-blue-200" : result?.stepResults.every(sr => sr.success) ? "border-green-200" : "border-amber-200"
+  );
   
   return (
     <Collapsible
       open={isOpen}
       onOpenChange={(open) => setIsOpen(open)}
-      className="mb-3 border border-gray-200 rounded-lg overflow-hidden shadow-sm"
+      className={cardClassName}
     >
       <div className="bg-white">
         <CollapsibleTrigger asChild>
-          <div className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50">
+          <div className={cn(
+            "flex items-center justify-between p-3 cursor-pointer",
+            isPending ? "hover:bg-blue-50/30" : result?.stepResults.every(sr => sr.success) ? "hover:bg-green-50/30" : "hover:bg-amber-50/30"
+          )}>
             <div className="flex items-center space-x-3">
               <div className="relative w-10 h-10 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
                 <img 
-                  src={`https:${result.item.img}@72w_72h_85q.webp`} 
-                  alt={result.item.name || `商品 #${result.item.itemsId}`} 
+                  src={`https:${displayItem.img}@72w_72h_85q.webp`} 
+                  alt={displayItem.name || `商品 #${displayItem.itemsId}`} 
                   className="w-full h-full object-contain mix-blend-multiply" 
                 />
+                {index !== undefined && isPending && (
+                  <div className="absolute top-0 right-0 w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
+                    <span className="text-[10px] font-medium text-blue-700">{index + 1}</span>
+                  </div>
+                )}
               </div>
               <div>
-                <h4 className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{result.item.name || `商品 #${result.item.itemsId}`}</h4>
-                <div className="text-xs text-gray-500">ID: {result.item.itemsId}</div>
+                <h4 className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{displayItem.name || `商品 #${displayItem.itemsId}`}</h4>
+                <div className="text-xs text-gray-500">ID: {displayItem.itemsId}</div>
               </div>
             </div>
             <div className="flex items-center">
-              <Badge className={result.stepResults.every(sr => sr.success) ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}>
-                {result.stepResults.every(sr => sr.success) ? "处理完成" : "部分完成"}
-              </Badge>
+              {isPending ? (
+                <Badge className="bg-blue-100 text-blue-800">待处理</Badge>
+              ) : (
+                <Badge className={result!.stepResults.every(sr => sr.success) ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}>
+                  {result!.stepResults.every(sr => sr.success) ? "处理完成" : "部分完成"}
+                </Badge>
+              )}
               <div className="ml-2">
                 {isOpen ? <ChevronUp className="h-5 w-5 text-gray-400" /> : <ChevronDown className="h-5 w-5 text-gray-400" />}
               </div>
@@ -401,71 +422,62 @@ const ProcessResultItem = ({ result }: { result: ProcessResult }) => {
         </CollapsibleTrigger>
         
         <CollapsibleContent>
-          <div className="p-3 pt-0 border-t border-gray-100">
-            <div className="space-y-2">
-              {result.stepResults.map((stepResult, index) => (
-                <div key={stepResult.stepId} className="p-2 rounded-md bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className={cn(
-                        "w-5 h-5 rounded-full flex items-center justify-center mr-2",
-                        stepResult.success ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
-                      )}>
-                        {stepResult.success ? 
-                          <CheckCircle className="w-3 h-3" /> : 
-                          <AlertCircle className="w-3 h-3" />}
-                      </div>
-                      <span className="text-sm font-medium">{stepResult.stepName}</span>
-                    </div>
-                    <Badge variant="outline" className={stepResult.success ? "text-green-600" : "text-red-600"}>
-                      {stepResult.success ? "成功" : "失败"}
-                    </Badge>
-                  </div>
-                  
-                  {stepResult.message && (
-                    <div className="mt-1 text-xs text-red-600 ml-7">
-                      错误: {stepResult.message}
-                    </div>
-                  )}
-                  
-                  {stepResult.result && (
-                    <div className="mt-1 text-xs text-gray-600 ml-7 bg-white p-2 rounded border border-gray-200">
-                      {typeof stepResult.result === 'object' ? 
-                        JSON.stringify(stepResult.result, null, 2) : 
-                        String(stepResult.result)}
-                    </div>
-                  )}
+          {isPending ? (
+            <div className="p-3 pt-0 border-t border-gray-100">
+              <div className="p-2 rounded-md bg-blue-50 text-blue-700 text-xs">
+                <div className="flex items-center">
+                  <Info className="w-4 h-4 mr-2" />
+                  <span>此项目将按照以下步骤进行处理</span>
                 </div>
-              ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="p-3 pt-0 border-t border-gray-100">
+              <div className="space-y-2">
+                {result!.stepResults.map((stepResult, index) => (
+                  <div key={stepResult.stepId} className="p-2 rounded-md bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className={cn(
+                          "w-5 h-5 rounded-full flex items-center justify-center mr-2",
+                          stepResult.success ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
+                        )}>
+                          {stepResult.success ? 
+                            <CheckCircle className="w-3 h-3" /> : 
+                            <AlertCircle className="w-3 h-3" />}
+                        </div>
+                        <span className="text-sm font-medium">{stepResult.stepName}</span>
+                      </div>
+                      <Badge variant="outline" className={stepResult.success ? "text-green-600" : "text-red-600"}>
+                        {stepResult.success ? "成功" : "失败"}
+                      </Badge>
+                    </div>
+                    
+                    {stepResult.message && (
+                      <div className="mt-1 text-xs text-red-600 ml-7">
+                        错误: {stepResult.message}
+                      </div>
+                    )}
+                    
+                    {stepResult.result && (
+                      <div className="mt-1 text-xs text-gray-600 ml-7 bg-white p-2 rounded border border-gray-200">
+                        {typeof stepResult.result === 'object' ? 
+                          JSON.stringify(stepResult.result, null, 2) : 
+                          String(stepResult.result)}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </CollapsibleContent>
       </div>
     </Collapsible>
   );
 };
 
-// 待处理项目预览卡片组件
-const PendingItemPreview = ({ item, index }: { item: DB.skuItem, index: number }) => {
-  return (
-    <div className="flex items-center space-x-2 p-2 bg-white rounded-md border border-gray-200">
-      <div className="w-8 h-8 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
-        <img 
-          src={`https:${item.img}@72w_72h_85q.webp`} 
-          alt={item.name || `商品 #${item.itemsId}`} 
-          className="w-full h-full object-contain mix-blend-multiply" 
-        />
-      </div>
-      <div className="flex-1 min-w-0">
-        <h4 className="text-xs font-medium text-gray-900 truncate">{item.name || `商品 #${item.itemsId}`}</h4>
-        <div className="text-[10px] text-gray-500">ID: {item.itemsId}</div>
-      </div>
-      <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center">
-        <span className="text-[10px] font-medium text-gray-700">{index + 1}</span>
-      </div>
-    </div>
-  );
-};
+// 移除 PendingItemPreview 组件，使用 ProcessResultItem 组件代替
 
 // 主组件
 export const skuProcessBoard = () => {
@@ -491,12 +503,10 @@ export const skuProcessBoard = () => {
   const [showResults, setShowResults] = useState(true);
   const [showPendingItems, setShowPendingItems] = useState(false);
   
-  // 当所有项目处理完成时自动关闭预览
+  // 移除自动关闭预览的效果
   useEffect(() => {
-    if (showPreview && pendingItems.length > 0 && completedItems.length === pendingItems.length) {
-      setShowPreview(false);
-    }
-  }, [completedItems.length, pendingItems.length, showPreview]);
+    // 不再需要自动关闭预览
+  }, [completedItems.length, pendingItems.length]);
   
   const totalItems = pendingItems.length;
   const totalSteps = processSteps.length;
@@ -607,8 +617,8 @@ export const skuProcessBoard = () => {
             )}
           </div>
           
-          {/* 待处理项目预览 - 仅在非运行状态下显示 */}
-          {!running && !paused && pendingItems.length > 0 && (
+          {/* 待处理项目预览 - 仅在非运行状态且非预览阶段下显示 */}
+          {!running && !paused && pendingItems.length > 0 && !showPreview && (
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
                 <h3 className="text-sm font-medium text-gray-700 flex items-center">
@@ -639,7 +649,12 @@ export const skuProcessBoard = () => {
                 <div className="p-3 max-h-40 overflow-y-auto">
                   <div className="grid grid-cols-2 gap-2">
                     {pendingItems.slice(0, 6).map((item, index) => (
-                      <PendingItemPreview key={item.itemsId} item={item} index={index} />
+                      <ProcessResultItem 
+                        key={item.itemsId} 
+                        item={item} 
+                        isPending={true} 
+                        index={index} 
+                      />
                     ))}
                   </div>
                   {pendingItems.length > 6 && (
@@ -647,6 +662,51 @@ export const skuProcessBoard = () => {
                       还有 {pendingItems.length - 6} 个项目未显示
                     </div>
                   )}
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* 预览阶段显示所有待处理项目 */}
+          {!running && !paused && pendingItems.length > 0 && showPreview && (
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="p-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-sm font-medium text-gray-700 flex items-center">
+                  <Package className="w-4 h-4 mr-1 text-blue-500" />
+                  待处理项目 ({pendingItems.length})
+                </h3>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 text-xs" 
+                  onClick={() => setShowPendingItems(!showPendingItems)}
+                >
+                  {showPendingItems ? (
+                    <>
+                      <ChevronUp className="w-3 h-3 mr-1" />
+                      收起
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-3 h-3 mr-1" />
+                      展开
+                    </>
+                  )}
+                </Button>
+              </div>
+              
+              {showPendingItems && (
+                <div className="p-3 max-h-60 overflow-y-auto">
+                  <div className="space-y-3">
+                    {pendingItems.map((item, index) => (
+                      <ProcessResultItem 
+                        key={item.itemsId} 
+                        isPending={true} 
+                        item={item} 
+                        index={index} 
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -729,20 +789,10 @@ export const skuProcessBoard = () => {
         </CardContent>
         
         <CardFooter className="bg-gray-50 p-4 flex justify-between">
-          {!running && !paused && showPreview && processSteps.length > 0 ? (
+          {!running && !paused ? (
             <>
-              <Button variant="outline" onClick={() => setShowPreview(false)}>
-                跳过预览
-              </Button>
-              <Button onClick={start}>
-                <Play className="w-4 h-4 mr-2" />
-                开始处理
-              </Button>
-            </>
-          ) : !running && !paused ? (
-            <>
-              <Button variant="outline" onClick={() => setShowPreview(true)} disabled={processSteps.length === 0}>
-                查看步骤
+              <Button variant="outline" onClick={cancel}>
+                取消
               </Button>
               <Button onClick={start} disabled={processSteps.length === 0}>
                 <Play className="w-4 h-4 mr-2" />

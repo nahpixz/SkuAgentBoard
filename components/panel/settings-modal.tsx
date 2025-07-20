@@ -20,20 +20,19 @@ export function SettingsModal({ onClose, onDataChange }: SettingsModalProps) {
       className="relative mt-8 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-md mx-auto border border-white/20 overflow-hidden text-start"
     >
         {/* Header */}
-        {/* <div className="relative px-6 py-4 bg-gradient-to-r from-[#786DF6]/5 to-[#786DF6]/10 border-b border-gray-100/50">
+        <div className="relative px-6 py-4 bg-gradient-to-r from-[#786DF6]/5 to-[#786DF6]/10 border-b border-gray-100/50">
           <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-[#786DF6]"></div>
             设置
           </h3>
           <button 
-            onClick={closeSettings}
             className="absolute top-4 right-6 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100/50 transition-all duration-200"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-        </div> */}
+        </div>
 
         <button 
             onClick={onClose}
