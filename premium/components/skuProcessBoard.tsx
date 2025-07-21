@@ -355,23 +355,6 @@ const ProcessResultItem = ({
     }
   }
 
-  // 获取分类图标
-  function getCategoryIcon(category?: string) {
-    if (!category) return <Info className="h-3.5 w-3.5" />;
-    switch (category) {
-      case '2312': // 手办
-        return <Package className="h-3.5 w-3.5" />;
-      case '2331': // 周边
-        return <Tag className="h-3.5 w-3.5" />;
-      case '2066': // 模型
-        return <Package className="h-3.5 w-3.5" />;
-      case '2273': // 数码
-        return <Package className="h-3.5 w-3.5" />;
-      default:
-        return <Info className="h-3.5 w-3.5" />;
-    }
-  }
-
   // 获取分类样式
   function getCategoryStyle(category?: string) {
     if (!category) return { bgColor: 'bg-gray-100 text-gray-600' };
@@ -499,17 +482,12 @@ const ProcessResultItem = ({
                 </div>
                 <div className="space-y-2 mt-2">
                   {steps.map((step, idx) => (
-                    <div key={step.id} className="flex items-center p-1 hover:bg-blue-100/50 rounded-md transition-colors">
-                      <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center mr-2">
-                        <span className="text-[10px] font-medium text-gray-700">{idx + 1}</span>
-                      </div>
-                      <div className="flex-1">
-                        <span className="text-xs font-medium">{step.name}</span>
-                        {step.description && (
-                          <p className="text-[10px] text-blue-600 mt-0.5">{step.description}</p>
-                        )}
-                      </div>
-                    </div>
+                    <StepResultItem
+                      key={step.id}
+                      step={step}
+                      status="pending"
+                      index={idx}
+                    />
                   ))}
                 </div>
               </div>
@@ -520,48 +498,14 @@ const ProcessResultItem = ({
                 {steps.map((step, idx) => {
                   const status = idx < currentStepIndex! ? 'completed' :
                     idx === currentStepIndex! ? 'running' : 'pending';
-
+                  
                   return (
-                    <div key={step.id} className={cn(
-                      "p-2 rounded-md transition-all duration-200",
-                      status === 'completed' ? "bg-green-50" :
-                        status === 'running' ? "bg-blue-50" :
-                          "bg-gray-50"
-                    )}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className={cn(
-                            "w-5 h-5 rounded-full flex items-center justify-center mr-2",
-                            status === 'completed' ? "bg-green-100 text-green-600" :
-                              status === 'running' ? "bg-blue-100 text-blue-600 animate-pulse" :
-                                "bg-gray-200 text-gray-600"
-                          )}>
-                            {status === 'completed' ?
-                              <CheckCircle className="w-3 h-3" /> :
-                              status === 'running' ?
-                                <span className="text-[10px] font-medium">{idx + 1}</span> :
-                                <span className="text-[10px] font-medium">{idx + 1}</span>}
-                          </div>
-                          <span className="text-sm font-medium">{step.name}</span>
-                        </div>
-                        <Badge variant="outline" className={cn(
-                          status === 'completed' ? "text-green-600" :
-                            status === 'running' ? "text-blue-600 animate-pulse" :
-                              "text-gray-500"
-                        )}>
-                          {status === 'completed' ? "已完成" :
-                            status === 'running' ? "处理中" :
-                              "待处理"}
-                        </Badge>
-                      </div>
-
-                      {status === 'running' && (
-                        <div className="mt-2 ml-7">
-                          <ProgressBar value={50} max={100} status="processing" className="h-1.5" />
-                          <p className="text-xs text-blue-600 mt-1">{step.description}</p>
-                        </div>
-                      )}
-                    </div>
+                    <StepResultItem 
+                      key={step.id}
+                      step={step}
+                      status={status}
+                      index={idx}
+                    />
                   );
                 })}
               </div>
@@ -569,7 +513,13 @@ const ProcessResultItem = ({
           ) : result ? (
             <div className="p-3 pt-0 border-t border-gray-100">
               <div className="space-y-2">
-                {result.stepResults.map(r => <StepResultItem stepResult={r} />)}
+                {result.stepResults.map(stepResult => (
+                  <StepResultItem 
+                    key={stepResult.stepId}
+                    stepResult={stepResult}
+                    status="completed"
+                  />
+                ))}
               </div>
             </div>
           ) : null}
@@ -579,17 +529,50 @@ const ProcessResultItem = ({
   );
 };
 
-const StepResultItem = ({stepResult}:{stepResult:StepResult}) => {
+// 统一的步骤显示组件，可以处理不同状态的步骤（已完成、进行中、待处理）
+const StepResultItem = ({
+  step, // 步骤信息
+  status, // 步骤状态：'completed', 'running', 'pending', 'error'
+  stepResult, // 步骤结果（如果有）
+  index, // 步骤索引
+}: {
+  step?: ProcessStep;
+  status: 'completed' | 'running' | 'pending' | 'error';
+  stepResult?: StepResult;
+  index?: number;
+}) => {
   const [isStepOpen, setIsStepOpen] = useState(false);
+  
+  // 确定显示内容
+  const stepName = stepResult?.stepName || step?.name || '';
+  const stepDescription = step?.description || '';
+  const isSuccess = stepResult?.success ?? (status === 'completed');
+  const hasError = stepResult?.message || status === 'error';
+  
+  // 确定样式
+  const bgColor = status === 'error' ? "bg-red-50" :
+                 status === 'completed' ? (isSuccess ? "bg-green-50" : "bg-red-50") :
+                 status === 'running' ? "bg-blue-50" : "bg-gray-50";
+  
+  const iconBgColor = status === 'error' ? "bg-red-100 text-red-600" :
+                     status === 'completed' ? (isSuccess ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600") :
+                     status === 'running' ? "bg-blue-100 text-blue-600 animate-pulse" : "bg-gray-200 text-gray-600";
+  
+  const badgeColor = status === 'error' ? "text-red-600" :
+                    status === 'completed' ? (isSuccess ? "text-green-600" : "text-red-600") :
+                    status === 'running' ? "text-blue-600 animate-pulse" : "text-gray-500";
+  
+  const badgeText = status === 'error' ? "错误" :
+                   status === 'completed' ? (isSuccess ? "成功" : "失败") :
+                   status === 'running' ? "处理中" : "待处理";
 
   return (
     <Collapsible
-      key={stepResult.stepId}
       open={isStepOpen}
       onOpenChange={setIsStepOpen}
       className={cn(
         "p-2 rounded-md transition-all duration-200",
-        stepResult.success ? "bg-green-50" : "bg-red-50"
+        bgColor
       )}
     >
       <CollapsibleTrigger asChild>
@@ -597,17 +580,24 @@ const StepResultItem = ({stepResult}:{stepResult:StepResult}) => {
           <div className="flex items-center">
             <div className={cn(
               "w-5 h-5 rounded-full flex items-center justify-center mr-2",
-              stepResult.success ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
+              iconBgColor
             )}>
-              {stepResult.success ?
+              {status === 'completed' && isSuccess ?
                 <CheckCircle className="w-3 h-3" /> :
-                <AlertCircle className="w-3 h-3" />}
+                status === 'completed' && !isSuccess ?
+                <AlertCircle className="w-3 h-3" /> :
+                <span className="text-[10px] font-medium">{index !== undefined ? index + 1 : ''}</span>}
             </div>
-            <span className="text-sm font-medium">{stepResult.stepName}</span>
+            <div>
+              <span className="text-sm font-medium">{stepName}</span>
+              {stepDescription && status !== 'completed' && (
+                <span className="text-xs ml-4 text-gray-500">{stepDescription}</span>
+              )}
+            </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Badge variant="outline" className={stepResult.success ? "text-green-600" : "text-red-600"}>
-              {stepResult.success ? "成功" : "失败"}
+            <Badge variant="outline" className={badgeColor}>
+              {badgeText}
             </Badge>
             <div className="text-gray-400">
               {isStepOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -619,7 +609,7 @@ const StepResultItem = ({stepResult}:{stepResult:StepResult}) => {
       <CollapsibleContent>
         <div className="mt-2 ml-7 space-y-2">
           {/* 错误信息 */}
-          {stepResult.message && (
+          {stepResult?.message && (
             <div className="text-xs text-red-600 p-2 bg-red-50 rounded-md border border-red-200">
               <div className="font-medium mb-1">错误信息:</div>
               {stepResult.message}
@@ -627,7 +617,7 @@ const StepResultItem = ({stepResult}:{stepResult:StepResult}) => {
           )}
 
           {/* 处理结果 */}
-          {stepResult.result && (
+          {stepResult?.result && (
             <div className="text-xs">
               <div className="font-medium text-gray-700 mb-1">处理结果:</div>
               <div className="bg-white p-2 rounded-md border border-gray-200 overflow-auto max-h-[200px]">
@@ -639,6 +629,14 @@ const StepResultItem = ({stepResult}:{stepResult:StepResult}) => {
                   <span>{String(stepResult.result)}</span>
                 )}
               </div>
+            </div>
+          )}
+          
+          {/* 待处理步骤的详细说明 */}
+          {status === 'pending' && step?.description && (
+            <div className="text-xs text-gray-600 p-2 bg-gray-50 rounded-md border border-gray-200">
+              <div className="font-medium mb-1">步骤说明:</div>
+              {step.description}
             </div>
           )}
         </div>
@@ -790,57 +788,6 @@ export const skuProcessBoard = () => {
               </div>
             )}
           </div>
-
-          {/* 待处理项目预览 - 仅在非运行状态且非预览阶段下显示 */}
-          {!running && !paused && pendingItems.length > 0 && !showPreview && (
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-700 flex items-center">
-                  <Package className="w-4 h-4 mr-1 text-blue-500" />
-                  待处理项目 ({pendingItems.length})
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-xs"
-                  onClick={() => setShowPendingItems(!showPendingItems)}
-                >
-                  {showPendingItems ? (
-                    <>
-                      <ChevronUp className="w-3 h-3 mr-1" />
-                      收起
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="w-3 h-3 mr-1" />
-                      预览
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {showPendingItems && (
-                <div className="p-3 max-h-40 overflow-y-auto">
-                  <div className="grid grid-cols-2 gap-2">
-                    {pendingItems.slice(0, 6).map((item, index) => (
-                      <ProcessResultItem
-                        key={item.itemsId}
-                        item={item}
-                        isPending={true}
-                        index={index}
-                        steps={processSteps}
-                      />
-                    ))}
-                  </div>
-                  {pendingItems.length > 6 && (
-                    <div className="text-xs text-center text-gray-500 mt-2">
-                      还有 {pendingItems.length - 6} 个项目未显示
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* 预览阶段显示所有待处理项目 */}
           {!running && !paused && pendingItems.length > 0 && showPreview && (
