@@ -321,27 +321,24 @@ const StepIndicator = ({
 // 处理结果组件
 const ProcessResultItem = ({
   result,
-  isPending,
-  isProcessing,
   item,
   index,
-  currentStepIndex,
-  totalSteps,
-  steps
 }: {
   result?: ProcessResult,
-  isPending?: boolean,
-  isProcessing?: boolean,
   item?: DB.skuItem,
-  index?: number,
-  currentStepIndex?: number,
-  totalSteps?: number,
-  steps?: ProcessStep[]
+  index: number,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-
+  const running = skuProcessStore(state=>state.running);
+  const currentItemIndex = skuProcessStore(state=>state.currentItemIndex);
+  const currentStepIndex = skuProcessStore(state=>state.currentStepIndex);
+  const steps = skuProcessStore(state=>state.processSteps);
+  const totalSteps = steps.length;
+  const isPending = !(result?.stepResults?.length);
+  const isProcessing = running && currentItemIndex === index;
+  
   // 如果是待处理项目，使用传入的item
-  const displayItem = isPending || isProcessing ? item! : result!.item;
+  const displayItem =  item! || result!.item;
 
   // 获取分类名称
   function getCategoryName(category?: string) {
@@ -776,11 +773,11 @@ export const skuProcessBoard = () => {
                   <p className="text-sm text-gray-500 text-center py-2">暂无已处理项目</p>
                 ) : (
                   <div className="space-y-3">
-                    {processResults.map((result) => (
+                    {processResults.map((result,idx) => (
                       <ProcessResultItem
                         key={result.item.itemsId}
                         result={result}
-                        steps={processSteps}
+                        index={idx}
                       />
                     ))}
                   </div>
@@ -823,10 +820,8 @@ export const skuProcessBoard = () => {
                     {pendingItems.map((item, index) => (
                       <ProcessResultItem
                         key={item.itemsId}
-                        isPending={true}
                         item={item}
                         index={index}
-                        steps={processSteps}
                       />
                     ))}
                   </div>
@@ -874,10 +869,7 @@ export const skuProcessBoard = () => {
                   <div className="mt-3">
                     <ProcessResultItem
                       item={currentItem}
-                      isProcessing={true}
-                      currentStepIndex={currentStepIndex}
-                      totalSteps={totalSteps}
-                      steps={processSteps}
+                      index={currentItemIndex}
                     />
                   </div>
                 )}
