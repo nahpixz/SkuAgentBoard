@@ -60,7 +60,7 @@ export function SelectModeToolbar({items,onClose}:{items:DB.skuItem[],onClose:()
       name: '获取详情',
       description: '从API获取SKU详细信息',
       process: async (item: DB.skuItem) => {
-        console.log(`获取SKU详情: ${item.skuName || item.itemsId}`);
+        console.log(`获取SKU详情: ${ item.itemsId}`);
         await new Promise(resolve => setTimeout(resolve, 1000));
         return;
       }
@@ -70,7 +70,7 @@ export function SelectModeToolbar({items,onClose}:{items:DB.skuItem[],onClose:()
       name: '更新价格',
       description: '更新SKU的最新价格信息',
       process: async (item: DB.skuItem) => {
-        console.log(`更新价格: ${item.skuName || item.itemsId}`);
+        console.log(`更新价格: ${ item.itemsId}`);
         await new Promise(resolve => setTimeout(resolve, 800));
         return;
       }
@@ -80,7 +80,7 @@ export function SelectModeToolbar({items,onClose}:{items:DB.skuItem[],onClose:()
       name: '检查库存',
       description: '检查SKU的库存状态',
       process: async (item: DB.skuItem) => {
-        console.log(`检查库存: ${item.skuName || item.itemsId}`);
+        console.log(`检查库存: ${ item.itemsId}`);
         await new Promise(resolve => setTimeout(resolve, 1200));
         return;
       }
@@ -90,7 +90,7 @@ export function SelectModeToolbar({items,onClose}:{items:DB.skuItem[],onClose:()
       name: '更新数据库',
       description: '将处理结果保存到数据库',
       process: async (item: DB.skuItem) => {
-        console.log(`更新数据库: ${item.skuName || item.itemsId}`);
+        console.log(`更新数据库: ${ item.itemsId}`);
         await new Promise(resolve => setTimeout(resolve, 500));
         return;
       }

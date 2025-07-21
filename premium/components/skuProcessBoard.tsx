@@ -379,7 +379,7 @@ const ProcessResultItem = ({ result, isPending, item, index }: { result?: Proces
   return (
     <Collapsible
       open={isOpen}
-      onOpenChange={(open) => setIsOpen(open)}
+      onOpenChange={(open) => setIsOpen(!isPending&&open)}
       className={cardClassName}
     >
       <div className="bg-white">
@@ -408,9 +408,9 @@ const ProcessResultItem = ({ result, isPending, item, index }: { result?: Proces
             </div>
             <div className="flex items-center">
               {isPending ? (
-                <Badge className="bg-blue-100 text-blue-800">待处理</Badge>
+                <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">待处理</Badge>
               ) : (
-                <Badge className={result!.stepResults.every(sr => sr.success) ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}>
+                <Badge className={result!.stepResults.every(sr => sr.success) ? "bg-green-100 text-green-800 hover:bg-green-100" : "bg-amber-100 text-amber-800"}>
                   {result!.stepResults.every(sr => sr.success) ? "处理完成" : "部分完成"}
                 </Badge>
               )}

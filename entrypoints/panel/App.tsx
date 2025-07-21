@@ -229,9 +229,9 @@ function App() {
   // },[skuList])
 
   useEffect(() => {
-    browser.devtools.network.onRequestFinished.addListener(networkListener);
+    browser?.devtools?.network?.onRequestFinished?.addListener(networkListener);
     return () => {
-      browser.devtools.network.onRequestFinished.removeListener(networkListener);
+      browser?.devtools?.network?.onRequestFinished?.addListener(networkListener);
     };
   }, [])
 
