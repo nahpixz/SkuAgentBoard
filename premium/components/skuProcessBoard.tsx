@@ -3,15 +3,13 @@ import { DB } from "@/entrypoints/panel/db";
 import { createT } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter} from "@/components/ui/card";
-import { Play, Pause, X, SkipForward, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Package, Tag, Info } from "lucide-react";
+import { Play, Pause, X, SkipForward, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { C2C_LIST } from "@/entrypoints/panel/api";
 
-// 定义处理步骤的类型
-type ProcessStepStatus = 'pending' | 'running' | 'completed' | 'error';
 
 interface ProcessStep {
   id: string;
@@ -40,9 +38,7 @@ const State = {
   running: false,
   currentItemIndex: -1,
   currentStepIndex: 0,
-  completedItems: [] as DB.skuItem[],
   processResults: [] as ProcessResult[],
-  errorItems: [] as { item: DB.skuItem, error: string }[],
   paused: false,
 }
 
@@ -55,10 +51,9 @@ export const skuProcessStore = createT<typeof State>({dev:true})((set, get) => (
         stepResults: []
       })),
       currentItemIndex: -1, currentStepIndex: 0, 
-      completedItems: [], errorItems: [], 
       running: false, paused: false 
     }),
-  clear: () => set({ pendingItems: [], running: false, currentItemIndex: 0, currentStepIndex: 0, completedItems: [], processResults: [], errorItems: [], paused: false }),
+  clear: () => set({ pendingItems: [], running: false, currentItemIndex: -1, currentStepIndex: 0, processResults: [], paused: false }),
   start: () => {
     const state = get();
     if (state.pendingItems.length === 0 || state.processSteps.length === 0) return;
@@ -226,67 +221,6 @@ const ProgressBar = ({
   );
 };
 
-// 步骤指示器组件
-const StepIndicator = ({
-  steps,
-  currentStep,
-  className
-}: {
-  steps: ProcessStep[],
-  currentStep: number,
-  className?: string
-}) => {
-  return (
-    <div className={cn("flex items-center space-x-2 w-full", className)}>
-      {steps.map((step, index) => {
-        const isActive = index === currentStep;
-        const isCompleted = index < currentStep;
-
-        return (
-          <div key={step.id} className="flex-1 flex flex-col items-center">
-            <div className="flex items-center w-full">
-              {index > 0 && (
-                <div
-                  className={cn(
-                    "h-1 flex-1",
-                    isCompleted ? "bg-blue-600" : "bg-gray-300"
-                  )}
-                ></div>
-              )}
-              <div
-                className={cn(
-                  "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
-                  isActive ? "bg-blue-600 text-white" :
-                    isCompleted ? "bg-green-500 text-white" :
-                      "bg-gray-300 text-gray-700"
-                )}
-              >
-                {isCompleted ? <CheckCircle className="w-4 h-4" /> : index + 1}
-              </div>
-              {index < steps.length - 1 && (
-                <div
-                  className={cn(
-                    "h-1 flex-1",
-                    index < currentStep ? "bg-blue-600" : "bg-gray-300"
-                  )}
-                ></div>
-              )}
-            </div>
-            <span className={cn(
-              "text-xs mt-1 text-center",
-              isActive ? "text-blue-600 font-medium" :
-                isCompleted ? "text-green-500" :
-                  "text-gray-500"
-            )}>
-              {step.name}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
 // 处理结果组件
 const ProcessResultItem = ({
   result,
@@ -298,8 +232,8 @@ const ProcessResultItem = ({
   const [isOpen, setIsOpen] = useState(false);
   const running = skuProcessStore(state=>state.running);
   const paused = skuProcessStore(state=>state.paused);
-  const currentItemIndex = skuProcessStore(state=>state.currentItemIndex);
-  const currentStepIndex = skuProcessStore(state=>state.currentStepIndex);
+  const currentItemIndex = skuProcessStore(state=>state.currentItemIndex); //memo会失效，currentItemIndex变化刷新所有组件
+  const currentStepIndex = skuProcessStore(state=>state.currentStepIndex); //memo会失效
   const steps = skuProcessStore(state=>state.processSteps);
   const totalSteps = steps.length;
   const isPending = index > currentItemIndex && !(result?.stepResults?.length);
@@ -591,7 +525,6 @@ const StepResultItem = ({
   );
 }
 
-// 移除 PendingItemPreview 组件，使用 ProcessResultItem 组件代替
 
 // 主组件
 export const skuProcessBoard = () => {
@@ -602,7 +535,6 @@ export const skuProcessBoard = () => {
     currentItemIndex,
     currentStepIndex,
     processResults,
-    errorItems,
     paused,
     clear,
     start,
@@ -612,7 +544,6 @@ export const skuProcessBoard = () => {
     skipCurrentItem
   } = skuProcessStore();
 
-  const isIdle = !running && !paused && currentItemIndex === -1;
   const [showPreview, setShowPreview] = useState(true);
   const [showResults, setShowResults] = useState(true);
 
@@ -644,11 +575,9 @@ export const skuProcessBoard = () => {
                         ? paused
                           ? "已暂停"
                           : "处理中"
-                        : showPreview
-                          ? "预览"
-                          : completedCot === totalItems
-                            ? "已完成"
-                            : "待处理"}
+                        : completedCot === totalItems
+                          ? "已完成"
+                          : "预览"}
                     </span>
                   </div>
                 </div>
@@ -722,13 +651,6 @@ export const skuProcessBoard = () => {
                     </span>
                   )}
                 </div>}
-
-                {/* 步骤指示器 */}
-                {/* <StepIndicator
-                  steps={processSteps}
-                  currentStep={running ? currentStepIndex : 0}
-                  className="mb-3"
-                /> */}
 
               {!running && (
                 <div className="p-0 border-t border-gray-100">
