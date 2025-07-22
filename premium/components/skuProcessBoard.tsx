@@ -439,38 +439,35 @@ const ProcessResultItem = ({
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          {result?.stepResults?.length ? (
-            <div className="p-3 pt-0 border-t border-gray-100">
-              <div className="space-y-2">
-                {result.stepResults.map(stepResult => (
-                  <StepResultItem 
-                    key={stepResult.stepId}
-                    stepResult={stepResult}
-                    status="completed"
-                  />
-                ))}
-              </div>
-            </div>
-          ) :steps ? (
-            <div className="p-3 pt-0 border-t border-gray-100">
-              <div className="space-y-2">
-                {steps.map((step, idx) => {
-                  const status = isPending ? 'pending':
-                    idx < currentStepIndex ? 'completed' :
-                    idx === currentStepIndex ? 'running' : 'pending';
+          <div className="p-3 pt-0 border-t border-gray-100">
+            <div className="space-y-2">
+              {/* 已执行步骤显示结果 */}
+              {result?.stepResults?.map(stepResult => (
+                <StepResultItem 
+                  key={stepResult.stepId}
+                  stepResult={stepResult}
+                  status="completed"
+                />
+              ))}
+              
+              {/* 未执行步骤以待处理状态显示 */}
+              {steps &&  (isPending || currentStepIndex < steps.length)&& 
+                steps.slice(isProcessing ? currentStepIndex : 0).map((step, idx) => {
+                  const actualIdx = (isProcessing ?currentStepIndex : 0) + idx;
+                  const status = isProcessing && actualIdx === currentStepIndex ? 'running' : 'pending';
                   
                   return (
                     <StepResultItem 
                       key={step.id}
                       step={step}
                       status={status}
-                      index={idx}
+                      index={actualIdx}
                     />
                   );
-                })}
-              </div>
+                })
+              }
             </div>
-          ) :  null}
+          </div>
         </CollapsibleContent>
       </div>
     </Collapsible>
