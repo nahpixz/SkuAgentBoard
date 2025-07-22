@@ -650,48 +650,28 @@ export const skuProcessBoard = () => {
       alignment="center"
     >
       <Card className="border-0 shadow-none p-0 gap-2 bg-white/94 ">
-        <div className="border-b border-gray-200 px-3 py-2 mt-2 flex flex-col"> 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5">
-                <div className={`w-2 h-2 rounded-full ${running ? paused ? 'bg-amber-400' : 'bg-green-500 animate-pulse' : completedCot === totalItems ? 'bg-blue-500' : 'bg-gray-400'}`} />
-                <h1 className="font-bold text-lg text-gray-700">SKU处理队列</h1>
-                <span className="text-xs text-gray-500">
-                  {running
-                    ? paused
-                      ? "已暂停"
-                      : "处理中"
-                    : showPreview
-                      ? "预览"
-                      : completedCot === totalItems
-                        ? "已完成"
-                        : "待处理"}
-                </span>
-              </div>
-            </div>
-            {!running && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={clear}
-                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100/50 h-6 w-6 p-0"
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            )}
-          </div>
-          
+        <div className="border-b border-gray-200 p-3 flex flex-col"> 
           {/* 集成进度显示到标题栏 */}
-          <div className="mt-2 flex items-center justify-between">
+          <div className="flex items-center justify-between">
             <div className="flex-1">
               <div className="flex justify-between items-center mb-1">
-                <h3 className="text-sm font-medium text-gray-700 flex items-center">
-                  {isIdle?<>
-                    <Package className="w-4 h-4 mr-1 text-blue-500" /> 待处理项目 ({pendingItems.length})
-                  </>:<>
-                    <CheckCircle className="w-4 h-4 mr-1 text-green-500" /> 处理进度
-                  </>} 
-                </h3>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <div className={`w-2 h-2 rounded-full ${running ? paused ? 'bg-amber-400' : 'bg-green-500 animate-pulse' : completedCot === totalItems ? 'bg-blue-500' : 'bg-gray-400'}`} />
+                    <h1 className="font-bold text-lg text-gray-700">SKU处理队列</h1>
+                    <span className="text-xs text-gray-500">
+                      {running
+                        ? paused
+                          ? "已暂停"
+                          : "处理中"
+                        : showPreview
+                          ? "预览"
+                          : completedCot === totalItems
+                            ? "已完成"
+                            : "待处理"}
+                    </span>
+                  </div>
+                </div>
                 <span className="text-xs text-gray-500">
                   {completedCot}/{totalItems} 项目
                 </span>
