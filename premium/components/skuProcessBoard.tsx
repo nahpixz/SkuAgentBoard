@@ -290,11 +290,9 @@ const StepIndicator = ({
 // 处理结果组件
 const ProcessResultItem = ({
   result,
-  item,
   index,
 }: {
   result?: ProcessResult,
-  item?: DB.skuItem,
   index: number,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -307,9 +305,11 @@ const ProcessResultItem = ({
   const isPending = index > currentItemIndex && !(result?.stepResults?.length);
   // 即使在暂停状态下，当前项目仍然被视为"处理中"
   const isProcessing = (running || paused) && currentItemIndex === index;
+
+  // const isOpen = _isOpen && isPending;
   
   // 如果是待处理项目，使用传入的item
-  const displayItem =  item! || result!.item;
+  const displayItem =  result!.item;
 
   // 获取分类样式
   function getCategoryStyle(category?: C2C_LIST.CategoryType) {
@@ -439,30 +439,24 @@ const ProcessResultItem = ({
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          {isPending && steps ? (
+          {result?.stepResults?.length ? (
             <div className="p-3 pt-0 border-t border-gray-100">
-              <div className="p-2 rounded-md bg-blue-50 text-blue-700 text-xs">
-                <div className="flex items-center mb-2">
-                  <Info className="w-4 h-4 mr-2" />
-                  <span>此项目将按照以下步骤进行处理</span>
-                </div>
-                <div className="space-y-2 mt-2">
-                  {steps.map((step, idx) => (
-                    <StepResultItem
-                      key={step.id}
-                      step={step}
-                      status="pending"
-                      index={idx}
-                    />
-                  ))}
-                </div>
+              <div className="space-y-2">
+                {result.stepResults.map(stepResult => (
+                  <StepResultItem 
+                    key={stepResult.stepId}
+                    stepResult={stepResult}
+                    status="completed"
+                  />
+                ))}
               </div>
             </div>
-          ) : isProcessing && steps ? (
+          ) :steps ? (
             <div className="p-3 pt-0 border-t border-gray-100">
               <div className="space-y-2">
                 {steps.map((step, idx) => {
-                  const status = idx < currentStepIndex ? 'completed' :
+                  const status = isPending ? 'pending':
+                    idx < currentStepIndex ? 'completed' :
                     idx === currentStepIndex ? 'running' : 'pending';
                   
                   return (
@@ -476,19 +470,7 @@ const ProcessResultItem = ({
                 })}
               </div>
             </div>
-          ) : result ? (
-            <div className="p-3 pt-0 border-t border-gray-100">
-              <div className="space-y-2">
-                {result.stepResults.map(stepResult => (
-                  <StepResultItem 
-                    key={stepResult.stepId}
-                    stepResult={stepResult}
-                    status="completed"
-                  />
-                ))}
-              </div>
-            </div>
-          ) : null}
+          ) :  null}
         </CollapsibleContent>
       </div>
     </Collapsible>
@@ -640,7 +622,8 @@ export const skuProcessBoard = () => {
   const completedCot= currentItemIndex > 0?currentItemIndex: 0;
   const totalItems = pendingItems.length;
   const totalSteps = processSteps.length;
-  const currentItem = pendingItems[currentItemIndex];
+
+  const currentProcessResult = processResults[currentItemIndex];
 
   return (
     <ModalOverlay
@@ -736,9 +719,9 @@ export const skuProcessBoard = () => {
                       ) : null}
                     </span>
                   </h3>
-                  {running && currentItem && (
+                  {running && (
                     <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
-                      步骤 {currentStepIndex + 1}/{totalSteps}
+                      {currentStepIndex + 1}/{totalSteps} 步骤 
                     </span>
                   )}
                 </div>}
@@ -772,10 +755,10 @@ export const skuProcessBoard = () => {
               )}
 
                 {/* 当前处理项目信息 */}
-                {running && currentItem && (
+                {running && (
                   <div className="mt-3">
                     <ProcessResultItem
-                      item={currentItem}
+                      result={currentProcessResult}
                       index={currentItemIndex}
                     />
                   </div>
