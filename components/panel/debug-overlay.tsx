@@ -15,7 +15,7 @@ export interface DebugOverlayRef {
 }
 
 const DebugOverlay = forwardRef<DebugOverlayRef, {}>((_, ref) => {
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
   const [debugData, setDebugData] = useState<DebugData>({});
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
 

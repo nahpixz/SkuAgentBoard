@@ -345,14 +345,14 @@ const ProcessResultItem = ({
           border: "border-amber-300",
           hover: "hover:bg-amber-50/50",
           badge: "bg-amber-200 text-amber-800 hover:bg-amber-200",
-          badgeText: `已暂停 ${Math.min(currentStepIndex! + 1,totalSteps)}/${totalSteps}`
+          badgeText: `已暂停`
         };
       }
       return {
         border: "border-blue-300",
         hover: "hover:bg-blue-50/50",
         badge: "bg-blue-200 text-blue-800 hover:bg-blue-200 animate-pulse",
-        badgeText: `处理中 ${Math.min(currentStepIndex! + 1,totalSteps)}/${totalSteps}`
+        badgeText: `处理中` //${Math.min(currentStepIndex! + 1,totalSteps)}/${totalSteps}
       };
     } else if (result?.stepResults.every(sr => sr.success)) {
       return {
@@ -724,8 +724,8 @@ export const skuProcessBoard = () => {
 
           {/* 步骤指示器与当前处理项目合并 */}
           {(
-              <div className="px-3 pt-4">
-                <div className="flex items-center justify-between mb-3">
+              <div className="px-3 pt-3">
+                {running && <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-medium text-gray-700 flex items-center">
                     <span className="flex items-center">
                       {running ? (
@@ -733,12 +733,7 @@ export const skuProcessBoard = () => {
                           <Play className="w-4 h-4 mr-1 text-blue-500" />
                           正在处理
                         </>
-                      ) : (
-                        <>
-                          <Info className="w-4 h-4 mr-1 text-blue-500" />
-                          处理步骤
-                        </>
-                      )}
+                      ) : null}
                     </span>
                   </h3>
                   {running && currentItem && (
@@ -746,14 +741,35 @@ export const skuProcessBoard = () => {
                       步骤 {currentStepIndex + 1}/{totalSteps}
                     </span>
                   )}
-                </div>
+                </div>}
 
                 {/* 步骤指示器 */}
-                <StepIndicator
+                {/* <StepIndicator
                   steps={processSteps}
                   currentStep={running ? currentStepIndex : 0}
                   className="mb-3"
-                />
+                /> */}
+
+              {!running && (
+                <div className="p-0 border-t border-gray-100">
+                  <div className="p-2 rounded-md bg-blue-50 text-blue-700 text-xs">
+                    <div className="flex items-center mb-2">
+                      <Info className="w-4 h-4 mr-2" />
+                      <span>此项目将按照以下步骤进行处理</span>
+                    </div>
+                    <div className="space-y-2 mt-2">
+                      {processSteps.map((step, idx) => (
+                        <StepResultItem
+                          key={step.id}
+                          step={step}
+                          status="pending"
+                          index={idx}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
                 {/* 当前处理项目信息 */}
                 {running && currentItem && (

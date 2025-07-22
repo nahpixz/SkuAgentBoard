@@ -360,7 +360,7 @@ function App() {
     {AGENT.ok && <>
 
       {gearMode=='Agent'&&(<>
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 p-6">
+      <div className="min-h-screen w-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 p-6">
         <AGENT.COMP.SkuAgentBoard className='mt-4'/>
       </div>
       </>)}
