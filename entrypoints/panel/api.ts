@@ -9,6 +9,17 @@ export namespace C2C_LIST{
         Model= '2066', //模型，一般都是高达
         _3C = '2273', //数码
     }
+    export function getCategoryName(category?: CategoryType) {
+        if (!category) return '未分类';
+        switch (category) {
+        case CategoryType.Figure:return '手办';
+        case CategoryType.Goods: return '周边';
+        case CategoryType.Model: return '模型';
+        case CategoryType._3C:  return '数码';
+        default: return '其他';
+        }
+    }
+
     export type skuItem = {
         blindBoxId:number
         img:string

@@ -2,13 +2,13 @@ import { ModalOverlay } from "@/components/panel/modal-overlay"
 import { DB } from "@/entrypoints/panel/db";
 import { createT } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter} from "@/components/ui/card";
 import { Play, Pause, X, SkipForward, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Package, Tag, Info } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { C2C_LIST } from "@/entrypoints/panel/api";
 
 // 定义处理步骤的类型
 type ProcessStepStatus = 'pending' | 'running' | 'completed' | 'error';
@@ -38,7 +38,7 @@ const State = {
   pendingItems: [] as DB.skuItem[],
   processSteps: [] as ProcessStep[],
   running: false,
-  currentItemIndex: 0,
+  currentItemIndex: -1,
   currentStepIndex: 0,
   completedItems: [] as DB.skuItem[],
   processResults: [] as ProcessResult[],
@@ -46,15 +46,15 @@ const State = {
   paused: false,
 }
 
-export const skuProcessStore = createT<typeof State>()((set, get) => ({
+export const skuProcessStore = createT<typeof State>({dev:true})((set, get) => ({
   ...State,
   init: (pendingItems: DB.skuItem[], processSteps: ProcessStep[] = []) =>
-    set({ pendingItems, processSteps, currentItemIndex: 0, currentStepIndex: 0, completedItems: [], processResults: [], errorItems: [], running: false, paused: false }),
+    set({ pendingItems, processSteps, currentItemIndex: -1, currentStepIndex: 0, completedItems: [], processResults: [], errorItems: [], running: false, paused: false }),
   clear: () => set({ pendingItems: [], running: false, currentItemIndex: 0, currentStepIndex: 0, completedItems: [], processResults: [], errorItems: [], paused: false }),
   start: () => {
     const state = get();
     if (state.pendingItems.length === 0 || state.processSteps.length === 0) return;
-    set({ running: true, paused: false });
+    set({ running: true, paused: false,currentItemIndex: 0,currentStepIndex: 0 });
     processNextStep();
   },
   pause: () => set({ paused: true }),
@@ -92,7 +92,7 @@ async function processNextStep() {
       skuProcessStore.setState({
         running: false,
         completedItems: newCompletedItems,
-        currentItemIndex: 0,
+        // currentItemIndex: 0,
         currentStepIndex: 0
       });
       return;
@@ -331,6 +331,7 @@ const ProcessResultItem = ({
   const [isOpen, setIsOpen] = useState(false);
   const running = skuProcessStore(state=>state.running);
   const currentItemIndex = skuProcessStore(state=>state.currentItemIndex);
+  // console.log("🚀 ~ currentItemIndex:", currentItemIndex)
   const currentStepIndex = skuProcessStore(state=>state.currentStepIndex);
   const steps = skuProcessStore(state=>state.processSteps);
   const totalSteps = steps.length;
@@ -340,29 +341,17 @@ const ProcessResultItem = ({
   // 如果是待处理项目，使用传入的item
   const displayItem =  item! || result!.item;
 
-  // 获取分类名称
-  function getCategoryName(category?: string) {
-    if (!category) return '未分类';
-    switch (category) {
-      case '2312': return '手办';
-      case '2331': return '周边';
-      case '2066': return '模型';
-      case '2273': return '数码';
-      default: return '其他';
-    }
-  }
-
   // 获取分类样式
-  function getCategoryStyle(category?: string) {
+  function getCategoryStyle(category?: C2C_LIST.CategoryType) {
     if (!category) return { bgColor: 'bg-gray-100 text-gray-600' };
     switch (category) {
-      case '2312': // 手办
+      case C2C_LIST.CategoryType.Figure: // 手办
         return { bgColor: 'bg-pink-100/40 text-pink-600' };
-      case '2331': // 周边
+      case C2C_LIST.CategoryType.Goods: // 周边
         return { bgColor: 'bg-purple-100/40 text-purple-600' };
-      case '2066': // 模型
+      case C2C_LIST.CategoryType.Model: // 模型 
         return { bgColor: 'bg-blue-100/40 text-blue-600' };
-      case '2273': // 数码
+      case C2C_LIST.CategoryType._3C: // 数码
         return { bgColor: 'bg-green-100/40 text-green-600' };
       default:
         return { bgColor: 'bg-gray-100/40 text-gray-600' };
@@ -442,7 +431,7 @@ const ProcessResultItem = ({
                   {/* 分类标签 */}
                   {displayItem.category && (
                     <Badge variant="outline" className={`text-[8px] h-4 ${getCategoryStyle(displayItem.category).bgColor}`}>
-                      {getCategoryName(displayItem.category)}
+                      {C2C_LIST.getCategoryName(displayItem.category)}
                     </Badge>
                   )}
                   {/* 价格信息 */}
@@ -664,6 +653,7 @@ export const skuProcessBoard = () => {
     skipCurrentItem
   } = skuProcessStore();
 
+  const isIdle = !running && !paused && currentItemIndex === -1;
   const [showPreview, setShowPreview] = useState(true);
   const [showResults, setShowResults] = useState(true);
   const [showPendingItems, setShowPendingItems] = useState(false);
@@ -735,8 +725,12 @@ export const skuProcessBoard = () => {
               <div className="flex-1">
                 <div className="flex justify-between items-center mb-1">
                   <h3 className="text-sm font-medium text-gray-700 flex items-center">
-                    <CheckCircle className="w-4 h-4 mr-1 text-green-500" />
-                    处理进度
+                    {isIdle?<>
+                      <Package className="w-4 h-4 mr-1 text-blue-500" /> 待处理项目 ({pendingItems.length})
+                    </>:<>
+                      <CheckCircle className="w-4 h-4 mr-1 text-green-500" /> 处理进度
+                    </>
+                    } 
                   </h3>
                   <span className="text-xs text-gray-500">
                     {overallProgress.completed}/{overallProgress.total} 项目
@@ -787,7 +781,7 @@ export const skuProcessBoard = () => {
           </div>
 
           {/* 预览阶段显示所有待处理项目 */}
-          {!running && !paused && pendingItems.length > 0 && showPreview && (
+          {!running && !paused && pendingItems.length > 0 &&  (
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
                 <h3 className="text-sm font-medium text-gray-700 flex items-center">
@@ -831,7 +825,7 @@ export const skuProcessBoard = () => {
           )}
 
           {/* 步骤指示器与当前处理项目合并 */}
-          {(showPreview || running) && processSteps.length > 0 && (
+          {(
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-3 bg-gray-50 border-b border-gray-200">
                 <h3 className="text-sm font-medium text-gray-700 flex items-center justify-between">
