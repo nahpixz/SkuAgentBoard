@@ -49,7 +49,15 @@ const State = {
 export const skuProcessStore = createT<typeof State>({dev:true})((set, get) => ({
   ...State,
   init: (pendingItems: DB.skuItem[], processSteps: ProcessStep[] = []) =>
-    set({ pendingItems, processSteps, currentItemIndex: -1, currentStepIndex: 0, completedItems: [], processResults: [], errorItems: [], running: false, paused: false }),
+    set({ pendingItems, processSteps, 
+      processResults:pendingItems.map(item => ({
+        item,
+        stepResults: []
+      })),
+      currentItemIndex: -1, currentStepIndex: 0, 
+      completedItems: [], errorItems: [], 
+      running: false, paused: false 
+    }),
   clear: () => set({ pendingItems: [], running: false, currentItemIndex: 0, currentStepIndex: 0, completedItems: [], processResults: [], errorItems: [], paused: false }),
   start: () => {
     const state = get();
@@ -78,21 +86,19 @@ export const skuProcessStore = createT<typeof State>({dev:true})((set, get) => (
 
 // 处理下一个步骤的函数
 async function processNextStep() {
-  const state = skuProcessStore.getState();
+  const {running,paused,processSteps,currentItemIndex,currentStepIndex,
+    processResults:[...updatedResults]
+  } = skuProcessStore.getState();
 
-  if (!state.running || state.paused || state.pendingItems.length === 0 || state.processSteps.length === 0) return;
+  if (!running || paused || updatedResults.length === 0 || processSteps.length === 0) return;
 
   // 如果当前项目的所有步骤都已完成，移动到下一个项目
-  if (state.currentStepIndex >= state.processSteps.length) {
-    const completedItem = state.pendingItems[state.currentItemIndex];
-    const newCompletedItems = [...state.completedItems, completedItem];
-
+  if (currentStepIndex >= processSteps.length) {
     // 如果所有项目都已处理完成
-    if (state.currentItemIndex >= state.pendingItems.length - 1) {
+    if (currentItemIndex >= updatedResults.length - 1) {
       skuProcessStore.setState({
         running: false,
-        completedItems: newCompletedItems,
-        // currentItemIndex: 0,
+        currentItemIndex: currentItemIndex + 1,
         currentStepIndex: 0
       });
       return;
@@ -100,9 +106,8 @@ async function processNextStep() {
 
     // 移动到下一个项目
     skuProcessStore.setState({
-      currentItemIndex: state.currentItemIndex + 1,
+      currentItemIndex: currentItemIndex + 1,
       currentStepIndex: 0,
-      completedItems: newCompletedItems
     });
 
     // 继续处理
@@ -110,98 +115,63 @@ async function processNextStep() {
     return;
   }
 
-  const currentItem = state.pendingItems[state.currentItemIndex];
-  const currentStep = state.processSteps[state.currentStepIndex];
+  const {item,stepResults:[...updatedStepResults]} = updatedResults[currentItemIndex];
+  const currentStep = processSteps[currentStepIndex];
 
-  try {
-    // 执行当前步骤的处理函数并保存结果
-    const result = await currentStep.process(currentItem);
-
-    // 查找或创建当前项目的处理结果
-    let currentResult = state.processResults.find(r => r.item.itemsId === currentItem.itemsId);
-
-    if (!currentResult) {
-      currentResult = {
-        item: currentItem,
-        stepResults: []
-      };
+  async function tryStep(){
+    try {
+      return [await currentStep.process(item),null]
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return [null,errorMessage]
     }
+  }
+  const [result,error] = await tryStep();
+  const success = !error;
 
-    // 添加当前步骤的处理结果
-    const stepResult = {
-      stepId: currentStep.id,
-      stepName: currentStep.name,
-      result: result,
-      success: true
+  updatedStepResults.push({
+        stepId: currentStep.id,
+        stepName: currentStep.name,
+        result: result,
+        success,
+        message: error
+    })
+      
+    updatedResults[currentItemIndex] = {item,
+      stepResults:updatedStepResults,
     };
-
-    // 更新处理结果
-    const updatedResults = state.processResults.filter(r => r.item.itemsId !== currentItem.itemsId);
-    updatedResults.push({
-      ...currentResult,
-      stepResults: [...currentResult.stepResults.filter(sr => sr.stepId !== currentStep.id), stepResult]
-    });
-
+    
     // 移动到下一个步骤
-    skuProcessStore.setState({
+    skuProcessStore.setState(success?{
       processResults: updatedResults,
-      currentStepIndex: state.currentStepIndex + 1
+      currentStepIndex: currentStepIndex + 1
+    }:{
+      processResults: updatedResults,
+      paused:true,
     });
 
     // 继续处理
     setTimeout(processNextStep, 100);
-  } catch (error) {
-    // 获取错误信息
-    const errorMessage = error instanceof Error ? error.message : String(error);
-
-    // 查找或创建当前项目的处理结果
-    let currentResult = state.processResults.find(r => r.item.itemsId === currentItem.itemsId);
-
-    if (!currentResult) {
-      currentResult = {
-        item: currentItem,
-        stepResults: []
-      };
-    }
-
-    // 添加当前步骤的错误结果
-    const stepResult = {
-      stepId: currentStep.id,
-      stepName: currentStep.name,
-      result: null,
-      success: false,
-      message: errorMessage
-    };
-
-    // 更新处理结果
-    const updatedResults = state.processResults.filter(r => r.item.itemsId !== currentItem.itemsId);
-    updatedResults.push({
-      ...currentResult,
-      stepResults: [...currentResult.stepResults.filter(sr => sr.stepId !== currentStep.id), stepResult]
-    });
-
-    // 处理错误
-    skuProcessStore.setState({
-      processResults: updatedResults,
-      errorItems: [...state.errorItems, { item: currentItem, error: errorMessage }],
-      running: false
-    });
-  }
 }
 
 // 进度条组件 - 支持多种状态显示
 const ProgressBar = ({
-  value,
-  max,
   className,
   status = 'default'
 }: {
-  value: number,
-  max: number,
   className?: string,
   status?: 'default' | 'success' | 'error' | 'warning' | 'processing'
 }) => {
-  const percentage = max > 0 ? (value / max) * 100 : 0;
+  const currentItemIndex = skuProcessStore(state=>state.currentItemIndex);
+  const currentStepIndex = skuProcessStore(state=>state.currentStepIndex);
+  const totalItem = skuProcessStore(state=>state.pendingItems.length);
+  const totalSteps = skuProcessStore(state=>state.processSteps.length);
+  const curItemIdx = currentItemIndex<0?0:currentItemIndex;
+  const max = totalSteps*totalItem;
+  const cur = currentStepIndex + curItemIdx*totalSteps;
+  console.log("🚀 ~ cur:", cur)
+  
+  const percentage = max > 0 ? (cur / max) * 100 : 0;
 
   // 根据状态确定颜色和动画效果
   const getColorClass = () => {
@@ -335,7 +305,7 @@ const ProcessResultItem = ({
   const currentStepIndex = skuProcessStore(state=>state.currentStepIndex);
   const steps = skuProcessStore(state=>state.processSteps);
   const totalSteps = steps.length;
-  const isPending = !(result?.stepResults?.length);
+  const isPending = index > currentItemIndex && !(result?.stepResults?.length);
   const isProcessing = running && currentItemIndex === index;
   
   // 如果是待处理项目，使用传入的item
@@ -372,7 +342,7 @@ const ProcessResultItem = ({
         border: "border-blue-300",
         hover: "hover:bg-blue-50/50",
         badge: "bg-blue-200 text-blue-800 hover:bg-blue-200 animate-pulse",
-        badgeText: `处理中 ${currentStepIndex! + 1}/${totalSteps}`
+        badgeText: `处理中 ${Math.min(currentStepIndex! + 1,totalSteps)}/${totalSteps}`
       };
     } else if (result?.stepResults.every(sr => sr.success)) {
       return {
@@ -482,8 +452,8 @@ const ProcessResultItem = ({
             <div className="p-3 pt-0 border-t border-gray-100">
               <div className="space-y-2">
                 {steps.map((step, idx) => {
-                  const status = idx < currentStepIndex! ? 'completed' :
-                    idx === currentStepIndex! ? 'running' : 'pending';
+                  const status = idx < currentStepIndex ? 'completed' :
+                    idx === currentStepIndex ? 'running' : 'pending';
                   
                   return (
                     <StepResultItem 
@@ -658,37 +628,28 @@ export const skuProcessBoard = () => {
   const [showResults, setShowResults] = useState(true);
   const [showPendingItems, setShowPendingItems] = useState(false);
 
-  // 移除自动关闭预览的效果
-  useEffect(() => {
-    // 不再需要自动关闭预览
-  }, [completedItems.length, pendingItems.length]);
 
   const totalItems = pendingItems.length;
   const totalSteps = processSteps.length;
   const currentItem = pendingItems[currentItemIndex];
-  const currentStep = processSteps[currentStepIndex];
 
+  const completed = currentItemIndex > 0?currentItemIndex: 0;
   const overallProgress = {
-    completed: completedItems.length,
+    completed,
     total: totalItems,
-    percentage: totalItems > 0 ? (completedItems.length / totalItems) * 100 : 0
-  };
-
-  const itemProgress = {
-    completed: currentStepIndex,
-    total: totalSteps,
-    percentage: totalSteps > 0 ? (currentStepIndex / totalSteps) * 100 : 0
+    percentage: totalItems > 0 ? ((completed*totalSteps + currentStepIndex) / totalItems*totalSteps) * 100 : 0,
+    perMax: totalItems*totalSteps
   };
 
   return (
     <ModalOverlay
       isOpen={pendingItems.length > 0}
       onClose={running ? () => { } : clear}
-      contentClassName="w-full max-w-2xl p-0 rounded-lg overflow-hidden shadow-xl"
+      contentClassName="mt-0 w-full max-w-2xl p-0 rounded-lg overflow-hidden shadow-xl"
       alignment="center"
     >
       <Card className="border-0 shadow-none py-2 gap-2">
-        <div className="border-b border-gray-100 px-3 py-0 flex items-center justify-between">
+        <div className="border-b border-gray-100 px-3 py-0 flex justify-between"> 
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-700">SKU处理队列</span>
             <div className="flex items-center gap-1.5">
@@ -736,7 +697,7 @@ export const skuProcessBoard = () => {
                     {overallProgress.completed}/{overallProgress.total} 项目
                   </span>
                 </div>
-                <ProgressBar value={overallProgress.completed} max={overallProgress.total} />
+                <ProgressBar/>
               </div>
               {processResults.length > 0 && (
                 <Button
@@ -761,7 +722,7 @@ export const skuProcessBoard = () => {
             </div>
 
             {/* 已处理项目结果 */}
-            {processResults.length > 0 && showResults && (
+            {processResults.length > 0 && (
               <div className="p-3 max-h-60 overflow-y-auto">
                 {processResults.length === 0 ? (
                   <p className="text-sm text-gray-500 text-center py-2">暂无已处理项目</p>

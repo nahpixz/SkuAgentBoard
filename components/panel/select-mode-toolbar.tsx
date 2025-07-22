@@ -13,10 +13,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuGroup,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu';
 import AGENT from '@/premium';
 import { DB } from '@/entrypoints/panel/db';
@@ -28,8 +24,6 @@ export function SelectModeToolbar({items,onClose}:{items:DB.skuItem[],onClose:()
     hasSelectedItems,
     hasSelectedC2C,
     selectAll,
-    deleteSelected,
-    deleteSelectedC2C,
     resetSelection,
   } = useSelectStore();
 
@@ -61,7 +55,7 @@ export function SelectModeToolbar({items,onClose}:{items:DB.skuItem[],onClose:()
       description: '从API获取SKU详细信息',
       process: async (item: DB.skuItem) => {
         console.log(`获取SKU详情: ${ item.itemsId}`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
         return;
       }
     },
@@ -71,7 +65,7 @@ export function SelectModeToolbar({items,onClose}:{items:DB.skuItem[],onClose:()
       description: '更新SKU的最新价格信息',
       process: async (item: DB.skuItem) => {
         console.log(`更新价格: ${ item.itemsId}`);
-        await new Promise(resolve => setTimeout(resolve, 800));
+        await new Promise(resolve => setTimeout(resolve, 3000));
         return;
       }
     },
