@@ -636,7 +636,6 @@ export const skuProcessBoard = () => {
   const isIdle = !running && !paused && currentItemIndex === -1;
   const [showPreview, setShowPreview] = useState(true);
   const [showResults, setShowResults] = useState(true);
-  const [showPendingItems, setShowPendingItems] = useState(false);
 
   const completedCot= currentItemIndex > 0?currentItemIndex: 0;
   const totalItems = pendingItems.length;
@@ -650,82 +649,83 @@ export const skuProcessBoard = () => {
       contentClassName="mt-0 w-full max-w-2xl p-0 rounded-lg overflow-hidden shadow-xl"
       alignment="center"
     >
-      <Card className="border-0 shadow-none py-2 gap-2">
-        <div className="border-b border-gray-100 px-3 py-0 flex justify-between"> 
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-700">SKU处理队列</span>
-            <div className="flex items-center gap-1.5">
-              <div className={`w-2 h-2 rounded-full ${running ? paused ? 'bg-amber-400' : 'bg-green-500 animate-pulse' : completedCot === totalItems ? 'bg-blue-500' : 'bg-gray-400'}`} />
-              <span className="text-xs text-gray-500">
-                {running
-                  ? paused
-                    ? "已暂停"
-                    : "处理中"
-                  : showPreview
-                    ? "预览"
-                    : completedCot === totalItems
-                      ? "已完成"
-                      : "待处理"}
-              </span>
+      <Card className="border-0 shadow-none p-0 gap-2 bg-white/94 ">
+        <div className="border-b border-gray-200 px-3 py-2 mt-2 flex flex-col"> 
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <div className={`w-2 h-2 rounded-full ${running ? paused ? 'bg-amber-400' : 'bg-green-500 animate-pulse' : completedCot === totalItems ? 'bg-blue-500' : 'bg-gray-400'}`} />
+                <h1 className="font-bold text-lg text-gray-700">SKU处理队列</h1>
+                <span className="text-xs text-gray-500">
+                  {running
+                    ? paused
+                      ? "已暂停"
+                      : "处理中"
+                    : showPreview
+                      ? "预览"
+                      : completedCot === totalItems
+                        ? "已完成"
+                        : "待处理"}
+                </span>
+              </div>
             </div>
+            {!running && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={clear}
+                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100/50 h-6 w-6 p-0"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
           </div>
-          {!running && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={clear}
-              className="text-gray-400 hover:text-gray-600 hover:bg-gray-100/50 h-6 w-6 p-0"
-            >
-              <X className="h-3 w-3" />
-            </Button>
-          )}
+          
+          {/* 集成进度显示到标题栏 */}
+          <div className="mt-2 flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex justify-between items-center mb-1">
+                <h3 className="text-sm font-medium text-gray-700 flex items-center">
+                  {isIdle?<>
+                    <Package className="w-4 h-4 mr-1 text-blue-500" /> 待处理项目 ({pendingItems.length})
+                  </>:<>
+                    <CheckCircle className="w-4 h-4 mr-1 text-green-500" /> 处理进度
+                  </>} 
+                </h3>
+                <span className="text-xs text-gray-500">
+                  {completedCot}/{totalItems} 项目
+                </span>
+              </div>
+              <ProgressBar/>
+            </div>
+            {processResults.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs ml-2"
+                onClick={() => setShowResults(!showResults)}
+              >
+                {showResults ? (
+                  <>
+                    <ChevronUp className="w-3 h-3 mr-1" />
+                    收起
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3 h-3 mr-1" />
+                    展开
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
         </div>
 
-        <CardContent className="p-4 space-y-4">
-          {/* 总体进度与已处理项目合并 */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
-            <div className="p-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-              <div className="flex-1">
-                <div className="flex justify-between items-center mb-1">
-                  <h3 className="text-sm font-medium text-gray-700 flex items-center">
-                    {isIdle?<>
-                      <Package className="w-4 h-4 mr-1 text-blue-500" /> 待处理项目 ({pendingItems.length})
-                    </>:<>
-                      <CheckCircle className="w-4 h-4 mr-1 text-green-500" /> 处理进度
-                    </>
-                    } 
-                  </h3>
-                  <span className="text-xs text-gray-500">
-                    {completedCot}/{totalItems} 项目
-                  </span>
-                </div>
-                <ProgressBar/>
-              </div>
-              {processResults.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-xs ml-2"
-                  onClick={() => setShowResults(!showResults)}
-                >
-                  {showResults ? (
-                    <>
-                      <ChevronUp className="w-3 h-3 mr-1" />
-                      收起
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="w-3 h-3 mr-1" />
-                      展开
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
+        <CardContent className="px-0 pt-0 pb-3">
 
             {/* 已处理项目结果 */}
             {processResults.length > 0 && showResults && (
-              <div className="p-3 max-h-60 overflow-y-auto">
+              <div className="mt-0 p-3 border-b border-gray-200 max-h-60 overflow-y-auto">
                 {processResults.length === 0 ? (
                   <p className="text-sm text-gray-500 text-center py-2">暂无已处理项目</p>
                 ) : (
@@ -741,36 +741,33 @@ export const skuProcessBoard = () => {
                 )}
               </div>
             )}
-          </div>
-
 
           {/* 步骤指示器与当前处理项目合并 */}
           {(
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-3 bg-gray-50 border-b border-gray-200">
-                <h3 className="text-sm font-medium text-gray-700 flex items-center justify-between">
-                  <span className="flex items-center">
-                    {running ? (
-                      <>
-                        <Play className="w-4 h-4 mr-1 text-blue-500" />
-                        正在处理
-                      </>
-                    ) : (
-                      <>
-                        <Info className="w-4 h-4 mr-1 text-blue-500" />
-                        处理步骤
-                      </>
-                    )}
-                  </span>
+              <div className="px-3 pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium text-gray-700 flex items-center">
+                    <span className="flex items-center">
+                      {running ? (
+                        <>
+                          <Play className="w-4 h-4 mr-1 text-blue-500" />
+                          正在处理
+                        </>
+                      ) : (
+                        <>
+                          <Info className="w-4 h-4 mr-1 text-blue-500" />
+                          处理步骤
+                        </>
+                      )}
+                    </span>
+                  </h3>
                   {running && currentItem && (
                     <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
                       步骤 {currentStepIndex + 1}/{totalSteps}
                     </span>
                   )}
-                </h3>
-              </div>
+                </div>
 
-              <div className="p-3">
                 {/* 步骤指示器 */}
                 <StepIndicator
                   steps={processSteps}
@@ -788,25 +785,7 @@ export const skuProcessBoard = () => {
                   </div>
                 )}
               </div>
-            </div>
-          )}
-
-          {/* 错误信息 - 如果有错误则显示 */}
-          {errorItems.length > 0 && (
-            <div className="bg-red-50 p-4 rounded-lg border border-red-100">
-              <h3 className="text-sm font-medium text-red-800 mb-2 flex items-center">
-                <AlertCircle className="w-4 h-4 mr-1" />
-                处理过程中出现错误
-              </h3>
-              <div className="max-h-24 overflow-y-auto text-xs text-red-600">
-                {errorItems.map((error, index) => (
-                  <p key={index} className="mb-1">
-                    {error.item.name || `SKU #${error.item.itemsId}`}: {error.error}
-                  </p>
-                ))}
-              </div>
-            </div>
-          )}
+            )}
         </CardContent>
 
         <CardFooter className="bg-gray-50 p-4 flex justify-between">
