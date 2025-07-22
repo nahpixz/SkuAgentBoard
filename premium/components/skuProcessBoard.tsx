@@ -169,7 +169,6 @@ const ProgressBar = ({
   const curItemIdx = currentItemIndex<0?0:currentItemIndex;
   const max = totalSteps*totalItem;
   const cur = currentStepIndex + curItemIdx*totalSteps;
-  console.log("🚀 ~ cur:", cur)
   
   const percentage = max > 0 ? (cur / max) * 100 : 0;
 
@@ -300,13 +299,14 @@ const ProcessResultItem = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const running = skuProcessStore(state=>state.running);
+  const paused = skuProcessStore(state=>state.paused);
   const currentItemIndex = skuProcessStore(state=>state.currentItemIndex);
-  // console.log("🚀 ~ currentItemIndex:", currentItemIndex)
   const currentStepIndex = skuProcessStore(state=>state.currentStepIndex);
   const steps = skuProcessStore(state=>state.processSteps);
   const totalSteps = steps.length;
   const isPending = index > currentItemIndex && !(result?.stepResults?.length);
-  const isProcessing = running && currentItemIndex === index;
+  // 即使在暂停状态下，当前项目仍然被视为"处理中"
+  const isProcessing = (running || paused) && currentItemIndex === index;
   
   // 如果是待处理项目，使用传入的item
   const displayItem =  item! || result!.item;
@@ -330,14 +330,24 @@ const ProcessResultItem = ({
 
   // 根据状态调整组件的显示样式
   const getStatusStyles = () => {
+    const paused = skuProcessStore(state=>state.paused);
+    
     if (isPending) {
       return {
-        border: "border-blue-200",
-        hover: "hover:bg-blue-50/30",
-        badge: "bg-blue-100 text-blue-800 hover:bg-blue-100",
+        border: "border-gray-200",
+        hover: "hover:bg-gray-50/30",
+        badge: "bg-gray-100 text-gray-700 hover:bg-gray-100",
         badgeText: "待处理"
       };
     } else if (isProcessing) {
+      if (paused) {
+        return {
+          border: "border-amber-300",
+          hover: "hover:bg-amber-50/50",
+          badge: "bg-amber-200 text-amber-800 hover:bg-amber-200",
+          badgeText: `已暂停 ${Math.min(currentStepIndex! + 1,totalSteps)}/${totalSteps}`
+        };
+      }
       return {
         border: "border-blue-300",
         hover: "hover:bg-blue-50/50",
@@ -485,7 +495,7 @@ const ProcessResultItem = ({
   );
 };
 
-// 统一的步骤显示组件，可以处理不同状态的步骤（已完成、进行中、待处理）
+// 统一的步骤显示组件，可以处理不同状态的步骤（已完成、进行中、待处理、暂停、错误）
 const StepResultItem = ({
   step, // 步骤信息
   status, // 步骤状态：'completed', 'running', 'pending', 'error'
@@ -498,6 +508,7 @@ const StepResultItem = ({
   index?: number;
 }) => {
   const [isStepOpen, setIsStepOpen] = useState(false);
+  const paused = skuProcessStore(state=>state.paused);
   
   // 确定显示内容
   const stepName = stepResult?.stepName || step?.name || '';
@@ -508,19 +519,19 @@ const StepResultItem = ({
   // 确定样式
   const bgColor = status === 'error' ? "bg-red-50" :
                  status === 'completed' ? (isSuccess ? "bg-green-50" : "bg-red-50") :
-                 status === 'running' ? "bg-blue-50" : "bg-gray-50";
+                 status === 'running' ? (paused ? "bg-amber-50" : "bg-blue-50") : "bg-gray-50";
   
   const iconBgColor = status === 'error' ? "bg-red-100 text-red-600" :
                      status === 'completed' ? (isSuccess ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600") :
-                     status === 'running' ? "bg-blue-100 text-blue-600 animate-pulse" : "bg-gray-200 text-gray-600";
+                     status === 'running' ? (paused ? "bg-amber-100 text-amber-600" : "bg-blue-100 text-blue-600 animate-pulse") : "bg-gray-200 text-gray-600";
   
   const badgeColor = status === 'error' ? "text-red-600" :
                     status === 'completed' ? (isSuccess ? "text-green-600" : "text-red-600") :
-                    status === 'running' ? "text-blue-600 animate-pulse" : "text-gray-500";
+                    status === 'running' ? (paused ? "text-amber-600" : "text-blue-600 animate-pulse") : "text-gray-500";
   
   const badgeText = status === 'error' ? "错误" :
                    status === 'completed' ? (isSuccess ? "成功" : "失败") :
-                   status === 'running' ? "处理中" : "待处理";
+                   status === 'running' ? (paused ? "已暂停" : "处理中") : "待处理";
 
   return (
     <Collapsible
@@ -611,7 +622,6 @@ export const skuProcessBoard = () => {
     running,
     currentItemIndex,
     currentStepIndex,
-    completedItems,
     processResults,
     errorItems,
     paused,
@@ -628,18 +638,10 @@ export const skuProcessBoard = () => {
   const [showResults, setShowResults] = useState(true);
   const [showPendingItems, setShowPendingItems] = useState(false);
 
-
+  const completedCot= currentItemIndex > 0?currentItemIndex: 0;
   const totalItems = pendingItems.length;
   const totalSteps = processSteps.length;
   const currentItem = pendingItems[currentItemIndex];
-
-  const completed = currentItemIndex > 0?currentItemIndex: 0;
-  const overallProgress = {
-    completed,
-    total: totalItems,
-    percentage: totalItems > 0 ? ((completed*totalSteps + currentStepIndex) / totalItems*totalSteps) * 100 : 0,
-    perMax: totalItems*totalSteps
-  };
 
   return (
     <ModalOverlay
@@ -653,7 +655,7 @@ export const skuProcessBoard = () => {
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-700">SKU处理队列</span>
             <div className="flex items-center gap-1.5">
-              <div className={`w-2 h-2 rounded-full ${running ? paused ? 'bg-amber-400' : 'bg-green-500 animate-pulse' : completedItems.length === totalItems ? 'bg-blue-500' : 'bg-gray-400'}`} />
+              <div className={`w-2 h-2 rounded-full ${running ? paused ? 'bg-amber-400' : 'bg-green-500 animate-pulse' : completedCot === totalItems ? 'bg-blue-500' : 'bg-gray-400'}`} />
               <span className="text-xs text-gray-500">
                 {running
                   ? paused
@@ -661,7 +663,7 @@ export const skuProcessBoard = () => {
                     : "处理中"
                   : showPreview
                     ? "预览"
-                    : completedItems.length === totalItems
+                    : completedCot === totalItems
                       ? "已完成"
                       : "待处理"}
               </span>
@@ -694,7 +696,7 @@ export const skuProcessBoard = () => {
                     } 
                   </h3>
                   <span className="text-xs text-gray-500">
-                    {overallProgress.completed}/{overallProgress.total} 项目
+                    {completedCot}/{totalItems} 项目
                   </span>
                 </div>
                 <ProgressBar/>
@@ -722,7 +724,7 @@ export const skuProcessBoard = () => {
             </div>
 
             {/* 已处理项目结果 */}
-            {processResults.length > 0 && (
+            {processResults.length > 0 && showResults && (
               <div className="p-3 max-h-60 overflow-y-auto">
                 {processResults.length === 0 ? (
                   <p className="text-sm text-gray-500 text-center py-2">暂无已处理项目</p>
@@ -741,49 +743,6 @@ export const skuProcessBoard = () => {
             )}
           </div>
 
-          {/* 预览阶段显示所有待处理项目 */}
-          {!running && !paused && pendingItems.length > 0 &&  (
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-700 flex items-center">
-                  <Package className="w-4 h-4 mr-1 text-blue-500" />
-                  待处理项目 ({pendingItems.length})
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-xs"
-                  onClick={() => setShowPendingItems(!showPendingItems)}
-                >
-                  {showPendingItems ? (
-                    <>
-                      <ChevronUp className="w-3 h-3 mr-1" />
-                      收起
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="w-3 h-3 mr-1" />
-                      展开
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {showPendingItems && (
-                <div className="p-3 max-h-60 overflow-y-auto">
-                  <div className="space-y-3">
-                    {pendingItems.map((item, index) => (
-                      <ProcessResultItem
-                        key={item.itemsId}
-                        item={item}
-                        index={index}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* 步骤指示器与当前处理项目合并 */}
           {(
