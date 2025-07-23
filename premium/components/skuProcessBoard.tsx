@@ -257,6 +257,7 @@ const ProcessResultItem = ({
   const isPending = index > currentItemIndex && !(result?.stepResults?.length);
   // 即使在暂停状态下，当前项目仍然被视为"处理中"
   const isProcessing = (running || paused) && currentItemIndex === index;
+  const hasError = result?.stepResults.some(sr => sr.message);
 
   // const isOpen = _isOpen && isPending;
   
@@ -275,6 +276,14 @@ const ProcessResultItem = ({
         badgeText: "待处理"
       };
     } else if (isProcessing) {
+      if (hasError){
+        return {
+          border: "border-red-200",
+          hover: "hover:bg-red-50/50",
+          badge: "bg-red-200 text-red-800 hover:bg-red-200",
+          badgeText: "错误"
+        };
+      } 
       if (paused) {
         return {
           border: "border-amber-300",
@@ -428,7 +437,7 @@ const StepResultItem = ({
   const stepName = stepResult?.stepName || step?.name || '';
   const stepDescription = step?.description || '';
   const isSuccess = stepResult?.success ?? (status === 'completed');
-  const hasError = stepResult?.message || status === 'error';
+  // const hasError = stepResult?.message || status === 'error';
   
   // 确定样式
   const bgColor = status === 'error' ? "bg-red-50" :
@@ -492,8 +501,7 @@ const StepResultItem = ({
           {/* 错误信息 */}
           {stepResult?.message && (
             <div className="text-xs text-red-600 p-2 bg-red-50 rounded-md border border-red-200">
-              <div className="font-medium mb-1">错误信息:</div>
-              {stepResult.message}
+              <div className="font-medium mb-1">错误信息: {stepResult.message}</div>
             </div>
           )}
 
@@ -552,6 +560,7 @@ export const SkuProcessBoard = () => {
   const totalSteps = processSteps.length;
 
   const currentProcessResult = processResults[currentItemIndex];
+  const hasError = currentProcessResult?.stepResults.some(sr => sr.message);
 
   return (
     <ModalOverlay
@@ -568,13 +577,15 @@ export const SkuProcessBoard = () => {
               <div className="flex justify-between items-center mb-1">
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1.5">
-                    <div className={`w-2 h-2 rounded-full ${running ? paused ? 'bg-amber-400' : 'bg-green-500 animate-pulse' : completedCot === totalItems ? 'bg-blue-500' : 'bg-gray-400'}`} />
+                    <div className={`w-2 h-2 rounded-full ${running ? hasError ? 'bg-red-600' : paused ? 'bg-amber-400' : 'bg-green-500 animate-pulse' : completedCot === totalItems ? 'bg-blue-500' : 'bg-gray-400'}`} />
                     <h1 className="font-bold text-lg text-gray-700">SKU处理队列</h1>
                     <span className="text-xs text-gray-500">
                       {running
-                        ? paused
-                          ? "已暂停"
-                          : "处理中"
+                        ? hasError 
+                          ?'出错'
+                          : paused
+                            ? "已暂停"
+                            : "处理中"
                         : completedCot === totalItems
                           ? "已完成"
                           : "预览"}
@@ -635,8 +646,8 @@ export const SkuProcessBoard = () => {
           {(
               <div className="p-0">
               {!running && (
-                <div className="p-0 border-t border-gray-100">
-                  <div className="p-2 bg-blue-50 text-blue-700 text-xs">
+                <div className="p-2 border-t border-gray-100">
+                  <div className="p-1 bg-blue-50/88 rounded-md text-blue-700 text-xs">
                     <div className="flex items-center mb-2">
                       <Info className="w-4 h-4 mr-2" />
                       <span>此项目将按照以下步骤进行处理</span>
@@ -657,13 +668,14 @@ export const SkuProcessBoard = () => {
 
                 {/* 当前处理项目信息 - 现代化水平布局 */}
                 {running && (
-                  <div className="bg-gradient-to-b from-white to-gray-50 border border-gray-200 shadow-sm overflow-hidden transition-all duration-300">
+                  <div className="bg-gradient-to-b from-white to-gray-50 shadow-sm overflow-hidden transition-all duration-300">
                     <div className="flex flex-col md:flex-row">
                       {/* 左侧：商品信息和图片 */}
                       <div className="w-full md:w-1/3 py-2 px-2 md:border-r border-b md:border-b-0 border-gray-100 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-white">
                         {/* 商品图片 - 突出显示 */}
                         <div className={cn(
                           "relative w-32 h-32 mb-3 rounded-lg overflow-hidden shadow-md ring-2 ring-offset-2",
+                          hasError? "ring-red-200" :
                           paused ? "ring-amber-100" : "ring-blue-100 running-item-image"
                         )}>
                           <img
@@ -700,7 +712,7 @@ export const SkuProcessBoard = () => {
                       {/* 右侧：处理结果/待处理列表 */}
                       <div className={cn(
                         "w-full md:w-2/3 p-3 pr-0",
-                        paused ? "bg-amber-50/20" : "bg-white"
+                        "bg-white"
                       )}>
                         <div className="flex items-center justify-between mb-3 mr-3">
                           <h3 className="text-sm font-semibold text-gray-700 flex items-center">
@@ -752,7 +764,7 @@ export const SkuProcessBoard = () => {
             )}
         </CardContent>
 
-        <CardFooter className="bg-gray-50 p-4 flex justify-between">
+        <CardFooter className="bg-gray-50 p-4 is flex justify-between [.border-t]:pt-3 border-t border-gray-50">
           {!running && !paused ? (
             <>
               <Button variant="outline" onClick={cancel}>
