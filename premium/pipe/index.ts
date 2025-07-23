@@ -1,3 +1,7 @@
+import { JSX } from "react"
+
+export {} from './*'
+
 export const createPipe = <Tin, TcurOut = null>(initStep?: ProcessStep<Tin, TcurOut, null>) => {
     const steps: ProcessStep<Tin>[] = initStep ? [initStep]: []
     const pipe: Pipe<Tin, TcurOut> = {
@@ -22,4 +26,5 @@ export type ProcessStep<Tin, Tout = any, Tprev = any> = {
     name: string;
     description: string;
     process: (item: Tin, prev?: Tprev) => Promise<Tout>;
+    render?:(result:Tout)=> JSX.Element;
 }

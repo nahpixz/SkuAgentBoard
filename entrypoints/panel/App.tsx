@@ -21,7 +21,7 @@ import AGENT from 'premium';
 import { ModalOverlay } from '@/components/panel/modal-overlay';
 import { networkListener } from './networkListener';
 import DebugOverlay,{DebugOverlayRef} from '@/components/panel/debug-overlay';
-// import { SkuProcessBoard } from '@/premium/components/skuProcessBoard';
+import { debugPipeRun } from '@/premium/pipe/debug';
 
 
 type OPT_MODE = 'idle' | 'search' | 'select' | 'settings' | 'filter';
@@ -93,13 +93,14 @@ function App() {
   const debugOverlayRef = useRef<DebugOverlayRef>(null);
   
   async function handleDebug() {
-    // 显示加载状态或提示
-    debugOverlayRef.current && debugOverlayRef.current.setIsVisible(true);
+    debugPipeRun();
+    // 注释掉原有debugOverlayRef使用
+    // debugOverlayRef.current && debugOverlayRef.current.setIsVisible(true);
     // console.log('正在获取调试数据...');
     
     // // 获取商品详情和截图
     // const {detail, screenshot} = await AGENT.TASK.captureSkuScreenshot(10919349);
-    // // 获取订单截图
+    // 获取订单截图
     // const screenshotB = await AGENT.TASK.captureOrderScreenshot(detail);
     
     // // 使用调试悬浮层显示数据

@@ -245,6 +245,7 @@ export async function evalGetBoundingClientRect(selector:string) {
           rect.bottom <= window.innerHeight &&
           rect.right <= window.innerWidth
         ),
+        winW:window.innerWidth,
         devicePixelRatio: window.devicePixelRatio || 1
       };
     },[selector])

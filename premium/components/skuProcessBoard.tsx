@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { C2C_LIST } from "@/entrypoints/panel/api";
 import "./skuProcessBoard.css";
-import { Pipe, ProcessStep } from "../pipe";
+import { Pipe, ProcessStep } from "../pipe/index";
 
 type StepResult = {
     stepId: string;
@@ -34,12 +34,11 @@ const State = {
   currentStepIndex: 0,
   processResults: [] as ProcessResult[],
   paused: false,
-  stepResultRender: null as ((result: any) => JSX.Element) | null,
 }
 
 export const skuProcessStore = createT<typeof State>({dev:true})((set, get) => ({
   ...State,
-  init: <R,>(pendingItems: DB.skuItem[], pipe: Pipe<DB.skuItem,R>,stepResultRender?:(result:R)=>JSX.Element ) =>
+  init: <R,>(pendingItems: DB.skuItem[], pipe: Pipe<DB.skuItem,R>) =>
     set({ pendingItems, 
       processSteps:pipe.steps, 
       processResults:pendingItems.map(item => ({
@@ -47,10 +46,9 @@ export const skuProcessStore = createT<typeof State>({dev:true})((set, get) => (
         stepResults: []
       })),
       currentItemIndex: -1, currentStepIndex: 0, 
-      running: false, paused: false,
-      stepResultRender: stepResultRender || null
+      running: false, paused: false
     }),
-  clear: () => set({ pendingItems: [], running: false, currentItemIndex: -1, currentStepIndex: 0, processResults: [], paused: false, stepResultRender: null }),
+  clear: () => set({ pendingItems: [], running: false, currentItemIndex: -1, currentStepIndex: 0, processResults: [], paused: false }),
   start: () => {
     const state = get();
     if (state.pendingItems.length === 0 || state.processSteps.length === 0) return;
@@ -434,7 +432,10 @@ const StepResultItem = ({
 }) => {
   const [isStepOpen, setIsStepOpen] = useState(false);
   const paused = skuProcessStore(state=>state.paused);
-  const stepResultRender = skuProcessStore(state=>state.stepResultRender);
+    // 根据stepResult找到对应的ProcessStep来获取render函数
+  const processSteps = skuProcessStore(state=>state.processSteps);
+  const currentStep = stepResult && processSteps.find(s => s.id === stepResult.stepId);
+  const stepRender = currentStep?.render;
   
   // 确定显示内容
   const stepName = stepResult?.stepName || step?.name || '';
@@ -512,8 +513,8 @@ const StepResultItem = ({
             <div className="text-xs">
               <div className="font-medium text-gray-700 mb-1">处理结果:</div>
               <div className={`bg-white p-2 rounded-md border border-gray-200 overflow-auto max-h-fit`}>
-                {stepResultRender ? (
-                  stepResultRender(stepResult.result)
+                {stepRender ? (
+                  stepRender(stepResult.result)
                 ) : typeof stepResult.result === 'object' ? (
                   <pre className="whitespace-pre-wrap break-words">
                     {JSON.stringify(stepResult.result, null, 2)}

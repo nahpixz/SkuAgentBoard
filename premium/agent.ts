@@ -140,11 +140,12 @@ export async function captureOrderScreenshot(skuDetail:MALL_DETAIL.ItemDetail) {
   const rectL = await evalGetBoundingClientRect('.item-card')
   const rectR = await evalGetBoundingClientRect('.info-card-pay');
   return await captureWithRect({
-    x: rectL.x,
+    x: 0,//rectL.x,
     y: rectL.y,
-    width: rectR.width,
+    width: rectR.winW,//rectR.width,
     height: rectR.y + rectR.height - rectL.y,
     isInViewport: true,
+    winW: rectR.winW,
     devicePixelRatio: 2
   })
   
