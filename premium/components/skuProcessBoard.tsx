@@ -10,14 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { C2C_LIST } from "@/entrypoints/panel/api";
 import "./skuProcessBoard.css";
-
-
-interface ProcessStep<Tin,Tout=any,Tprev=any> {
-  id: string;
-  name: string;
-  description: string;
-  process: (item:Tin,prev?:Tprev) => Promise<Tout>;
-}
+import { Pipe, ProcessStep } from "../pipe";
 
 type StepResult = {
     stepId: string;
@@ -45,8 +38,9 @@ const State = {
 
 export const skuProcessStore = createT<typeof State>({dev:true})((set, get) => ({
   ...State,
-  init: (pendingItems: DB.skuItem[], processSteps: ProcessStep<DB.skuItem>[] = []) =>
-    set({ pendingItems, processSteps, 
+  init: (pendingItems: DB.skuItem[], pipe: Pipe<DB.skuItem,any>) =>
+    set({ pendingItems, 
+      processSteps:pipe.steps, 
       processResults:pendingItems.map(item => ({
         item,
         stepResults: []
