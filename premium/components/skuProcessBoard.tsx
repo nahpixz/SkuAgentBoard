@@ -3,7 +3,7 @@ import { DB } from "@/entrypoints/panel/db";
 import { createT } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter} from "@/components/ui/card";
-import { Play, Pause, X, SkipForward, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Info } from "lucide-react";
+import { Play, Pause, X, SkipForward, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Info, Download } from "lucide-react";
 import { JSX, useMemo, useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
@@ -560,6 +560,48 @@ export const SkuProcessBoard = () => {
 
   const [showResults, setShowResults] = useState(false);
 
+  // 导出所有stepResults为JSON文件
+  const exportStepResults = () => {
+    const exportData = {
+      exportTime: new Date().toISOString(),
+      totalItems: processResults.length,
+      processSteps: processSteps.map(step => ({
+        id: step.id,
+        name: step.name,
+        description: step.description
+      })),
+      results: processResults.map(result => ({
+        item: {
+          itemsId: result.item.itemsId,
+          skuId: result.item.skuId,
+          name: result.item.name,
+          marketPrice: result.item.marketPrice,
+          category: result.item.category,
+          img: result.item.img
+        },
+        stepResults: result.stepResults.map(stepResult => ({
+          stepId: stepResult.stepId,
+          stepName: stepResult.stepName,
+          success: stepResult.success,
+          message: stepResult.message,
+          result: stepResult.result
+        }))
+      }))
+    };
+
+    const jsonString = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `sku-process-results-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const completedCot= currentItemIndex > 0?currentItemIndex: 0;
   const totalItems = pendingItems.length;
   const totalSteps = processSteps.length;
@@ -799,9 +841,18 @@ export const SkuProcessBoard = () => {
         <CardFooter className="bg-gray-50 p-4 is flex justify-between [.border-t]:pt-3 border-t border-gray-50">
           {!running && !paused ? (
             <>
-              <Button variant="outline" onClick={cancel}>
-                取消
-              </Button>
+              <div className="space-x-2">
+                <Button variant="outline" onClick={cancel}>
+                  取消
+                </Button>
+                {/* 完成状态时显示导出按钮 */}
+                {completedCot === totalItems && processResults.some(r => r.stepResults.length > 0) && (
+                  <Button variant="outline" onClick={exportStepResults}>
+                    <Download className="w-4 h-4 mr-2" />
+                    导出结果
+                  </Button>
+                )}
+              </div>
               <Button onClick={start} disabled={processSteps.length === 0 || completedCot === totalItems}>
                 <Play className="w-4 h-4 mr-2" />
                 开始处理
@@ -809,10 +860,19 @@ export const SkuProcessBoard = () => {
             </>
           ) : paused ? (
             <>
-              <Button variant="outline" onClick={cancel}>
-                <X className="w-4 h-4 mr-2" />
-                取消
-              </Button>
+              <div className="space-x-2">
+                <Button variant="outline" onClick={cancel}>
+                  <X className="w-4 h-4 mr-2" />
+                  取消
+                </Button>
+                {/* 暂停状态时显示导出按钮 */}
+                {processResults.some(r => r.stepResults.length > 0) && (
+                  <Button variant="outline" onClick={exportStepResults}>
+                    <Download className="w-4 h-4 mr-2" />
+                    导出结果
+                  </Button>
+                )}
+              </div>
               <div className="space-x-2">
                 <Button variant="outline" onClick={skipCurrentItem}>
                   <SkipForward className="w-4 h-4 mr-2" />
