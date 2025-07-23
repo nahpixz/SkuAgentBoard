@@ -130,7 +130,8 @@ export async function captureOrderScreenshot(skuDetail:MALL_DETAIL.ItemDetail) {
   }, [newM]);
   if(!ok) {
     console.error('captureOrderScreenshot failed',err, skuDetail);
-    return null;
+    throw Error('captureOrderScreenshot failed');
+    // return null;
   }
 
   await waitForFrame(666);

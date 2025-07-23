@@ -112,7 +112,8 @@ async function processNextStep() {
 
   async function tryStep(){
     try {
-      return [await currentStep.process(item),null]
+      const prev = updatedStepResults.at(-1)?.result
+      return [await currentStep.process(item,prev),null]
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       return [null,errorMessage]
@@ -433,6 +434,7 @@ const StepResultItem = ({
 }) => {
   const [isStepOpen, setIsStepOpen] = useState(false);
   const paused = skuProcessStore(state=>state.paused);
+  const runNotCompleted = skuProcessStore(state=>state.currentItemIndex<state.pendingItems.length);
   const stepResultRender = skuProcessStore(state=>state.stepResultRender);
   
   // 确定显示内容
@@ -510,7 +512,7 @@ const StepResultItem = ({
           {stepResult?.result && (
             <div className="text-xs">
               <div className="font-medium text-gray-700 mb-1">处理结果:</div>
-              <div className="bg-white p-2 rounded-md border border-gray-200 overflow-auto max-h-[200px]">
+              <div className={`bg-white p-2 rounded-md border border-gray-200 overflow-auto ${runNotCompleted ? 'max-h-[200px]' : 'max-h-[600px]'}`}>
                 {stepResultRender ? (
                   stepResultRender(stepResult.result)
                 ) : typeof stepResult.result === 'object' ? (
@@ -556,7 +558,7 @@ export const SkuProcessBoard = () => {
     skipCurrentItem
   } = skuProcessStore();
 
-  const [showResults, setShowResults] = useState(true);
+  const [showResults, setShowResults] = useState(false);
 
   const completedCot= currentItemIndex > 0?currentItemIndex: 0;
   const totalItems = pendingItems.length;
@@ -565,11 +567,16 @@ export const SkuProcessBoard = () => {
   const currentProcessResult = processResults[currentItemIndex];
   const hasError = currentProcessResult?.stepResults.some(sr => sr.message);
 
+  useEffect(()=> {
+    if(completedCot && completedCot==totalItems) setShowResults(true); 
+  },[completedCot])
+
   return (
     <ModalOverlay
       isOpen={pendingItems.length > 0}
       onClose={running ? () => { } : clear}
-      contentClassName="mt-0 w-full max-w-2xl p-0 rounded-lg overflow-hidden shadow-xl"
+      contentClassName="m-0 w-full max-w-2xl p-0 rounded-lg overflow-hidden shadow-xl"
+      zIndex="z-60"
       alignment="center"
     >
       <Card className="border-0 shadow-none p-0 gap-0 bg-white/94 ">
@@ -628,7 +635,7 @@ export const SkuProcessBoard = () => {
 
             {/* 已处理项目结果 */}
             {processResults.length > 0 && showResults && (
-              <div className="mt-0 mb-3 p-3 max-h-60 overflow-y-auto custom-scrollbar">
+              <div className={`mt-0 mb-3 p-3  overflow-y-auto custom-scrollbar ${completedCot === totalItems ? 'max-h-150' : 'max-h-60'}`}>
                 {processResults.length === 0 ? (
                   <p className="text-sm text-gray-500 text-center py-2">暂无已处理项目</p>
                 ) : (
@@ -649,7 +656,7 @@ export const SkuProcessBoard = () => {
           {(
               <div className="p-0">
               {/* 预览状态 */}
-              {!running && (
+              {!running && completedCot < totalItems && (
                 <div className="p-2 border-t border-gray-100">
                   <div className="p-1 bg-blue-50/88 rounded-md text-blue-700 text-xs">
                     <div className="flex items-center mb-2">
@@ -747,16 +754,14 @@ export const SkuProcessBoard = () => {
                             paused ? "bg-amber-100 text-amber-800" : 
                             "bg-blue-100 text-blue-800 animate-pulse"
                           )}>
-                            {currentStepIndex + 1}/{totalSteps} 步骤 
+                            {currentStepIndex}/{totalSteps} 步骤 
                           </span>
                         </div>
                         
-                        <div className={cn(
-                          "space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar rounded-md transition-all duration-300",
+                        <div className={
+                          `bg-blue-50/20 space-y-2 ${completedCot<totalItems ? 'max-h-[200px]' : 'max-h-[600px]'} overflow-y-auto pr-2 custom-scrollbar rounded-md transition-all duration-300`
                           // hasError ? "bg-red-50/50" : 
-                          // paused ? "bg-amber-50/50" : 
-                          "bg-blue-50/20"
-                        )}>
+                        }>
                           {/* 已执行步骤显示结果 */}
                           {currentProcessResult.stepResults.map(stepResult => (
                             <StepResultItem 
@@ -797,7 +802,7 @@ export const SkuProcessBoard = () => {
               <Button variant="outline" onClick={cancel}>
                 取消
               </Button>
-              <Button onClick={start} disabled={processSteps.length === 0}>
+              <Button onClick={start} disabled={processSteps.length === 0 || completedCot === totalItems}>
                 <Play className="w-4 h-4 mr-2" />
                 开始处理
               </Button>

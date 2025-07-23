@@ -1,5 +1,5 @@
 export const createPipe = <Tin, TcurOut = null>(initStep?: ProcessStep<Tin, TcurOut, null>) => {
-    const steps: ProcessStep<Tin>[] = []
+    const steps: ProcessStep<Tin>[] = initStep ? [initStep]: []
     const pipe: Pipe<Tin, TcurOut> = {
         addStep<TstepOut>(step: ProcessStep<Tin, TstepOut, TcurOut>) {
             steps.push(step)
