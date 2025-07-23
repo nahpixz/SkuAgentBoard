@@ -54,7 +54,7 @@ export function SelectModeToolbar({items,onClose}:{items:DB.skuItem[],onClose:()
     description: '从API获取SKU详细信息',
     process: async (item: DB.skuItem) => {
       console.log(`获取SKU详情: ${ item.itemsId}`);
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise(resolve => setTimeout(resolve, 50));
       return "结果A";
     }
   }).addStep({
@@ -63,35 +63,36 @@ export function SelectModeToolbar({items,onClose}:{items:DB.skuItem[],onClose:()
     description: '更新SKU的最新价格信息',
     process: async (item: DB.skuItem) => {
       console.log(`更新价格: ${ item.itemsId}`);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      throw "更新价格失败";
-      return;
+      await new Promise(resolve => setTimeout(resolve, 50));
+      // throw "更新价格失败";
+      return "https://i0.hdslb.com/bfs/mall/mall/89/a8/89a842ec34e5ee139b64647866ac4264.png@.webp";
     }
-  }).addStep({
-    id: 'check-inventory',
-    name: '检查库存',
-    description: '检查SKU的库存状态',
-    process: async (item: DB.skuItem) => {
-      console.log(`检查库存: ${ item.itemsId}`);
-      await new Promise(resolve => setTimeout(resolve, 1200));
-      return;
-    }
-  }).addStep({
-    id: 'update-database',
-    name: '更新数据库',
-    description: '将处理结果保存到数据库',
-    process: async (item: DB.skuItem) => {
-      console.log(`更新数据库: ${ item.itemsId}`);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return (<></>);
-    }
-  });
+  })
+  // .addStep({
+  //   id: 'check-inventory',
+  //   name: '检查库存',
+  //   description: '检查SKU的库存状态',
+  //   process: async (item: DB.skuItem) => {
+  //     console.log(`检查库存: ${ item.itemsId}`);
+  //     await new Promise(resolve => setTimeout(resolve, 1200));
+  //     return;
+  //   }
+  // }).addStep({
+  //   id: 'update-database',
+  //   name: '更新数据库',
+  //   description: '将处理结果保存到数据库',
+  //   process: async (item: DB.skuItem) => {
+  //     console.log(`更新数据库: ${ item.itemsId}`);
+  //     await new Promise(resolve => setTimeout(resolve, 500));
+  //     return (<></>);
+  //   }
+  // });
 
   function processSelected() {
     // 获取选中的SKU项目
     const selectedSkuItems = items.filter(x => selectedItems[x.itemsId]);
     // 初始化处理队列
-    AGENT.STORE.skuProcessStore.getState().init(selectedSkuItems, processPipe);
+    AGENT.STORE.skuProcessStore.getState().init(selectedSkuItems, processPipe,(r)=> <img src={r}/>);
   }
   
   return (

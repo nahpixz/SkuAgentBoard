@@ -434,7 +434,6 @@ const StepResultItem = ({
 }) => {
   const [isStepOpen, setIsStepOpen] = useState(false);
   const paused = skuProcessStore(state=>state.paused);
-  const runNotCompleted = skuProcessStore(state=>state.currentItemIndex<state.pendingItems.length);
   const stepResultRender = skuProcessStore(state=>state.stepResultRender);
   
   // 确定显示内容
@@ -512,7 +511,7 @@ const StepResultItem = ({
           {stepResult?.result && (
             <div className="text-xs">
               <div className="font-medium text-gray-700 mb-1">处理结果:</div>
-              <div className={`bg-white p-2 rounded-md border border-gray-200 overflow-auto ${runNotCompleted ? 'max-h-[200px]' : 'max-h-[600px]'}`}>
+              <div className={`bg-white p-2 rounded-md border border-gray-200 overflow-auto max-h-fit`}>
                 {stepResultRender ? (
                   stepResultRender(stepResult.result)
                 ) : typeof stepResult.result === 'object' ? (
@@ -579,7 +578,7 @@ export const SkuProcessBoard = () => {
       zIndex="z-60"
       alignment="center"
     >
-      <Card className="border-0 shadow-none p-0 gap-0 bg-white/94 ">
+      <Card className="border-0 shadow-none p-0 gap-0 bg-white/94 max-h-svh">
         <div className="border-b border-gray-200 p-3 flex flex-col"> 
           {/* 集成进度显示到标题栏 */}
           <div className="flex items-center justify-between">
@@ -635,7 +634,7 @@ export const SkuProcessBoard = () => {
 
             {/* 已处理项目结果 */}
             {processResults.length > 0 && showResults && (
-              <div className={`mt-0 mb-3 p-3  overflow-y-auto custom-scrollbar ${completedCot === totalItems ? 'max-h-150' : 'max-h-60'}`}>
+              <div className={`mt-0 mb-3 p-3  overflow-y-auto custom-scrollbar max-h-90`}>
                 {processResults.length === 0 ? (
                   <p className="text-sm text-gray-500 text-center py-2">暂无已处理项目</p>
                 ) : (
@@ -759,7 +758,7 @@ export const SkuProcessBoard = () => {
                         </div>
                         
                         <div className={
-                          `bg-blue-50/20 space-y-2 ${completedCot<totalItems ? 'max-h-[200px]' : 'max-h-[600px]'} overflow-y-auto pr-2 custom-scrollbar rounded-md transition-all duration-300`
+                          `bg-blue-50/20 space-y-2 max-h-fit overflow-y-auto pr-2 custom-scrollbar rounded-md transition-all duration-300`
                           // hasError ? "bg-red-50/50" : 
                         }>
                           {/* 已执行步骤显示结果 */}
