@@ -83,7 +83,7 @@ export function SelectModeToolbar({items,onClose}:{items:DB.skuItem[],onClose:()
     process: async (item: DB.skuItem) => {
       console.log(`更新数据库: ${ item.itemsId}`);
       await new Promise(resolve => setTimeout(resolve, 500));
-      return;
+      return (<></>);
     }
   });
 

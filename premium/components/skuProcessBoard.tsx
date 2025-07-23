@@ -4,7 +4,7 @@ import { createT } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter} from "@/components/ui/card";
 import { Play, Pause, X, SkipForward, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Info } from "lucide-react";
-import { useMemo, useState } from "react";
+import { JSX, useMemo, useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -34,11 +34,12 @@ const State = {
   currentStepIndex: 0,
   processResults: [] as ProcessResult[],
   paused: false,
+  stepResultRender: null as ((result: any) => JSX.Element) | null,
 }
 
 export const skuProcessStore = createT<typeof State>({dev:true})((set, get) => ({
   ...State,
-  init: (pendingItems: DB.skuItem[], pipe: Pipe<DB.skuItem,any>) =>
+  init: <R,>(pendingItems: DB.skuItem[], pipe: Pipe<DB.skuItem,R>,stepResultRender?:(result:R)=>JSX.Element ) =>
     set({ pendingItems, 
       processSteps:pipe.steps, 
       processResults:pendingItems.map(item => ({
@@ -46,9 +47,10 @@ export const skuProcessStore = createT<typeof State>({dev:true})((set, get) => (
         stepResults: []
       })),
       currentItemIndex: -1, currentStepIndex: 0, 
-      running: false, paused: false 
+      running: false, paused: false,
+      stepResultRender: stepResultRender || null
     }),
-  clear: () => set({ pendingItems: [], running: false, currentItemIndex: -1, currentStepIndex: 0, processResults: [], paused: false }),
+  clear: () => set({ pendingItems: [], running: false, currentItemIndex: -1, currentStepIndex: 0, processResults: [], paused: false, stepResultRender: null }),
   start: () => {
     const state = get();
     if (state.pendingItems.length === 0 || state.processSteps.length === 0) return;
@@ -431,6 +433,7 @@ const StepResultItem = ({
 }) => {
   const [isStepOpen, setIsStepOpen] = useState(false);
   const paused = skuProcessStore(state=>state.paused);
+  const stepResultRender = skuProcessStore(state=>state.stepResultRender);
   
   // 确定显示内容
   const stepName = stepResult?.stepName || step?.name || '';
@@ -508,7 +511,9 @@ const StepResultItem = ({
             <div className="text-xs">
               <div className="font-medium text-gray-700 mb-1">处理结果:</div>
               <div className="bg-white p-2 rounded-md border border-gray-200 overflow-auto max-h-[200px]">
-                {typeof stepResult.result === 'object' ? (
+                {stepResultRender ? (
+                  stepResultRender(stepResult.result)
+                ) : typeof stepResult.result === 'object' ? (
                   <pre className="whitespace-pre-wrap break-words">
                     {JSON.stringify(stepResult.result, null, 2)}
                   </pre>
