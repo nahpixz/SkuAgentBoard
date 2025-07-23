@@ -645,6 +645,7 @@ export const SkuProcessBoard = () => {
           {/* 步骤指示器与当前处理项目合并 */}
           {(
               <div className="p-0">
+              {/* 预览状态 */}
               {!running && (
                 <div className="p-2 border-t border-gray-100">
                   <div className="p-1 bg-blue-50/88 rounded-md text-blue-700 text-xs">
@@ -674,10 +675,11 @@ export const SkuProcessBoard = () => {
                       <div className="w-full md:w-1/3 py-2 px-2 md:border-r border-b md:border-b-0 border-gray-100 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-white">
                         {/* 商品图片 - 突出显示 */}
                         <div className={cn(
-                          "relative w-32 h-32 mb-3 rounded-lg overflow-hidden shadow-md ring-2 ring-offset-2",
-                          hasError? "ring-red-200" :
+                          "relative w-32 h-32 mb-3 rounded-lg overflow-hidden shadow-md ring-2 ring-offset-2 transition-all duration-300",
+                          hasError? "ring-red-200 shadow-red-100" :
                           paused ? "ring-amber-100" : "ring-blue-100 running-item-image"
                         )}>
+                          {hasError && <div className="absolute inset-0 bg-red-500/10 z-10 animate-pulse"></div>}
                           <img
                             src={`https:${currentProcessResult.item.img}@180w_180h_90q.webp`}
                             alt={currentProcessResult.item.name || `商品 #${currentProcessResult.item.itemsId}`}
@@ -711,25 +713,47 @@ export const SkuProcessBoard = () => {
                       
                       {/* 右侧：处理结果/待处理列表 */}
                       <div className={cn(
-                        "w-full md:w-2/3 p-3 pr-0",
+                        "w-full md:w-2/3 p-3 pr-0 transition-colors duration-300",
+                        hasError ? "bg-red-50/38" : 
+                        paused ? "bg-amber-50/38" : 
                         "bg-white"
                       )}>
                         <div className="flex items-center justify-between mb-3 mr-3">
-                          <h3 className="text-sm font-semibold text-gray-700 flex items-center">
-                            {/* <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse mr-2"></span>
-                            处理进度 */}
-                            <Play className="w-4 h-4 mr-1 text-blue-500 animate-pulse" />
-                            正在处理
-                            <span className="ml-2 text-xs text-gray-500">
-                              {Math.min(currentStepIndex + 1, processSteps.length)}/{processSteps.length}
-                            </span>
+                          <h3 className="text-sm font-semibold flex items-center">
+                            {hasError ? (
+                              <>
+                                <AlertCircle className="w-4 h-4 mr-1.5 text-red-500" />
+                                <span className="text-red-600">处理出错</span>
+                              </>
+                            ) : paused ? (
+                              <>
+                                <Pause className="w-4 h-4 mr-1.5 text-amber-500" />
+                                <span className="text-amber-600">已暂停</span>
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-4 h-4 mr-1.5 text-blue-500 animate-pulse" />
+                                <span className="text-blue-600">正在处理</span>
+                              </>
+                            )}
+                            
                           </h3>
-                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                          <span className={cn(
+                            "text-xs px-2.5 py-0.5 rounded-full font-medium transition-colors duration-200",
+                            hasError ? "bg-red-100 text-red-800" : 
+                            paused ? "bg-amber-100 text-amber-800" : 
+                            "bg-blue-100 text-blue-800 animate-pulse"
+                          )}>
                             {currentStepIndex + 1}/{totalSteps} 步骤 
                           </span>
                         </div>
                         
-                        <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+                        <div className={cn(
+                          "space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar rounded-md transition-all duration-300",
+                          // hasError ? "bg-red-50/50 p-2" : 
+                          // paused ? "bg-amber-50/50 p-2" : 
+                          "bg-blue-50/20 p-2"
+                        )}>
                           {/* 已执行步骤显示结果 */}
                           {currentProcessResult.stepResults.map(stepResult => (
                             <StepResultItem 

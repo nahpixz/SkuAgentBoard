@@ -11,11 +11,29 @@
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.1);
   border-radius: 3px;
-  /* transition: all 0.2s ease; */
+  transition: all 0.2s ease;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.2);
+}
+
+/* 错误状态滚动条 */
+.bg-red-50\/50::-webkit-scrollbar-thumb {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.bg-red-50\/50::-webkit-scrollbar-thumb:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+/* 暂停状态滚动条 */
+.bg-amber-50\/50::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.2);
+}
+
+.bg-amber-50\/50::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.3);
 }
 
 /* 添加一些动画效果 */
@@ -32,6 +50,29 @@
     transform: scale(0.95);
     box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
   }
+}
+
+@keyframes error-pulse {
+  0% {
+    transform: scale(0.98);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    transform: scale(1);
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(0.98);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+@keyframes subtle-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-2px); }
+  40% { transform: translateX(2px); }
+  60% { transform: translateX(-1px); }
+  80% { transform: translateX(1px); }
 }
 
 /* 为图片添加脉冲动画效果 */
