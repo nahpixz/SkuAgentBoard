@@ -55,7 +55,7 @@ export function SelectModeToolbar({items,onClose}:{items:DB.skuItem[],onClose:()
       description: '从API获取SKU详细信息',
       process: async (item: DB.skuItem) => {
         console.log(`获取SKU详情: ${ item.itemsId}`);
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise(resolve => setTimeout(resolve, 800));
         return "结果A";
       }
     },
@@ -65,7 +65,7 @@ export function SelectModeToolbar({items,onClose}:{items:DB.skuItem[],onClose:()
       description: '更新SKU的最新价格信息',
       process: async (item: DB.skuItem) => {
         console.log(`更新价格: ${ item.itemsId}`);
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
         throw "更新价格失败";
         return;
       }

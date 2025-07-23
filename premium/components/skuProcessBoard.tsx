@@ -253,11 +253,17 @@ const ProcessResultItem = ({
   const currentItemIndex = skuProcessStore(state=>state.currentItemIndex); //memo会失效，currentItemIndex变化刷新所有组件
   const currentStepIndex = skuProcessStore(state=>state.currentStepIndex); //memo会失效
   const steps = skuProcessStore(state=>state.processSteps);
-  const totalSteps = steps.length;
+
   const isPending = index > currentItemIndex && !(result?.stepResults?.length);
   // 即使在暂停状态下，当前项目仍然被视为"处理中"
   const isProcessing = (running || paused) && currentItemIndex === index;
+  const lastResultStepId = result?.stepResults.at(-1)?.stepId;
+  const thsItemStepIdx = isPending? 0
+                        :isProcessing ? currentStepIndex
+                        :lastResultStepId ? Math.min(steps.findIndex(s=>s.id == lastResultStepId) + 1,steps.length)
+                        :steps.length;
   const hasError = result?.stepResults.some(sr => sr.message);
+  
 
   // const isOpen = _isOpen && isPending;
   
@@ -303,13 +309,13 @@ const ProcessResultItem = ({
         border: "border-green-200",
         hover: "hover:bg-green-50/30",
         badge: "bg-green-100 text-green-800 hover:bg-green-100",
-        badgeText: "处理完成"
+        badgeText: "已完成"
       };
     } else {
       return {
-        border: "border-amber-200",
-        hover: "hover:bg-amber-50/30",
-        badge: "bg-amber-100 text-amber-800 hover:bg-amber-100",
+        border: "border-pink-200",
+        hover: "hover:bg-pink-50/30",
+        badge: "bg-pink-100 text-pink-800 hover:bg-pink-100",
         badgeText: "部分完成"
       };
     }
@@ -386,20 +392,19 @@ const ProcessResultItem = ({
           <div className="p-3 pt-0 border-t border-gray-100">
             <div className="space-y-2">
               {/* 已执行步骤显示结果 */}
-              {result?.stepResults?.map(stepResult => (
+              {result?.stepResults?.map((stepResult,idx) => (
                 <StepResultItem 
-                  key={stepResult.stepId}
+                  key={stepResult.success?stepResult.stepId:`${stepResult.stepId}_ERR_${idx}`}
                   stepResult={stepResult}
                   status="completed"
                 />
               ))}
               
               {/* 未执行步骤以待处理状态显示 */}
-              {steps &&  (isPending || currentStepIndex < steps.length)&& 
-                steps.slice(isProcessing ? currentStepIndex : 0).map((step, idx) => {
-                  const actualIdx = (isProcessing ?currentStepIndex : 0) + idx;
+              {steps && (thsItemStepIdx < steps.length)&& 
+                steps.slice(thsItemStepIdx).map((step, idx) => {
+                  const actualIdx = thsItemStepIdx + idx;
                   const status = isProcessing && actualIdx === currentStepIndex ? 'running' : 'pending';
-                  
                   return (
                     <StepResultItem 
                       key={step.id}
@@ -437,7 +442,6 @@ const StepResultItem = ({
   const stepName = stepResult?.stepName || step?.name || '';
   const stepDescription = step?.description || '';
   const isSuccess = stepResult?.success ?? (status === 'completed');
-  // const hasError = stepResult?.message || status === 'error';
   
   // 确定样式
   const bgColor = status === 'error' ? "bg-red-50" :
@@ -625,7 +629,7 @@ export const SkuProcessBoard = () => {
 
             {/* 已处理项目结果 */}
             {processResults.length > 0 && showResults && (
-              <div className="mt-0 p-3 border-b border-gray-200 max-h-60 overflow-y-auto">
+              <div className="mt-0 mb-3 p-3 max-h-60 overflow-y-auto custom-scrollbar">
                 {processResults.length === 0 ? (
                   <p className="text-sm text-gray-500 text-center py-2">暂无已处理项目</p>
                 ) : (
@@ -750,9 +754,9 @@ export const SkuProcessBoard = () => {
                         
                         <div className={cn(
                           "space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar rounded-md transition-all duration-300",
-                          // hasError ? "bg-red-50/50 p-2" : 
-                          // paused ? "bg-amber-50/50 p-2" : 
-                          "bg-blue-50/20 p-2"
+                          // hasError ? "bg-red-50/50" : 
+                          // paused ? "bg-amber-50/50" : 
+                          "bg-blue-50/20"
                         )}>
                           {/* 已执行步骤显示结果 */}
                           {currentProcessResult.stepResults.map(stepResult => (
