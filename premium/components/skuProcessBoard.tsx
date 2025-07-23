@@ -9,6 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { C2C_LIST } from "@/entrypoints/panel/api";
+import "./skuProcessBoard.css";
 
 
 interface ProcessStep {
@@ -672,13 +673,101 @@ export const SkuProcessBoard = () => {
                 </div>
               )}
 
-                {/* 当前处理项目信息 */}
+                {/* 当前处理项目信息 - 现代化水平布局 */}
                 {running && (
-                  <div className="mt-3">
-                    <ProcessResultItem
-                      result={currentProcessResult}
-                      index={currentItemIndex}
-                    />
+                  <div className="mt-3 bg-gradient-to-b from-white to-gray-50 rounded-lg border border-gray-200 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
+                    <div className="flex flex-col md:flex-row">
+                      {/* 左侧：商品信息和图片 */}
+                      <div className="w-full md:w-1/3 p-4 md:border-r border-b md:border-b-0 border-gray-100 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-white">
+                        {/* 商品图片 - 突出显示 */}
+                        <div className={cn(
+                          "relative w-32 h-32 mb-3 rounded-lg overflow-hidden shadow-md ring-2 ring-offset-2",
+                          paused ? "ring-amber-100" : "ring-blue-100 running-item-image"
+                        )}>
+                          <img
+                            src={`https:${currentProcessResult.item.img}@180w_180h_90q.webp`}
+                            alt={currentProcessResult.item.name || `商品 #${currentProcessResult.item.itemsId}`}
+                            className="w-full h-full object-contain bg-white"
+                          />
+                        </div>
+                        
+                        {/* 商品基本信息 */}
+                        <h4 className="text-sm font-medium text-center text-gray-900 line-clamp-2 mb-1">
+                          {currentProcessResult.item.name || `商品 #${currentProcessResult.item.itemsId}`}
+                        </h4>
+                        
+                        <div className="flex items-center justify-center space-x-2 text-xs">
+                          {currentProcessResult.item.category && (
+                            <Badge variant="outline" className={`bg-${currentProcessResult.item.category === C2C_LIST.CategoryType.Figure ? 'pink' : 
+                                                                  currentProcessResult.item.category === C2C_LIST.CategoryType.Goods ? 'purple' : 
+                                                                  currentProcessResult.item.category === C2C_LIST.CategoryType.Model ? 'blue' : 
+                                                                  currentProcessResult.item.category === C2C_LIST.CategoryType._3C ? 'green' : 'gray'}-100/40 text-${currentProcessResult.item.category === C2C_LIST.CategoryType.Figure ? 'pink' : 
+                                                                  currentProcessResult.item.category === C2C_LIST.CategoryType.Goods ? 'purple' : 
+                                                                  currentProcessResult.item.category === C2C_LIST.CategoryType.Model ? 'blue' : 
+                                                                  currentProcessResult.item.category === C2C_LIST.CategoryType._3C ? 'green' : 'gray'}-600`}>
+                              {C2C_LIST.getCategoryName(currentProcessResult.item.category)}
+                            </Badge>
+                          )}
+                          {currentProcessResult.item.marketPrice && (
+                            <span className="font-medium text-blue-600">¥{currentProcessResult.item.marketPrice / 100}</span>
+                          )}
+                        </div>
+                        
+                        <div className="mt-2 text-xs text-gray-500">
+                          <span>ID: {currentProcessResult.item.itemsId}</span>
+                          {currentProcessResult.item.c2cItemsIds && (
+                            <span className="ml-2">库存: {currentProcessResult.item.c2cItemsIds.length}</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* 右侧：处理结果/待处理列表 */}
+                      <div className={cn(
+                        "w-full md:w-2/3 p-4",
+                        paused ? "bg-amber-50/20" : "bg-white"
+                      )}>
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-sm font-semibold text-gray-700 flex items-center">
+                            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse mr-2"></span>
+                            处理进度
+                            <span className="ml-2 text-xs text-gray-500">
+                              {Math.min(currentStepIndex + 1, processSteps.length)}/{processSteps.length}
+                            </span>
+                          </h3>
+                          <Badge className={paused ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-800 animate-pulse"}>
+                            {paused ? "已暂停" : "处理中"}
+                          </Badge>
+                        </div>
+                        
+                        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                          {/* 已执行步骤显示结果 */}
+                          {currentProcessResult.stepResults.map(stepResult => (
+                            <StepResultItem 
+                              key={stepResult.stepId}
+                              stepResult={stepResult}
+                              status="completed"
+                            />
+                          ))}
+                          
+                          {/* 未执行步骤以待处理状态显示 */}
+                          {processSteps && currentStepIndex < processSteps.length && 
+                            processSteps.slice(currentStepIndex).map((step, idx) => {
+                              const actualIdx = currentStepIndex + idx;
+                              const status = actualIdx === currentStepIndex ? 'running' : 'pending';
+                              
+                              return (
+                                <StepResultItem 
+                                  key={step.id}
+                                  step={step}
+                                  status={status}
+                                  index={actualIdx}
+                                />
+                              );
+                            })
+                          }
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
