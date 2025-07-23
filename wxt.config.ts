@@ -25,7 +25,7 @@ export default defineConfig({
     plugins: [tailwindcss()],
     resolve:{
       alias:{
-        '@/premium':path.resolve(__dirname, `premium/${import.meta.env.VITE_FREE_VERSION?'unimpl':'index'}.ts`)
+        'premium':path.resolve(__dirname, `premium/${import.meta.env.VITE_FREE_VERSION?'unimpl':'index'}.ts`)
       }
     }
   })

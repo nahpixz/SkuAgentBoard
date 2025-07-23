@@ -4,7 +4,7 @@ import { createT } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter} from "@/components/ui/card";
 import { Play, Pause, X, SkipForward, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Info } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -527,7 +527,7 @@ const StepResultItem = ({
 
 
 // 主组件
-export const skuProcessBoard = () => {
+export const SkuProcessBoard = () => {
   const {
     pendingItems,
     processSteps,
@@ -544,7 +544,6 @@ export const skuProcessBoard = () => {
     skipCurrentItem
   } = skuProcessStore();
 
-  const [showPreview, setShowPreview] = useState(true);
   const [showResults, setShowResults] = useState(true);
 
   const completedCot= currentItemIndex > 0?currentItemIndex: 0;

@@ -17,10 +17,11 @@ import { SettingsModal } from '@/components/panel/settings-modal';
 import { FilterAndSort, FilterModal, useGlobalFilterStore } from '@/components/panel/filter-modal';
 import { InventoryCheckModal } from '@/components/panel/inventory-check-modal';
 import { GearSwitcher, type GEAR_MODE } from '@/components/panel/gear-switcher';
-import AGENT from '@/premium';
+import AGENT from 'premium';
 import { ModalOverlay } from '@/components/panel/modal-overlay';
 import { networkListener } from './networkListener';
 import DebugOverlay,{DebugOverlayRef} from '@/components/panel/debug-overlay';
+import { SkuProcessBoard } from '@/premium/components/skuProcessBoard';
 
 
 type OPT_MODE = 'idle' | 'search' | 'select' | 'settings' | 'filter';
@@ -365,7 +366,7 @@ function App() {
       </div>
       </>)}
       
-      <AGENT.COMP.skuProcessBoard/>
+      <SkuProcessBoard/>
         
     </>}
 

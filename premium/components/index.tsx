@@ -2,7 +2,7 @@ import { ToolButton } from "@/components/panel/tool-button";
 import { Bot, Drone } from "lucide-react";
 
 export { SkuAgentBoard } from "./skuFetchAgent";
-export { skuProcessBoard, skuProcessStore } from "./skuProcessBoard";
+export { SkuProcessBoard, skuProcessStore } from "./skuProcessBoard";
 
 export const AgentButton = ()=>(
 <ToolButton 
