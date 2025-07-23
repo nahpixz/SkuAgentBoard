@@ -527,9 +527,9 @@ const StepResultItem = ({
           
           {/* 待处理步骤的详细说明 */}
           {status === 'pending' && step?.description && (
-            <div className="text-xs text-gray-600 p-2 bg-gray-50 rounded-md border border-gray-200">
-              <div className="font-medium mb-1">步骤说明:</div>
-              {step.description}
+            <div className="text-xs text-left text-gray-600 p-2 bg-gray-50 rounded-md border border-gray-200">
+              {/* <div className="font-medium mb-1">步骤说明:</div> */}
+              {step.process.toString()}
             </div>
           )}
         </div>
