@@ -12,11 +12,11 @@ import { C2C_LIST } from "@/entrypoints/panel/api";
 import "./skuProcessBoard.css";
 
 
-interface ProcessStep {
+interface ProcessStep<Tin,Tout=any,Tprev=any> {
   id: string;
   name: string;
   description: string;
-  process: (item: DB.skuItem) => Promise<any>;
+  process: (item:Tin,prev?:Tprev) => Promise<Tout>;
 }
 
 type StepResult = {
@@ -35,7 +35,7 @@ type ProcessResult = {
 // 定义状态
 const State = {
   pendingItems: [] as DB.skuItem[],
-  processSteps: [] as ProcessStep[],
+  processSteps: [] as ProcessStep<DB.skuItem>[],
   running: false,
   currentItemIndex: -1,
   currentStepIndex: 0,
@@ -45,7 +45,7 @@ const State = {
 
 export const skuProcessStore = createT<typeof State>({dev:true})((set, get) => ({
   ...State,
-  init: (pendingItems: DB.skuItem[], processSteps: ProcessStep[] = []) =>
+  init: (pendingItems: DB.skuItem[], processSteps: ProcessStep<DB.skuItem>[] = []) =>
     set({ pendingItems, processSteps, 
       processResults:pendingItems.map(item => ({
         item,
@@ -430,7 +430,7 @@ const StepResultItem = ({
   stepResult, // 步骤结果（如果有）
   index, // 步骤索引
 }: {
-  step?: ProcessStep;
+  step?: ProcessStep<DB.skuItem>;
   status: 'completed' | 'running' | 'pending' | 'error';
   stepResult?: StepResult;
   index?: number;
