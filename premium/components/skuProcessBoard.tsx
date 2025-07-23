@@ -222,6 +222,23 @@ const ProgressBar = ({
   );
 };
 
+// 获取分类样式
+function getCategoryStyle(category?: C2C_LIST.CategoryType) {
+  if (!category) return { bgColor: 'bg-gray-100 text-gray-600' };
+  switch (category) {
+    case C2C_LIST.CategoryType.Figure: // 手办
+      return { bgColor: 'bg-pink-100/40 text-pink-600' };
+    case C2C_LIST.CategoryType.Goods: // 周边
+      return { bgColor: 'bg-purple-100/40 text-purple-600' };
+    case C2C_LIST.CategoryType.Model: // 模型 
+      return { bgColor: 'bg-blue-100/40 text-blue-600' };
+    case C2C_LIST.CategoryType._3C: // 数码
+      return { bgColor: 'bg-green-100/40 text-green-600' };
+    default:
+      return { bgColor: 'bg-gray-100/40 text-gray-600' };
+  }
+}
+
 // 处理结果组件
 const ProcessResultItem = ({
   result,
@@ -245,23 +262,6 @@ const ProcessResultItem = ({
   
   // 如果是待处理项目，使用传入的item
   const displayItem =  result!.item;
-
-  // 获取分类样式
-  function getCategoryStyle(category?: C2C_LIST.CategoryType) {
-    if (!category) return { bgColor: 'bg-gray-100 text-gray-600' };
-    switch (category) {
-      case C2C_LIST.CategoryType.Figure: // 手办
-        return { bgColor: 'bg-pink-100/40 text-pink-600' };
-      case C2C_LIST.CategoryType.Goods: // 周边
-        return { bgColor: 'bg-purple-100/40 text-purple-600' };
-      case C2C_LIST.CategoryType.Model: // 模型 
-        return { bgColor: 'bg-blue-100/40 text-blue-600' };
-      case C2C_LIST.CategoryType._3C: // 数码
-        return { bgColor: 'bg-green-100/40 text-green-600' };
-      default:
-        return { bgColor: 'bg-gray-100/40 text-gray-600' };
-    }
-  }
 
   // 根据状态调整组件的显示样式
   const getStatusStyles = () => {
@@ -560,7 +560,7 @@ export const SkuProcessBoard = () => {
       contentClassName="mt-0 w-full max-w-2xl p-0 rounded-lg overflow-hidden shadow-xl"
       alignment="center"
     >
-      <Card className="border-0 shadow-none p-0 gap-2 bg-white/94 ">
+      <Card className="border-0 shadow-none p-0 gap-0 bg-white/94 ">
         <div className="border-b border-gray-200 p-3 flex flex-col"> 
           {/* 集成进度显示到标题栏 */}
           <div className="flex items-center justify-between">
@@ -610,7 +610,7 @@ export const SkuProcessBoard = () => {
           </div>
         </div>
 
-        <CardContent className="px-0 pt-0 pb-3">
+        <CardContent className="p-0">
 
             {/* 已处理项目结果 */}
             {processResults.length > 0 && showResults && (
@@ -633,28 +633,10 @@ export const SkuProcessBoard = () => {
 
           {/* 步骤指示器与当前处理项目合并 */}
           {(
-              <div className="px-3 pt-3">
-                {running && <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-medium text-gray-700 flex items-center">
-                    <span className="flex items-center">
-                      {running ? (
-                        <>
-                          <Play className="w-4 h-4 mr-1 text-blue-500" />
-                          正在处理
-                        </>
-                      ) : null}
-                    </span>
-                  </h3>
-                  {running && (
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
-                      {currentStepIndex + 1}/{totalSteps} 步骤 
-                    </span>
-                  )}
-                </div>}
-
+              <div className="p-0">
               {!running && (
                 <div className="p-0 border-t border-gray-100">
-                  <div className="p-2 rounded-md bg-blue-50 text-blue-700 text-xs">
+                  <div className="p-2 bg-blue-50 text-blue-700 text-xs">
                     <div className="flex items-center mb-2">
                       <Info className="w-4 h-4 mr-2" />
                       <span>此项目将按照以下步骤进行处理</span>
@@ -675,10 +657,10 @@ export const SkuProcessBoard = () => {
 
                 {/* 当前处理项目信息 - 现代化水平布局 */}
                 {running && (
-                  <div className="mt-3 bg-gradient-to-b from-white to-gray-50 rounded-lg border border-gray-200 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
+                  <div className="bg-gradient-to-b from-white to-gray-50 border border-gray-200 shadow-sm overflow-hidden transition-all duration-300">
                     <div className="flex flex-col md:flex-row">
                       {/* 左侧：商品信息和图片 */}
-                      <div className="w-full md:w-1/3 p-4 md:border-r border-b md:border-b-0 border-gray-100 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-white">
+                      <div className="w-full md:w-1/3 py-2 px-2 md:border-r border-b md:border-b-0 border-gray-100 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-white">
                         {/* 商品图片 - 突出显示 */}
                         <div className={cn(
                           "relative w-32 h-32 mb-3 rounded-lg overflow-hidden shadow-md ring-2 ring-offset-2",
@@ -698,13 +680,7 @@ export const SkuProcessBoard = () => {
                         
                         <div className="flex items-center justify-center space-x-2 text-xs">
                           {currentProcessResult.item.category && (
-                            <Badge variant="outline" className={`bg-${currentProcessResult.item.category === C2C_LIST.CategoryType.Figure ? 'pink' : 
-                                                                  currentProcessResult.item.category === C2C_LIST.CategoryType.Goods ? 'purple' : 
-                                                                  currentProcessResult.item.category === C2C_LIST.CategoryType.Model ? 'blue' : 
-                                                                  currentProcessResult.item.category === C2C_LIST.CategoryType._3C ? 'green' : 'gray'}-100/40 text-${currentProcessResult.item.category === C2C_LIST.CategoryType.Figure ? 'pink' : 
-                                                                  currentProcessResult.item.category === C2C_LIST.CategoryType.Goods ? 'purple' : 
-                                                                  currentProcessResult.item.category === C2C_LIST.CategoryType.Model ? 'blue' : 
-                                                                  currentProcessResult.item.category === C2C_LIST.CategoryType._3C ? 'green' : 'gray'}-600`}>
+                            <Badge variant="outline" className={`${getCategoryStyle(currentProcessResult.item.category).bgColor}`}>
                               {C2C_LIST.getCategoryName(currentProcessResult.item.category)}
                             </Badge>
                           )}
@@ -723,23 +699,25 @@ export const SkuProcessBoard = () => {
                       
                       {/* 右侧：处理结果/待处理列表 */}
                       <div className={cn(
-                        "w-full md:w-2/3 p-4",
+                        "w-full md:w-2/3 p-3 pr-0",
                         paused ? "bg-amber-50/20" : "bg-white"
                       )}>
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center justify-between mb-3 mr-3">
                           <h3 className="text-sm font-semibold text-gray-700 flex items-center">
-                            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse mr-2"></span>
-                            处理进度
+                            {/* <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse mr-2"></span>
+                            处理进度 */}
+                            <Play className="w-4 h-4 mr-1 text-blue-500 animate-pulse" />
+                            正在处理
                             <span className="ml-2 text-xs text-gray-500">
                               {Math.min(currentStepIndex + 1, processSteps.length)}/{processSteps.length}
                             </span>
                           </h3>
-                          <Badge className={paused ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-800 animate-pulse"}>
-                            {paused ? "已暂停" : "处理中"}
-                          </Badge>
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                            {currentStepIndex + 1}/{totalSteps} 步骤 
+                          </span>
                         </div>
                         
-                        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                        <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
                           {/* 已执行步骤显示结果 */}
                           {currentProcessResult.stepResults.map(stepResult => (
                             <StepResultItem 

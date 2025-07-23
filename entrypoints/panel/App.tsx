@@ -21,7 +21,7 @@ import AGENT from 'premium';
 import { ModalOverlay } from '@/components/panel/modal-overlay';
 import { networkListener } from './networkListener';
 import DebugOverlay,{DebugOverlayRef} from '@/components/panel/debug-overlay';
-import { SkuProcessBoard } from '@/premium/components/skuProcessBoard';
+// import { SkuProcessBoard } from '@/premium/components/skuProcessBoard';
 
 
 type OPT_MODE = 'idle' | 'search' | 'select' | 'settings' | 'filter';
@@ -366,7 +366,7 @@ function App() {
       </div>
       </>)}
       
-      <SkuProcessBoard/>
+      <AGENT.COMP.SkuProcessBoard/>
         
     </>}
 
