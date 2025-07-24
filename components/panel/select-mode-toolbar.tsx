@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import AGENT from '@/premium';
 import { DB } from '@/entrypoints/panel/db';
-import { debugPipeRun } from '@/premium/pipe/debug';
+import { debugExportCBOR, debugPipeRun } from '@/premium/pipe/debug';
 
 export function SelectModeToolbar({items,onClose}:{items:DB.skuItem[],onClose:()=>void}) {
   // const skuList = useLiveQuery(() => DB.getSkuList());
@@ -299,9 +299,11 @@ export function SelectModeToolbar({items,onClose}:{items:DB.skuItem[],onClose:()
               <DropdownMenuContent align="end" className="w-40">
                 <DropdownMenuLabel className="text-xs">调试与检查</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-xs flex items-center gap-2">
+                <DropdownMenuItem
+                onClick={()=>debugExportCBOR(items.filter(x => selectedItems[x.itemsId]))}
+                 className="text-xs flex items-center gap-2">
                   <Bug className="h-3.5 w-3.5 text-blue-600" />
-                  查看商品详情
+                  导出已选择SKU信息
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-xs flex items-center gap-2">
                   <ShoppingCart className="h-3.5 w-3.5 text-green-600" />

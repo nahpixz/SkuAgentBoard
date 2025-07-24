@@ -2,6 +2,7 @@ import { DB } from "@/entrypoints/panel/db";
 import { createPipe } from ".";
 import { captureOrderScreenshot, captureSkuScreenshot } from "../agent";
 import { skuProcessStore } from "../components/skuProcessBoard";
+import { exportCBOR } from "../opts";
 
 export const debugPipe = createPipe<DB.skuItem>()
   .addStep({
@@ -66,6 +67,10 @@ const mockSkuItem: DB.skuItem = {
 
 export const debugPipeRun=(item:DB.skuItem[] = [mockSkuItem])=>{
   skuProcessStore.getState().init(item, debugPipe);
+}
+
+export const debugExportCBOR=(item:DB.skuItem[])=>{
+  exportCBOR(item,'debug.cbor');
 }
 
    

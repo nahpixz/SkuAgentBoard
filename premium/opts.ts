@@ -313,3 +313,31 @@ async function dispatchTouchEvent() {
     console.error('Touch event failed:', err);
   }
 }
+
+export function exportJson(exportData:any,filename:string){
+  const jsonString = JSON.stringify(exportData, null, 2);
+  const blob = new Blob([jsonString], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${filename}-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+import { encode } from 'cbor-x';
+export function exportCBOR(exportData:any,filename:string){
+  const cborData = encode(exportData);
+  const blob = new Blob([cborData], { type: 'application/cbor' });
+  const url = URL.createObjectURL(blob);
+  
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${filename}-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.cbor`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
