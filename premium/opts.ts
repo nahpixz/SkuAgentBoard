@@ -141,6 +141,7 @@ export async function captureElementScreenshot(selector: string): Promise<Base64
  * @returns 返回base64编码的图片数据URL
  */
 export async function captureVisibleTab(format: 'jpeg' | 'png' = 'png', quality?: number): Promise<Base64URLString> {
+  const tab = await browser.tabs.get(browser.devtools.inspectedWindow.tabId);
   return new Promise((resolve, reject) => {
     // 准备截图选项
     const options: Browser.extensionTypes.ImageDetails = { format };
@@ -149,7 +150,7 @@ export async function captureVisibleTab(format: 'jpeg' | 'png' = 'png', quality?
     }
     
     // 使用browser.tabs API捕获当前可见标签页
-    browser.tabs.captureVisibleTab(options, (dataUrl) => {
+    browser.tabs.captureVisibleTab(tab.windowId,options, (dataUrl) => {
       // if (browser.runtime.lastError) {
       //   console.error('截图失败:', browser.runtime.lastError.message);
       //   reject(new Error(`截图失败: ${browser.runtime.lastError.message}`));
