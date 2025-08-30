@@ -21,10 +21,19 @@ export type Pipe<Tin, TcurOut> = {
     get steps(): ProcessStep<Tin>[];
 }
 
+export type ConfigField = {
+    key: string;
+    label: string;
+    type: 'boolean' | 'string';
+    defaultValue: boolean | string;
+    placeholder?: string;
+}
+
 export type ProcessStep<Tin, Tout = any, Tprev = any> = {
     id: string;
     name: string;
     description: string;
-    process: (item: Tin, prev?: Tprev) => Promise<Tout>;
+    process: (item: Tin, prev?: Tprev, config?: Record<string, any>) => Promise<Tout>;
     render?:(result:Tout)=> JSX.Element;
+    config?: ConfigField[];
 }

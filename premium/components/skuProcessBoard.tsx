@@ -10,7 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { C2C_LIST } from "@/entrypoints/panel/api";
 import "./skuProcessBoard.css";
-import { Pipe, ProcessStep } from "../pipe/index";
+import { Pipe, ProcessStep, ConfigField } from "../pipe/index";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type StepResult = {
     stepId: string;
@@ -25,6 +27,115 @@ type ProcessResult = {
   stepResults: StepResult[];
 };
 
+// 配置表单组件 - 支持全局和item特定配置
+const StepConfigForm = ({ 
+  step, 
+  itemId, 
+  isGlobal = false 
+}: { 
+  step: ProcessStep<DB.skuItem>; 
+  itemId?: string; 
+  isGlobal?: boolean; 
+}) => {
+  const { globalStepConfigs, itemStepConfigs, updateGlobalStepConfig, updateItemStepConfig } = skuProcessStore();
+  
+  // 获取配置值：优先使用item特定配置，否则使用全局配置
+  const getConfigValue = (fieldKey: string, defaultValue: any) => {
+    if (isGlobal) {
+      return globalStepConfigs[step.id]?.[fieldKey] ?? defaultValue;
+    }
+    if (itemId) {
+      return itemStepConfigs[itemId]?.[step.id]?.[fieldKey] ?? 
+             globalStepConfigs[step.id]?.[fieldKey] ?? 
+             defaultValue;
+    }
+    return defaultValue;
+  };
+
+  const updateConfig = (fieldKey: string, value: any) => {
+    if (isGlobal) {
+      updateGlobalStepConfig(step.id, { [fieldKey]: value });
+    } else if (itemId) {
+      updateItemStepConfig(itemId, step.id, { [fieldKey]: value });
+    }
+  };
+
+  // 重置配置到默认值
+  const resetConfig = () => {
+    if (!step.config) return;
+    if (isGlobal) {
+      const defaultConfig: Record<string, any> = {};
+      step.config.forEach(field => {
+        defaultConfig[field.key] = field.defaultValue;
+      });
+      updateGlobalStepConfig(step.id, defaultConfig);
+    } else if (itemId) {
+      // 清除item特定配置，让其回退到全局配置
+      const state = skuProcessStore.getState();
+      const itemConfigs = { ...state.itemStepConfigs[itemId] };
+      delete itemConfigs[step.id];
+      skuProcessStore.setState({
+        itemStepConfigs: {
+          ...state.itemStepConfigs,
+          [itemId]: itemConfigs
+        }
+      });
+    }
+  };
+
+  // 检查是否有自定义配置
+  const hasCustomConfig = !isGlobal && itemId && itemStepConfigs[itemId]?.[step.id];
+
+  if (!step.config || step.config.length === 0) return null;
+
+  return (
+    <div className="p-1">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs font-medium text-gray-700">
+          {isGlobal ? '默认配置' : '步骤配置'}
+        </span>
+        {!isGlobal && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={resetConfig}
+            className="h-5 px-1 text-xs text-gray-500 hover:text-gray-700"
+            title={hasCustomConfig ? "重置为默认配置" : "已使用默认配置"}
+          >
+            {hasCustomConfig ? "重置" : "默认"}
+          </Button>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-x-2 gap-y-1">
+        {step.config.map((field) => (
+          <div key={field.key} className="flex items-center space-x-1 flex-1 min-w-fit">
+            <label className="text-xs text-gray-600 whitespace-nowrap flex-shrink-0">{field.label}:</label>
+            {field.type === 'boolean' ? (
+              <Checkbox
+                checked={getConfigValue(field.key, field.defaultValue)}
+                onCheckedChange={(checked) => {
+                  updateConfig(field.key, checked);
+                }}
+                className="h-3 w-3 flex-shrink-0"
+              />
+            ) : (
+              <Input
+                type="text"
+                value={getConfigValue(field.key, field.defaultValue)}
+                placeholder={field.placeholder}
+                onChange={(e) => {
+                  updateConfig(field.key, e.target.value);
+                }}
+                className="h-5 text-xs flex-1 min-w-[40px] px-1"
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // 定义状态
 const State = {
   pendingItems: [] as DB.skuItem[],
@@ -34,11 +145,26 @@ const State = {
   currentStepIndex: 0,
   processResults: [] as ProcessResult[],
   paused: false,
+  // 全局默认配置
+  globalStepConfigs: {} as Record<string, Record<string, any>>,
+  // 每个item的独立配置 itemId -> stepId -> config
+  itemStepConfigs: {} as Record<string, Record<string, Record<string, any>>>,
 }
 
 export const skuProcessStore = createT<typeof State>({dev:true})((set, get) => ({
   ...State,
-  init: <R,>(pendingItems: DB.skuItem[], pipe: Pipe<DB.skuItem,R>) =>
+  init: <R,>(pendingItems: DB.skuItem[], pipe: Pipe<DB.skuItem,R>) => {
+    // 初始化全局默认配置
+    const globalStepConfigs: Record<string, Record<string, any>> = {};
+    pipe.steps.forEach(step => {
+      if (step.config) {
+        globalStepConfigs[step.id] = {};
+        step.config.forEach(field => {
+          globalStepConfigs[step.id][field.key] = field.defaultValue;
+        });
+      }
+    });
+    
     set({ pendingItems, 
       processSteps:pipe.steps, 
       processResults:pendingItems.map(item => ({
@@ -46,9 +172,34 @@ export const skuProcessStore = createT<typeof State>({dev:true})((set, get) => (
         stepResults: []
       })),
       currentItemIndex: -1, currentStepIndex: 0, 
-      running: false, paused: false
-    }),
-  clear: () => set({ pendingItems: [], running: false, currentItemIndex: -1, currentStepIndex: 0, processResults: [], paused: false }),
+      running: false, paused: false,
+      globalStepConfigs,
+      itemStepConfigs: {}
+    });
+  },
+  clear: () => set({ pendingItems: [], running: false, currentItemIndex: -1, currentStepIndex: 0, processResults: [], paused: false, globalStepConfigs: {}, itemStepConfigs: {} }),
+  updateGlobalStepConfig: (stepId: string, config: Record<string, any>) => {
+    const state = get();
+    set({ 
+      globalStepConfigs: {
+        ...state.globalStepConfigs,
+        [stepId]: { ...state.globalStepConfigs[stepId], ...config }
+      }
+    });
+  },
+  updateItemStepConfig: (itemId: string, stepId: string, config: Record<string, any>) => {
+    const state = get();
+    const itemConfigs = state.itemStepConfigs[itemId] || {};
+    set({ 
+      itemStepConfigs: {
+        ...state.itemStepConfigs,
+        [itemId]: {
+          ...itemConfigs,
+          [stepId]: { ...itemConfigs[stepId], ...config }
+        }
+      }
+    });
+  },
   start: () => {
     const state = get();
     if (state.pendingItems.length === 0 || state.processSteps.length === 0) return;
@@ -77,7 +228,7 @@ export const skuProcessStore = createT<typeof State>({dev:true})((set, get) => (
 // 处理下一个步骤的函数
 async function processNextStep() {
   const {running,paused,processSteps,currentItemIndex,currentStepIndex,
-    processResults:[...updatedResults]
+    processResults:[...updatedResults], globalStepConfigs, itemStepConfigs
   } = skuProcessStore.getState();
 
   if (!running || paused || updatedResults.length === 0 || processSteps.length === 0) return;
@@ -111,7 +262,12 @@ async function processNextStep() {
   async function tryStep(){
     try {
       const prev = updatedStepResults.at(-1)?.result
-      return [await currentStep.process(item,prev),null]
+      // 获取配置：优先使用item特定配置，否则使用全局默认配置
+      const itemId = String(item.itemsId);
+      const itemConfig = itemStepConfigs[itemId]?.[currentStep.id] || {};
+      const globalConfig = globalStepConfigs[currentStep.id] || {};
+      const config = { ...globalConfig, ...itemConfig };
+      return [await currentStep.process(item,prev,config),null]
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       return [null,errorMessage]
@@ -406,6 +562,7 @@ const ProcessResultItem = ({
                       step={step}
                       status={status}
                       index={actualIdx}
+                      itemId={String(displayItem.itemsId)}
                     />
                   );
                 })
@@ -424,11 +581,13 @@ const StepResultItem = ({
   status, // 步骤状态：'completed', 'running', 'pending', 'error'
   stepResult, // 步骤结果（如果有）
   index, // 步骤索引
+  itemId, // 商品ID，用于item特定配置
 }: {
   step?: ProcessStep<DB.skuItem>;
   status: 'completed' | 'running' | 'pending' | 'error';
   stepResult?: StepResult;
   index?: number;
+  itemId?: string;
 }) => {
   const [isStepOpen, setIsStepOpen] = useState(false);
   const paused = skuProcessStore(state=>state.paused);
@@ -525,6 +684,13 @@ const StepResultItem = ({
               </div>
             </div>
           )}
+          
+          {/* 待处理步骤的配置表单 - 只有当步骤有配置时才显示 */}
+            {status === 'pending' && step && step.config && step.config.length > 0 && (
+               <div className="p-2 bg-gray-50 rounded-md border border-gray-200">
+                 <StepConfigForm step={step} itemId={itemId} isGlobal={!itemId} />
+               </div>
+             )}
           
           {/* 待处理步骤的详细说明 */}
           {status === 'pending' && step?.description && (
