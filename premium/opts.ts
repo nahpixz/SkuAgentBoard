@@ -258,11 +258,12 @@ type UnpackPromise<T> = T extends Promise<infer U> ? U : T;
 type Rect = UnpackPromise<ReturnType<typeof evalGetBoundingClientRect>>
 
 export async function evalInConsole<T = string|number,R=any>(fnWithoutSideEffect: (...fnArgs:T[])=>R,fnArgs:T[]):Promise<R>{
-  // console.warn(`(${fnWithoutSideEffect.toString()})(${fnArgs.map(x=>JSON.stringify(x)).join(',')})`)
+  console.warn(`(${fnWithoutSideEffect.toString()})(${fnArgs.map(x=>JSON.stringify(x)).join(',')})`)
   return new Promise((resolve, reject) => {
     browser.devtools.inspectedWindow.eval(
       `(${fnWithoutSideEffect.toString()})(${fnArgs.map(x=>JSON.stringify(x)).join(',')})`,
       (result:R, e) => {
+        console.warn('evalInConsole:',result,e)
         if (e) {
           console.error("evalInConsole:", e)
           reject(e)

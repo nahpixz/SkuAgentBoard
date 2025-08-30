@@ -135,10 +135,11 @@ export async function captureOrderScreenshot(skuDetail:MALL_DETAIL.ItemDetail) {
   }
 
   await waitForFrame(666);
-  console.warn('OrderModDone:',ok)
-
+  //使用iPhone 14 pro max的100% 才能正确找到窗口
   const rectL = await evalGetBoundingClientRect('.item-card')
   const rectR = await evalGetBoundingClientRect('.info-card-pay');
+  console.log('rectL',rectL)
+  console.log('rectR',rectR)
   return await captureWithRect({
     x: 0,//rectL.x,
     y: rectL.y,

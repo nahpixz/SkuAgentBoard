@@ -1,6 +1,6 @@
 import { DB } from "@/entrypoints/panel/db";
 import { createPipe } from ".";
-import { captureOrderScreenshot, captureSkuScreenshot } from "../agent";
+import { captureOrderScreenshot, captureSkuScreenshot,goofishProAddNew } from "../agent";
 import { skuProcessStore } from "../components/skuProcessBoard";
 import { exportCBOR } from "../opts";
 
@@ -12,7 +12,7 @@ export const debugPipe = createPipe<DB.skuItem>()
     process: async (item: DB.skuItem) => {
       return await captureSkuScreenshot(item.itemsId);
     },
-    render: (result: any) => {
+    render: (result) => {
       if (result?.detail) {
         return (
           <div className="p-2 border rounded">
@@ -37,9 +37,9 @@ export const debugPipe = createPipe<DB.skuItem>()
     description: '捕获订单截图',
     process: async (item: DB.skuItem, prev) => {
       const screenshotB = prev && await captureOrderScreenshot(prev.detail);
-      return { screenshotB };
+      return { screenshotA:prev?.screenshot, screenshotB };
     },
-    render: (result: any) => {
+    render: (result) => {
       if (result?.screenshotB) {
         return (
           <div className="p-2 border rounded">
@@ -50,7 +50,32 @@ export const debugPipe = createPipe<DB.skuItem>()
       }
       return <pre className="text-xs">{JSON.stringify(result, null, 2)}</pre>;
     }
-  });
+  })
+  .addStep({
+    id: 'goofish-pro-new',
+    name: '闲鱼上架',
+    description: '闲鱼新商品',
+    process: async(item: DB.skuItem, prev)=>{
+      // goofishProAddNew(item,)
+    },
+    // render:(result)=>{
+      
+    // }
+  })
+;
+
+export const debugGooFishPipe = createPipe<DB.skuItem>()
+  .addStep({
+    id: 'goofish-pro-new',
+    name: '闲鱼上架',
+    description: '闲鱼新商品',
+    process: async(item: DB.skuItem, prev)=>{
+      return goofishProAddNew(item)
+    },
+    // render:(result)=>{
+      
+    // }
+  })
 
 // 模拟一个SKU项目用于测试
 const mockSkuItem: DB.skuItem = {
@@ -66,7 +91,7 @@ const mockSkuItem: DB.skuItem = {
 };
 
 export const debugPipeRun=(item:DB.skuItem[] = [mockSkuItem])=>{
-  skuProcessStore.getState().init(item, debugPipe);
+  skuProcessStore.getState().init(item, debugGooFishPipe);
 }
 
 export const debugExportCBOR=(item:DB.skuItem[])=>{
