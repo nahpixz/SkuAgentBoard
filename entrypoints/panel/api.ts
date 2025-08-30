@@ -158,6 +158,14 @@ export namespace MALL_DETAIL{
                 }[]
             }[];
         };
+        ipRightList: {
+          ipRightId: string;
+          ipRightLogo: string;
+          ipRightName: string;
+          isShow: boolean
+          jumpUrl: string;
+          naJumpUrl: string;
+        }[];
         sales: number;
     }
 }

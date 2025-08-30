@@ -72,7 +72,7 @@ export async function captureSkuScreenshot(skuid: number) {
 const ORDER_PAGE_URL = 'https://mall.bilibili.com/orderdetail.html?orderId=4000366603358272&noTitleBar=1';
 export async function captureOrderScreenshot(skuDetail:MALL_DETAIL.ItemDetail) {
   ListenKey.ORDER_DETAIL = 'captureOrderScreenshot'
-  const detailPromise = waitForRequest(ORDER_DETAIL.JSON_PREFIX, ListenKey.ORDER_DETAIL);
+  const detailPromise = waitForRequest(ORDER_DETAIL.JSON_PREFIX, ListenKey.ORDER_DETAIL,30000);
   await JumpToComplete(ORDER_PAGE_URL);
   await detailPromise;
   ListenKey.ORDER_DETAIL = 'null'
@@ -153,9 +153,25 @@ export async function captureOrderScreenshot(skuDetail:MALL_DETAIL.ItemDetail) {
 }
 
 const GOOFISH_PRO_ADD = 'https://goofish.pro/sale/product/add?from=%2Fall'
-export async function goofishProAddNew(skuItem:DB.skuItem){
-  // await JumpToComplete(GOOFISH_PRO_ADD);
-
+export async function goofishProAddNew(skuItem:DB.skuItem,screenBS64:string[],detail?: MALL_DETAIL.ItemDetail){
+  await JumpToComplete(GOOFISH_PRO_ADD);
+  console.log('jumped')
+  const c2c = skuItem?.c2cLists?.[0];
+  if(!c2c?.showMarketPrice || !c2c?.price) throw "获取价格失败"
+  let price = skuItem.marketPrice * 0.888
+  price = price <= c2c.price ? c2c.price+2000:price
+  price = Math.round(price/100)
+  const argData = {
+    title:skuItem.name,
+    original_price:c2c?.showMarketPrice,
+    price,
+    screenshots:screenBS64,
+    ips:detail?.ipRightList.map(x=>x.ipRightName.trim()).concat(
+      detail?.itemsSkuListVO?.specInfoList.map(x=>x?.specValueVOList.map(y=>y.specValueName.trim().split(/\s/))).flat(2)
+    )
+  }
+  
+  console.log('argData',argData)
   // await waitForFrame();
   const [ok1,err1]:[boolean,any] = await evalInConsole(() => {
     try {
@@ -169,7 +185,7 @@ export async function goofishProAddNew(skuItem:DB.skuItem){
   if(!ok1) throw `上架E1:${err1}`
   
   await waitForFrame(999);
-  const [ok2,err2]:[boolean,any] = await evalInConsole(() => {
+  const [ok2,err2]:[boolean,any] = await evalInConsole((arg:typeof argData) => {
     try {
       const $q = (s:string)=>(document.querySelector(s) as any)
       const setInput = (label:string,value:any)=> {
@@ -177,7 +193,7 @@ export async function goofishProAddNew(skuItem:DB.skuItem){
         ipV.handleInput({target:{value}})
         return ipV
       }
-      $q('.auth-list.custom-element>li').click()
+      // $q('.auth-list.custom-element>li').click()
       const ipV = setInput!('channelCat','手办').$parent
       ipV.suggestionSelect(ipV.suggestionList[0])
       $q('.container.custom-style-release').__vue__.pv_list.push(
@@ -194,11 +210,11 @@ export async function goofishProAddNew(skuItem:DB.skuItem){
       return [false,String(e)];
     }
     return [true,null];
-  }, []);
+  }, [argData]);
   if(!ok2) throw `上架E2:${err2}`
     
   await waitForFrame(333);
-  const [ok3,err3]:[boolean,any] = await evalInConsole(() => {
+  const [ok3,err3]:[boolean,any] = await evalInConsole((arg:typeof argData) => {
     try {
       const $q = (s:string)=>(document.querySelector(s) as any)
       const setInput = (label:string,value:any)=> {
@@ -206,34 +222,129 @@ export async function goofishProAddNew(skuItem:DB.skuItem){
         ipV.handleInput({target:{value}})
         return ipV
       }
+      function createFileFromBase64(base64URL:string, filename:string) {
+        return new Promise<File>((resolve, reject) => {
+          try {
+            // 从base64URL中提取MIME类型和纯base64数据
+            const matches = base64URL.match(/^data:(image\/\w+);base64,(.+)$/);
+            if (!matches || matches.length !== 3) {
+              throw new Error('无效的base64URL格式');
+            }
       
-      setInput('title0','标题')
-      setInput('original_price','10')
-      setInput('price','10')
+            const mimeType = matches[1];
+            const base64Data = matches[2];
       
-      $q('.el-form-item__label[for="content0"] +div .el-textarea').__vue__.handleInput({target:{value:'详情'}})
+            // 将base64字符串转换为字节数组
+            const byteCharacters = atob(base64Data);
+            const byteArrays = [];
+      
+            for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+              const slice = byteCharacters.slice(offset, offset + 512);
+              const byteNumbers = new Array(slice.length);
+      
+              for (let i = 0; i < slice.length; i++) {
+                byteNumbers[i] = slice.charCodeAt(i);
+              }
+      
+              const byteArray = new Uint8Array(byteNumbers);
+              byteArrays.push(byteArray);
+            }
+      
+            // 创建Blob对象
+            const blob = new Blob(byteArrays, { type: mimeType });
+      
+            // 确定文件扩展名
+            const ext = mimeType.split('/')[1];
+            const fullFilename = `${filename}.${ext}`;
+      
+            // 创建File对象
+            const file = new File([blob], fullFilename, {
+              type: mimeType,
+              lastModified: Date.now()
+            });
+      
+            resolve(file);
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }
+      async function handleBase64ImageInput(base64URL:string, filename:string) {
+        // 1. 将base64URL转换为File对象
+        const file = await createFileFromBase64(base64URL, filename);
+      
+        // 2. 获取页面中的文件输入元素
+        const input = document.querySelector('input.el-upload__input');
+        if (!input || !('files' in input)) {
+          throw new Error('未找到文件上传输入框');
+        }
+      
+        // 3. 创建DataTransfer对象并添加文件
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+      
+        // 4. 更新输入框的文件列表
+        input.files = dataTransfer.files;
+      
+        // 5. 触发change事件
+        const changeEvent = new Event('change', {
+          bubbles: true,
+          cancelable: true
+        });
+        input.dispatchEvent(changeEvent);
+      
+        const event = new Event("change", {
+          bubbles: !0,
+        });
+        input.dispatchEvent(event);
+      
+        return file;
+      }
+      
+      arg.screenshots.forEach((bs64,i)=> handleBase64ImageInput(bs64,`file_${i}`))
+      
+      if(arg?.ips && arg.ips.length){
+        const elC = $q('.container.custom-style-release').__vue__
+        const ip0 = arg.ips.map(ip=>
+          elC.pvList[0]?.children.filter((x: any) => x.value_name.includes(ip)).map((x: any) => x.pv_id)
+        ).flat()
+        // console.debug('ip0',ip0)
+        const ip5 = arg.ips.map(ip=>
+          elC.pvList[5]?.children.filter((x: any) => x.value_name.includes(ip)).map((x: any) => x.pv_id)
+        ).flat()
+        // console.debug('ip5',ip5)
+        
+        elC.pv_list.push(...ip0,...ip5)
+      }
+
+      setInput('title0',arg.title)
+      setInput('original_price',arg.original_price)
+      setInput('price',arg.price)
+      
+      $q('.el-form-item__label[for="content0"] +div .el-textarea').__vue__.handleInput({target:
+        {value:`B站会员购购买，全新盒装未拆，发出不退`}})
       
       const cs = $q('.cs-item .el-select').__vue__
       cs.handleOptionSelect(cs.options[0],true)
       
       $q('.el-form-item__label[for="region_full_name0"] +div .el-select').__vue__.handleFocus()
       const regionDlg = $q('.el-dialog[aria-label="请选择发货区域"]').closest('.dlg-wrape').__vue__
-      regionDlg.query.province.id = 110000
-      regionDlg.query.province.name = "北京"
+      regionDlg.query.province.id = 320000 //110000
+      regionDlg.query.province.name = "江苏省" //"北京"
       regionDlg.getProvince()
-      regionDlg.query.city.id = 110100
-      regionDlg.query.city.name = "北京市"
+      regionDlg.query.city.id =  320100 //110100
+      regionDlg.query.city.name = "南京市" //"北京市"
       regionDlg.getCity()
       // regionDlg.getDistrict()
-      regionDlg.query.district.id = 110101
-      regionDlg.query.district.name = "东城区"
+      regionDlg.query.district.id = 320111
+      regionDlg.query.district.name = "浦口区"//"东城区"
       regionDlg.dlgConfirm()
     } catch (e) {
       console.debug('e',e)
       return [false,String(e)];
     }
     return [true,null];
-  }, []);
+  }, [argData]);
   if(!ok3) throw `上架E3:${err3}`
   
   await waitForFrame(3333);

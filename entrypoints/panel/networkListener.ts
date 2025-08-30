@@ -31,7 +31,8 @@ export async function networkListener(
       requestDispatcher(C2C_LIST.URL,ListenKey.C2C_LIST)?.dispatch(data);
       DB.putC2CList(data);
     });
-  } else if (C2C_DETAIL.isDetail(req.request.url)) {
+  } else if (useSettingsStore.getState().autoCaptureDetail &&
+    C2C_DETAIL.isDetail(req.request.url)) {
     // console.debug('req',req._connectionId,req.request.url,req)
     req.getContent((body, encoding) => {
       try {

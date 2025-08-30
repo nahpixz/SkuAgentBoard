@@ -11,7 +11,7 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ onClose, onDataChange }: SettingsModalProps) {
-  const { autoCaptureMall, autoCaptureDetail, enableLiveQuery, toggleAutoCaptureMall, toggleLiveQuery } = useSettingsStore();
+  const { autoCaptureMall, autoCaptureDetail, enableLiveQuery, toggleAutoCaptureMall,toggleAutoCaptureDetail, toggleLiveQuery } = useSettingsStore();
   
   // if (!isOpen) return null;
 
@@ -19,21 +19,6 @@ export function SettingsModal({ onClose, onDataChange }: SettingsModalProps) {
     <div
       className="relative mt-8 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-md mx-auto border border-white/20 overflow-hidden text-start"
     >
-        {/* Header */}
-        <div className="relative px-6 py-4 bg-gradient-to-r from-[#786DF6]/5 to-[#786DF6]/10 border-b border-gray-100/50">
-          <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#786DF6]"></div>
-            设置
-          </h3>
-          <button 
-            className="absolute top-4 right-6 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100/50 transition-all duration-200"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
         <button 
             onClick={onClose}
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
@@ -67,7 +52,23 @@ export function SettingsModal({ onClose, onDataChange }: SettingsModalProps) {
               </div>
             </div>
             
-            <div className="flex items-center justify-between p-3 rounded-xl border border-gray-200/40 bg-gray-50/50">
+            <div 
+              className={`group flex items-center justify-between p-3 rounded-xl border border-gray-200/60  ${autoCaptureDetail?'bg-[#786DF6]/10':'hover:bg-[#786DF6]/5'} hover:border-[#786DF6]/30 transition-all duration-200 cursor-pointer`}
+              onClick={toggleAutoCaptureDetail}
+            >
+              <div className="flex items-center gap-3">
+                <Checkbox 
+                  checked={autoCaptureDetail}
+                  className="h-4 w-4 rounded-md data-[state=checked]:bg-[#786DF6] data-[state=checked]:border-[#786DF6] border-gray-300 transition-colors"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-700">商品详情自动抓取</span>
+                  {/*<p className="text-xs text-gray-500 mt-0.5">自动捕获数据</p>*/}
+                </div>
+              </div>
+            </div>
+            
+            {/*<div className="flex items-center justify-between p-3 rounded-xl border border-gray-200/40 bg-gray-50/50">
               <div className="flex items-center gap-3">
                 <Checkbox 
                   checked={autoCaptureDetail}
@@ -76,11 +77,11 @@ export function SettingsModal({ onClose, onDataChange }: SettingsModalProps) {
                 />
                 <div>
                   <span className="text-sm font-medium text-gray-500">商品详情自动抓取</span>
-                  <p className="text-xs text-gray-400 mt-0.5">功能开发中</p>
+                  <p className="text-xs text-gray-400 mt-0.5">自动捕获数据</p>
                 </div>
               </div>
               <span className="text-xs px-2 py-1 bg-gray-200/60 text-gray-500 rounded-full">敬请期待</span>
-            </div>
+            </div>*/}
 
             <div
               className="group flex items-center justify-between p-3 rounded-xl border border-gray-200/60 hover:border-[#786DF6]/30 hover:bg-[#786DF6]/5 transition-all duration-200 cursor-pointer"

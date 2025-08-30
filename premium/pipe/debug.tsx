@@ -10,7 +10,11 @@ export const debugPipe = createPipe<DB.skuItem>()
     name: '获取SKU截图',
     description: '捕获商品详情和截图',
     process: async (item: DB.skuItem) => {
-      return await captureSkuScreenshot(item.itemsId);
+      // const r = await captureSkuScreenshot(item.itemsId);
+      // console.log('item',item)
+      // console.log('detail',r.detail)
+      // throw 'show detail'
+      return captureSkuScreenshot(item.itemsId)
     },
     render: (result) => {
       if (result?.detail) {
@@ -37,7 +41,7 @@ export const debugPipe = createPipe<DB.skuItem>()
     description: '捕获订单截图',
     process: async (item: DB.skuItem, prev) => {
       const screenshotB = prev && await captureOrderScreenshot(prev.detail);
-      return { screenshotA:prev?.screenshot, screenshotB };
+      return { detail:prev?.detail,screenshotA:prev?.screenshot, screenshotB };
     },
     render: (result) => {
       if (result?.screenshotB) {
@@ -56,7 +60,13 @@ export const debugPipe = createPipe<DB.skuItem>()
     name: '闲鱼上架',
     description: '闲鱼新商品',
     process: async(item: DB.skuItem, prev)=>{
-      // goofishProAddNew(item,)
+      if(!prev) throw `前序结果未获取`
+      const { detail, screenshotA, screenshotB } = prev;
+      const bs64 = []
+      screenshotA && bs64.push(screenshotA)
+      screenshotB && bs64.push(screenshotB)
+      await goofishProAddNew(item,bs64,detail)
+      await new Promise(r=>setTimeout(r,5000))
     },
     // render:(result)=>{
       
@@ -70,7 +80,7 @@ export const debugGooFishPipe = createPipe<DB.skuItem>()
     name: '闲鱼上架',
     description: '闲鱼新商品',
     process: async(item: DB.skuItem, prev)=>{
-      return goofishProAddNew(item)
+      return goofishProAddNew(item,[])
     },
     // render:(result)=>{
       
@@ -91,7 +101,7 @@ const mockSkuItem: DB.skuItem = {
 };
 
 export const debugPipeRun=(item:DB.skuItem[] = [mockSkuItem])=>{
-  skuProcessStore.getState().init(item, debugGooFishPipe);
+  skuProcessStore.getState().init(item, debugPipe);
 }
 
 export const debugExportCBOR=(item:DB.skuItem[])=>{
