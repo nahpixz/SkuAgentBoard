@@ -4,7 +4,7 @@ import { getInspectedUrl, JumpToComplete, waitForRequest } from "@/entrypoints/p
 import { skuAgentStore } from "./components/skuFetchAgent";
 import { ScrollToEnd_bilimall, evalInConsole, captureVisibleTab, waitForFrame, evalGetBoundingClientRect, captureWithRect } from "./opts";
 import { ListenKey } from "@/entrypoints/panel/networkListener";
-import { number } from "motion/react";
+import { DB } from "@/entrypoints/panel/db";
 
 export async function skuAutoScroll(){
   const autoCaptureMall = useSettingsStore.getState().getAndOpen_AutoCaptureMall() //缓存旧autoCaptureMall
@@ -151,3 +151,108 @@ export async function captureOrderScreenshot(skuDetail:MALL_DETAIL.ItemDetail) {
   })
   
 }
+
+const GOOFISH_PRO_ADD = 'https://goofish.pro/sale/product/add?from=%2Fall'
+export async function goofishProAddNew(skuItem:DB.skuItem){
+  // await JumpToComplete(GOOFISH_PRO_ADD);
+
+  // await waitForFrame();
+  const [ok1,err1]:[boolean,any] = await evalInConsole(() => {
+    try {
+      const $q = (s:string)=>(document.querySelector(s) as any)
+      $q('.produect-type-2 .el-radio input').click() //第一个选项-普通商品
+    } catch (e) {
+      return [false,e];
+    }
+    return [true,null];
+  }, []);
+  if(!ok1) throw `上架E1:${err1}`
+  
+  await waitForFrame(999);
+  const [ok2,err2]:[boolean,any] = await evalInConsole(() => {
+    try {
+      const $q = (s:string)=>(document.querySelector(s) as any)
+      const setInput = (label:string,value:any)=> {
+        const ipV = $q(`.el-form-item__label[for="${label}"] +div .el-input`).__vue__
+        ipV.handleInput({target:{value}})
+        return ipV
+      }
+      $q('.auth-list.custom-element>li').click()
+      const ipV = setInput!('channelCat','手办').$parent
+      ipV.suggestionSelect(ipV.suggestionList[0])
+      $q('.container.custom-style-release').__vue__.pv_list.push(
+        'fb9a8d5bf33e218147ad41482caf5b13', //全新未拆封
+        '216ff34a76fe9274919b3ac515922d7c', //现货
+        '0948659a39e9a59d90b64ccec8afc4cb', //全新无瑕疵
+        'f5d311dc4130498b6ee44d672c9ba952', //有原装盒
+        // '5def5822bcf50d8a309cf60ad0dae4b2' //景品
+      )
+      
+      
+    } catch (e) {
+      console.debug('e',e)
+      return [false,String(e)];
+    }
+    return [true,null];
+  }, []);
+  if(!ok2) throw `上架E2:${err2}`
+    
+  await waitForFrame(333);
+  const [ok3,err3]:[boolean,any] = await evalInConsole(() => {
+    try {
+      const $q = (s:string)=>(document.querySelector(s) as any)
+      const setInput = (label:string,value:any)=> {
+        const ipV = $q(`.el-form-item__label[for="${label}"] +div .el-input`).__vue__
+        ipV.handleInput({target:{value}})
+        return ipV
+      }
+      
+      setInput('title0','标题')
+      setInput('original_price','10')
+      setInput('price','10')
+      
+      $q('.el-form-item__label[for="content0"] +div .el-textarea').__vue__.handleInput({target:{value:'详情'}})
+      
+      const cs = $q('.cs-item .el-select').__vue__
+      cs.handleOptionSelect(cs.options[0],true)
+      
+      $q('.el-form-item__label[for="region_full_name0"] +div .el-select').__vue__.handleFocus()
+      const regionDlg = $q('.el-dialog[aria-label="请选择发货区域"]').closest('.dlg-wrape').__vue__
+      regionDlg.query.province.id = 110000
+      regionDlg.query.province.name = "北京"
+      regionDlg.getProvince()
+      regionDlg.query.city.id = 110100
+      regionDlg.query.city.name = "北京市"
+      regionDlg.getCity()
+      // regionDlg.getDistrict()
+      regionDlg.query.district.id = 110101
+      regionDlg.query.district.name = "东城区"
+      regionDlg.dlgConfirm()
+    } catch (e) {
+      console.debug('e',e)
+      return [false,String(e)];
+    }
+    return [true,null];
+  }, []);
+  if(!ok3) throw `上架E3:${err3}`
+  
+  await waitForFrame(3333);
+  const [ok4,err4]:[boolean,any] = await evalInConsole(() => {
+    try {
+      const $q = (s:string)=>(document.querySelector(s) as any)
+      $q('.cs-item .el-radio input').click()
+      $q('.publish-item .el-radio input').click()
+      
+    } catch (e) {
+      console.debug('e',e)
+      return [false,String(e)];
+    }
+    return [true,null];
+  }, []);
+  if(!ok4) throw `上架E4:${err4}`
+  
+  // return ;
+}
+
+
+
