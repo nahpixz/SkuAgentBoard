@@ -24,6 +24,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@redux-devtools/extension": "^3.3.0",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "@types/react-window": "^1.8.8",
     "cbor-x": "^1.6.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -36,6 +37,8 @@
     "react-dom": "^19.1.0",
     "react-json-view-lite": "^2.4.1",
     "react-syntax-highlighter": "^15.6.1",
+    "react-window": "^2.0.0",
+    "react-window-infinite-loader": "^1.0.10",
     "tailwind-merge": "^3.3.1",
     "tw-animate-css": "^1.3.4",
     "zustand": "^5.0.6"

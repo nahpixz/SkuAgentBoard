@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import './App.css';
 import { C2C_DETAIL, C2C_LIST, GOOFISH, MALL_DETAIL, MARKET_SWG } from './api';
 import { ArrowLeft, Search, Settings, Bug, Layers, Check, CircleCheckBig, FunnelPlus, SlidersHorizontal } from 'lucide-react';
@@ -137,10 +137,38 @@ function App() {
     setIsCheckingComplete(false);
   }
   
+  // 分页状态管理
+  const [displayCount, setDisplayCount] = useState(24); // 初始显示200个项目
+  const ITEMS_PER_PAGE = 12; // 每次加载100个项目
+  
   const skuShowList = useMemo(() => {
     if (!skuList || skuList.length === 0) return [];
     return FilterAndSort(skuList);
   }, [skuList, filterState.applied]);
+  
+  // 当前显示的项目列表
+  const displayedItems = useMemo(() => {
+    return skuShowList.slice(0, displayCount);
+  }, [skuShowList, displayCount]);
+  
+  // 加载更多项目
+  const loadMore = useCallback(() => {
+    setDisplayCount(prev => Math.min(prev + ITEMS_PER_PAGE, skuShowList.length));
+  }, [skuShowList.length]);
+  
+  // 重置显示数量当筛选条件改变时
+  useEffect(() => {
+    setDisplayCount(24);
+  }, [filterState.applied]);
+  
+  // 无限滚动处理
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    // 当滚动到底部附近时自动加载更多
+    if (scrollHeight - scrollTop <= clientHeight + 100 && displayCount < skuShowList.length) {
+      loadMore();
+    }
+  }, [loadMore, displayCount, skuShowList.length]);
 
   async function startCheck() {
     if (!checkingItem) return console.error('检查项不存在');
@@ -240,14 +268,17 @@ function App() {
   return (
     <>
       {/* 选择/搜索模式下的顶部操作栏 */}
-      {mode=='select' && <SelectModeToolbar items={skuShowList} onClose={()=>setMode('idle')} />}
+      {mode=='select' && <SelectModeToolbar items={displayedItems} onClose={()=>setMode('idle')} />}
       {mode=='search' && <SearchModal onClose={()=>setMode('idle')} />}
       
       {/* 主内容区域  =='Interactive'*/}
       {gearMode =='Interactive' && 
-      <div className={`h-screen overflow-y-auto ${mode === 'select' || mode === 'search' ? 'pt-16' : 'pt-2'}`}>
+      <div 
+        className={`h-screen overflow-y-auto ${mode === 'select' || mode === 'search' ? 'pt-16' : 'pt-2'}`}
+        onScroll={handleScroll}
+      >
         <div className={` grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 p-2`}>
-        {skuShowList.map((item) => {
+        {displayedItems.map((item) => {
           // const isSelected = selectedItems[item.itemsId];
           return (
             <ProductCard
@@ -257,6 +288,18 @@ function App() {
           );
         })}      
         </div>
+        
+        {/* 加载更多按钮 */}
+        {displayCount < skuShowList.length && (
+          <div className="flex justify-center p-4">
+            <button 
+              onClick={loadMore}
+              className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              加载更多 ({displayCount}/{skuShowList.length})
+            </button>
+          </div>
+        )}
       </div>}
 
       {gearMode =='Auto' &&<>
