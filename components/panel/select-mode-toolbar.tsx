@@ -258,11 +258,19 @@ export function SelectModeToolbar({items,onClose}:{items:DB.skuItem[],onClose:()
               <DropdownMenuContent align="center" className="w-40">
                 <DropdownMenuLabel className="text-xs">收藏操作</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-xs flex items-center gap-2 text-amber-600">
+                <DropdownMenuItem className="text-xs flex items-center gap-2 text-amber-600"
+                  onClick={() =>  DB.batchSkuFavorite(Object.entries(selectedItems)
+                    .filter(([itemsId, selected]) => selected)
+                    .map(([itemsId, selected]) => Number(itemsId)),true)
+                   }>
                   <Star className="h-3.5 w-3.5" />
                   添加到收藏
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-xs flex items-center gap-2 text-yellow-600">
+                <DropdownMenuItem className="text-xs flex items-center gap-2 text-yellow-600"
+                 onClick={() =>  DB.batchSkuFavorite(Object.entries(selectedItems)
+                    .filter(([itemsId, selected]) => selected)
+                    .map(([itemsId, selected]) => Number(itemsId)),false)
+                   }>
                   <StarOff className="h-3.5 w-3.5" />
                   从收藏中移除
                 </DropdownMenuItem>

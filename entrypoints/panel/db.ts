@@ -6,6 +6,7 @@ interface StoredSkuItem extends C2C_LIST.skuItem {
   c2cLists?: (StoredC2CItem | undefined)[]; //Only for get,Not for put/add
   c2cInfosLastUpdateTime?: number; // 最后一次更新时间
   category?: C2C_LIST.CategoryType;
+  isFavorited?: boolean; // 收藏状态
 }
 
 interface StoredC2CItem extends Omit<C2C_LIST.c2cItem, "detailDtoList"> {
@@ -32,6 +33,18 @@ db.version(2).stores({
   skus: "itemsId, skuId",
   c2cs: "c2cItemsId",
   blacklist: "c2cItemsId",
+});
+
+db.version(3).stores({
+  skus: "itemsId, skuId",
+  c2cs: "c2cItemsId",
+  blacklist: "c2cItemsId",
+}).upgrade(trans => {
+  return trans.table('skus').toCollection().modify(sku => {
+    if (sku.isFavorited === undefined) {
+      sku.isFavorited = false;
+    }
+  });
 });
 
 async function _putSkuFromC2CItem(c2cIt: C2C_LIST.c2cItem|C2C_DETAIL.c2cItem) {
@@ -75,6 +88,30 @@ export async function countSku(): Promise<number> {
   return db.skus.count();
 }
 
+// 切换SKU收藏状态
+export async function toggleSkuFavorite(itemsId: number, favoriteStatus?: boolean): Promise<boolean> {
+  const sku = await db.skus.get(itemsId);
+  if (!sku) throw new Error('SKU not found');
+  
+  const newFavoriteStatus = favoriteStatus ?? !sku.isFavorited;
+  await db.skus.update(itemsId, { isFavorited: newFavoriteStatus });
+  return newFavoriteStatus;
+}
+
+export async function batchSkuFavorite(itemsIds: number[], favoriteStatus: boolean): Promise<void> {
+  await db.skus.bulkUpdate(itemsIds.map(key => ({ key, changes: { isFavorited: favoriteStatus } })))
+}
+
+// 获取收藏的SKU列表
+export async function getFavoriteSkus(): Promise<StoredSkuItem[]> {
+  return db.skus.filter(sku => sku.isFavorited === true).toArray();
+}
+
+// 统计收藏的SKU数量
+export async function countFavoriteSkus(): Promise<number> {
+  return db.skus.filter(sku => sku.isFavorited === true).count();
+}
+
 export async function putC2CList(data: C2C_LIST.c2cItem[]): Promise<void> {
   return db.transaction("rw", db.c2cs, db.skus, async () => {
     for (const c2cIt of data) {
@@ -108,7 +145,7 @@ export async function exportData(): Promise<string> {
     const blacklist = await db.blacklist.toArray();
     
     const exportData = {
-      version: "2.0",
+      version: "3.0",
       timestamp: new Date().toISOString(),
       data: {
         skus,
@@ -131,8 +168,14 @@ export async function importData(jsonData: string): Promise<void> {
     }
     
     return db.transaction("rw", db.skus, db.c2cs, db.blacklist, async () => {
+      // 处理旧版本数据兼容性
+      const skusWithFavorites = importData.data.skus.map((sku: any) => ({
+        ...sku,
+        isFavorited: sku.isFavorited || false // 为旧数据添加默认值
+      }));
+      
       // 导入新数据
-      await db.skus.bulkPut(importData.data.skus);
+      await db.skus.bulkPut(skusWithFavorites);
       await db.c2cs.bulkPut(importData.data.c2cs);
       
       // 导入黑名单数据（如果存在）

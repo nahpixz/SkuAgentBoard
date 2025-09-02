@@ -88,6 +88,21 @@ function App() {
   // 筛选相关状态
   const filterState = useGlobalFilterStore();
   
+  // 收藏处理函数
+  const handleFavoriteToggle = useCallback(async (itemsId: number, newStatus: boolean) => {
+    // 如果启用了实时查询，数据会自动更新
+    // 如果没有启用实时查询，需要手动更新缓存
+    if (!enableLiveQuery) {
+      setCachedSkuList(prev => 
+        prev.map(item => 
+          item.itemsId === itemsId 
+            ? { ...item, isFavorited: newStatus }
+            : item
+        )
+      );
+    }
+  }, [enableLiveQuery]);
+  
 
   // 创建调试组件的引用
   const debugOverlayRef = useRef<DebugOverlayRef>(null);
@@ -284,7 +299,10 @@ function App() {
             <ProductCard
               key={item.itemsId}
               item={item}
-              onOpenInventoryCheck={opencheckInventory} mode={mode}            />
+              onOpenInventoryCheck={opencheckInventory} 
+              mode={mode}
+              onFavoriteToggle={handleFavoriteToggle}
+            />
           );
         })}      
         </div>

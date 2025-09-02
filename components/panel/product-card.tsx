@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Info, Tag, Package, Gamepad2, Smartphone, Gift } from 'lucide-react';
+import { Info, Tag, Package, Gamepad2, Smartphone, Gift, Heart,Star } from 'lucide-react';
 import { C2C_DETAIL, MALL_DETAIL } from '../../entrypoints/panel/api';
 import { JumpTo, ToC2cSearch } from '../../entrypoints/panel/tasks';
 import { DB } from '../../entrypoints/panel/db';
@@ -16,12 +16,14 @@ interface ProductCardProps {
   mode?: 'select' | string
   item: DB.skuItem;
   onOpenInventoryCheck: (item: DB.skuItem) => void;
+  onFavoriteToggle?: (itemsId: number, newStatus: boolean) => void;
 }
 
 export function ProductCard({
   mode = '',
   item,
-  onOpenInventoryCheck
+  onOpenInventoryCheck,
+  onFavoriteToggle
 }: ProductCardProps) {
   // 使用select store
   const { 
@@ -129,6 +131,26 @@ export function ProductCard({
                 checked={isSelected}
                 className="h-5 w-5 rounded-full data-[state=checked]:bg-[#786DF6] data-[state=checked]:border-[#786DF6] border-gray-300"
               />
+          </div>
+        )}
+        
+        {/* 收藏图标背景 */}
+        {item.isFavorited && (
+          <div 
+            className="absolute top-15 left-1 z-10 cursor-pointer"
+            title={item.isFavorited ? '取消收藏' : '添加收藏'}
+          >
+            <div className={`p-2 rounded-full transition-all ${
+              item.isFavorited 
+                ? 'bg-yellow-500/30 text-white shadow-lg' 
+                : 'bg-black/30 text-white/70 hover:bg-black/50 hover:text-white'
+            }`}>
+              <Star 
+                className="h-10 w-10" 
+                // fill={'none'}
+                color='#D8790066'
+              />
+            </div>
           </div>
         )}
         

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, JSX, ComponentType } from 'react';
-import { X, ArrowUpDown, Percent, Clock, Package, Tag, Gift, Gamepad2, Smartphone } from 'lucide-react';
+import { X, ArrowUpDown, Percent, Clock, Package, Tag, Gift, Gamepad2, Smartphone, Heart } from 'lucide-react';
 import { PriceRangeFilter,PriceRangeFilterProps } from './price-range-filter';
 import { SortButton, SortDirection, SortOption } from './sort-button';
 import { ModalOverlay } from './modal-overlay';
@@ -15,7 +15,8 @@ const FilterDefaultOptions = {
   showOnlyInStock:false,
   discountRange: 100,
   updateTimeRange: 7,
-  selectedCategory: '' as selectAbleCategory // 空字符串表示不筛选分类
+  selectedCategory: '' as selectAbleCategory, // 空字符串表示不筛选分类
+  showOnlyFavorites: false // 仅显示收藏的商品
 }
 const FilterDefaultState = {
   skuPriceRange:[NaN,NaN] as [number,number],
@@ -37,6 +38,9 @@ export const useGlobalFilterStore = _create((set:setFn<typeof FilterDefaultState
   })),
   _onCategoryChange:(category:selectAbleCategory)=> set(state=>({
     pending:{...state.pending,selectedCategory:category}
+  })),
+  _toggleShowOnlyFavorites:()=> set(state=>({
+    pending:{...state.pending,showOnlyFavorites:!state.pending.showOnlyFavorites}
   })),
   _resetPending:()=>set(state=>({
     pending:state.applied || FilterDefaultOptions
@@ -68,10 +72,10 @@ export function FilterModal({ isOpen, onClose }: FilterModalProps) {
     pending,skuPriceRange,
     _handleSortChange,
     _onDiscountRangeChange,_onUpdateTimeRangeChange,_toggleShowOnlyInStock,
-    _onCategoryChange,
+    _onCategoryChange,_toggleShowOnlyFavorites,
     _apply,_reset,_resetPending
   }  = useGlobalFilterStore();
-  const {priceRange,sortOption,sortDirection,discountRange,updateTimeRange,showOnlyInStock,selectedCategory} = pending;
+  const {priceRange,sortOption,sortDirection,discountRange,updateTimeRange,showOnlyInStock,selectedCategory,showOnlyFavorites} = pending;
   const [skuGroupOptions,setSkuGroupOptions] = useState<PriceRangeFilterProps['groupOptions']|null>(null);
   
   // 当模态框打开时，重置pending状态为上次应用的状态
@@ -291,6 +295,39 @@ export function FilterModal({ isOpen, onClose }: FilterModalProps) {
             </div>
           </div>
           
+          <div className="mb-4">
+            <div className="flex items-center mb-2">
+              <div 
+                className="relative inline-block w-10 mr-2 align-middle select-none"
+                onClick={() => _toggleShowOnlyFavorites()}
+              >
+                <input 
+                  type="checkbox" 
+                  id="showOnlyFavorites" 
+                  checked={showOnlyFavorites}
+                  onChange={(e) => _toggleShowOnlyFavorites()}
+                  className="sr-only"
+                />
+                <div className="block h-5 w-10 rounded-full bg-gray-300 cursor-pointer"
+                  style={{
+                    background: showOnlyFavorites ? '#786DF6' : '#D1D5DB'
+                  }}
+                ></div>
+                <div 
+                  className="absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition-transform duration-200 ease-in-out"
+                  style={{
+                    transform: showOnlyFavorites ? 'translateX(20px)' : 'translateX(0)',
+                    border: showOnlyFavorites ? '2px solid #786DF6' : '2px solid #D1D5DB'
+                  }}
+                ></div>
+              </div>
+              <label htmlFor="showOnlyFavorites" className="text-sm font-medium text-gray-700 flex items-center gap-1.5 cursor-pointer">
+                <Heart className="h-3.5 w-3.5" />
+                只显示收藏商品
+              </label>
+            </div>
+          </div>
+          
           <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
             <button 
               className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 text-xs rounded-lg transition-colors"
@@ -414,6 +451,11 @@ export function FilterAndSort(skuList: DB.skuItem[]){
     // 只显示有货商品
     if (appliedOpt?.showOnlyInStock) {
       if (isAllDisabled(item)) return false;
+    }
+    
+    // 只显示收藏商品
+    if (appliedOpt?.showOnlyFavorites) {
+      if (!item.isFavorited) return false;
     }
 
     // 价格范围筛选
