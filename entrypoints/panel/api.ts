@@ -218,4 +218,5 @@ export namespace MARKET_SWG{
 export namespace GOOFISH{
     export const HOME_URL = "https://ssr.m.goofish.com/wow/moyu/moyu-project/anime-app/pages/home?stage=rank"
     export const SEARCH_URL = "https://ssr.m.goofish.com/wow/moyu/moyu-project/fish-anime-category/pages/categorySearch"
+    export const UPLOAD_URL = 'https://upload-z2.qiniup.com'
 }

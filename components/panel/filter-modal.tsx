@@ -504,12 +504,19 @@ export function FilterAndSort(skuList: DB.skuItem[]){
         valueB = b.marketPrice;
         break;
       case 'discount':
-        // 计算折扣率 (1 - 最低价/市场价) * 100
+        // 计算折扣率 (1 - 平均价/市场价) * 100
+        const getAveragePrice = (item: any) => {
+          if (!item.c2cLists || item.c2cLists.length === 0) return 0;
+          const availableItems = item.c2cLists.filter((c2c: any) => !c2c?.removable);
+          if (availableItems.length === 0) return 0;
+          const totalPrice = availableItems.reduce((sum: number, c2c: any) => sum + (Number(c2c?.showPrice) || 0), 0);
+          return totalPrice / availableItems.length;
+        };
         const discountA = a.c2cLists && a.c2cLists.length > 0
-          ? (1 - parseFloat(a.c2cLists.sort((x, y) => (x?.price || 0) - (y?.price || 0))[0]?.showPrice || '0') / (a.marketPrice / 100)) * 100
+          ? (1 - getAveragePrice(a) / (a.marketPrice / 100)) * 100
           : 0;
         const discountB = b.c2cLists && b.c2cLists.length > 0
-          ? (1 - parseFloat(b.c2cLists.sort((x, y) => (x?.price || 0) - (y?.price || 0))[0]?.showPrice || '0') / (b.marketPrice / 100)) * 100
+          ? (1 - getAveragePrice(b) / (b.marketPrice / 100)) * 100
           : 0;
         valueA = discountA;
         valueB = discountB;

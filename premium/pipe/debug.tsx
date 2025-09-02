@@ -71,6 +71,13 @@ export const debugPipe = createPipe<DB.skuItem>()
     // render:(result)=>{
       
     // }
+  }).addStep({
+    id:'fav',
+    name:'收藏',
+    description:'收藏商品',
+    process:async(item: DB.skuItem)=>{
+      return DB.toggleSkuFavorite(item.itemsId,true)
+    }
   })
 ;
 

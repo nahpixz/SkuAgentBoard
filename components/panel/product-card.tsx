@@ -75,6 +75,14 @@ export function ProductCard({
     return Math.round(totalPrice / availableItems.length);
   }
 
+  function getDiscountRate(it: DB.skuItem) {
+    const avgPrice = getAveragePrice(it);
+    if (!avgPrice || !it.marketPrice) return null;
+    const marketPriceYuan = it.marketPrice / 100; // 转换为元
+    const discountRate = (avgPrice / marketPriceYuan) * 100;
+    return Math.round(discountRate);
+  }
+
   // 获取分类名称
   function getCategoryName(category?: string) {
     if (!category) return '未分类';
@@ -261,7 +269,7 @@ export function ProductCard({
                    hover:shadow-xl transition-all duration-200`} //border border-white/20 shadow-lg
                 >
                   {/* <span>&nbsp;</span>  */}
-                  <span>¥{111.11}</span>
+                  <span>{getDiscountRate(item) ? `${getDiscountRate(item)}%` : '无折扣'}</span>
                    {/* <span>¥{getLowestPrice(item)}</span> */}
                   {/* transparent  #786DF6*/}
                 </div>

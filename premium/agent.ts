@@ -1,5 +1,5 @@
 import { useSettingsStore } from "@/components/panel/settings-store";
-import { C2C_LIST, MALL_DETAIL, ORDER_DETAIL } from "@/entrypoints/panel/api";
+import { C2C_LIST, GOOFISH, MALL_DETAIL, ORDER_DETAIL } from "@/entrypoints/panel/api";
 import { getInspectedUrl, JumpToComplete, waitForRequest } from "@/entrypoints/panel/tasks";
 import { skuAgentStore } from "./components/skuFetchAgent";
 import { ScrollToEnd_bilimall, evalInConsole, captureVisibleTab, waitForFrame, evalGetBoundingClientRect, captureWithRect } from "./opts";
@@ -173,18 +173,20 @@ export async function goofishProAddNew(skuItem:DB.skuItem,screenBS64:string[],de
   
   console.log('argData',argData)
   // await waitForFrame();
-  const [ok1,err1]:[boolean,any] = await evalInConsole(() => {
-    try {
-      const $q = (s:string)=>(document.querySelector(s) as any)
-      $q('.produect-type-2 .el-radio input').click() //第一个选项-普通商品
-    } catch (e) {
-      return [false,e];
-    }
-    return [true,null];
-  }, []);
-  if(!ok1) throw `上架E1:${err1}`
+  // const [ok1,err1]:[boolean,any] = await evalInConsole(() => {
+  //   try {
+  //     const $q = (s:string)=>(document.querySelector(s) as any)
+  //     $q('.produect-type-2 .el-radio input').click() //第一个选项-普通商品
+  //   } catch (e) {
+  //     return [false,e];
+  //   }
+  //   return [true,null];
+  // }, []);
+  // if(!ok1) throw `上架E1:${err1}`
   
-  await waitForFrame(999);
+  await waitForFrame(333);
+  ListenKey.GOOFISH_UPLOAD = 'GOOFISH_UPLOAD'
+  const uploaded0 = waitForRequest(GOOFISH.UPLOAD_URL,ListenKey.GOOFISH_UPLOAD,30000);
   const [ok2,err2]:[boolean,any] = await evalInConsole((arg:typeof argData) => {
     try {
       const $q = (s:string)=>(document.querySelector(s) as any)
@@ -203,8 +205,87 @@ export async function goofishProAddNew(skuItem:DB.skuItem,screenBS64:string[],de
         'f5d311dc4130498b6ee44d672c9ba952', //有原装盒
         // '5def5822bcf50d8a309cf60ad0dae4b2' //景品
       )
+
+      function createFileFromBase64(base64URL:string, filename:string) {
+        return new Promise<File>((resolve, reject) => {
+          try {
+            // 从base64URL中提取MIME类型和纯base64数据
+            const matches = base64URL.match(/^data:(image\/\w+);base64,(.+)$/);
+            if (!matches || matches.length !== 3) {
+              throw new Error('无效的base64URL格式');
+            }
       
+            const mimeType = matches[1];
+            const base64Data = matches[2];
       
+            // 将base64字符串转换为字节数组
+            const byteCharacters = atob(base64Data);
+            const byteArrays = [];
+      
+            for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+              const slice = byteCharacters.slice(offset, offset + 512);
+              const byteNumbers = new Array(slice.length);
+      
+              for (let i = 0; i < slice.length; i++) {
+                byteNumbers[i] = slice.charCodeAt(i);
+              }
+      
+              const byteArray = new Uint8Array(byteNumbers);
+              byteArrays.push(byteArray);
+            }
+      
+            // 创建Blob对象
+            const blob = new Blob(byteArrays, { type: mimeType });
+      
+            // 确定文件扩展名
+            const ext = mimeType.split('/')[1];
+            const fullFilename = `${filename}.${ext}`;
+      
+            // 创建File对象
+            const file = new File([blob], fullFilename, {
+              type: mimeType,
+              lastModified: Date.now()
+            });
+      
+            resolve(file);
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }
+      async function handleBase64ImageInput(base64URL:string, filename:string) {
+        // 1. 将base64URL转换为File对象
+        const file = await createFileFromBase64(base64URL, filename);
+      
+        // 2. 获取页面中的文件输入元素
+        const input = document.querySelector('input.el-upload__input');
+        if (!input || !('files' in input)) {
+          throw new Error('未找到文件上传输入框');
+        }
+      
+        // 3. 创建DataTransfer对象并添加文件
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+      
+        // 4. 更新输入框的文件列表
+        input.files = dataTransfer.files;
+      
+        // 5. 触发change事件
+        const changeEvent = new Event('change', {
+          bubbles: true,
+          cancelable: true
+        });
+        input.dispatchEvent(changeEvent);
+      
+        const event = new Event("change", {
+          bubbles: !0,
+        });
+        input.dispatchEvent(event);
+      
+        return file;
+      }
+      handleBase64ImageInput(arg.screenshots[0],`file_${0}`)
+
     } catch (e) {
       console.debug('e',e)
       return [false,String(e)];
@@ -212,8 +293,10 @@ export async function goofishProAddNew(skuItem:DB.skuItem,screenBS64:string[],de
     return [true,null];
   }, [argData]);
   if(!ok2) throw `上架E2:${err2}`
+  console.warn('upload0:',await uploaded0)
     
   await waitForFrame(333);
+  const uploaded1 = waitForRequest(GOOFISH.UPLOAD_URL,ListenKey.GOOFISH_UPLOAD,30000);  
   const [ok3,err3]:[boolean,any] = await evalInConsole((arg:typeof argData) => {
     try {
       const $q = (s:string)=>(document.querySelector(s) as any)
@@ -300,8 +383,7 @@ export async function goofishProAddNew(skuItem:DB.skuItem,screenBS64:string[],de
       
         return file;
       }
-      
-      arg.screenshots.forEach((bs64,i)=> handleBase64ImageInput(bs64,`file_${i}`))
+      handleBase64ImageInput(arg.screenshots[1],`file_${1}`)
       
       if(arg?.ips && arg.ips.length){
         const elC = $q('.container.custom-style-release').__vue__
@@ -346,14 +428,16 @@ export async function goofishProAddNew(skuItem:DB.skuItem,screenBS64:string[],de
     return [true,null];
   }, [argData]);
   if(!ok3) throw `上架E3:${err3}`
+  console.warn('upload1:',await uploaded1)
+  ListenKey.GOOFISH_UPLOAD = 'null'
   
-  await waitForFrame(3333);
+  await waitForFrame(333);
   const [ok4,err4]:[boolean,any] = await evalInConsole(() => {
     try {
       const $q = (s:string)=>(document.querySelector(s) as any)
       $q('.cs-item .el-radio input').click()
       $q('.publish-item .el-radio input').click()
-      
+      $q('.submit-btn>button').click()
     } catch (e) {
       console.debug('e',e)
       return [false,String(e)];
@@ -364,6 +448,5 @@ export async function goofishProAddNew(skuItem:DB.skuItem,screenBS64:string[],de
   
   // return ;
 }
-
 
 

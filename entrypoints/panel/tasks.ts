@@ -1,5 +1,5 @@
 import { useSettingsStore } from "@/components/panel/settings-store";
-import { C2C_DETAIL, C2C_LIST, MARKET_SWG, MALL_DETAIL, ORDER_DETAIL } from "./api";
+import { C2C_DETAIL, C2C_LIST, MARKET_SWG, MALL_DETAIL, ORDER_DETAIL, GOOFISH } from "./api";
 
 export type RequestTypeMap = {
   [MARKET_SWG.JSON_PREFIX]: MARKET_SWG.c2cItem[];
@@ -7,6 +7,7 @@ export type RequestTypeMap = {
   [C2C_LIST.URL]: C2C_LIST.c2cItem[];
   [MALL_DETAIL.JSON_PREFIX]: MALL_DETAIL.ItemDetail;
   [ORDER_DETAIL.JSON_PREFIX]: boolean;
+  [GOOFISH.UPLOAD_URL]: boolean;
 };
 type RequestUrl = keyof RequestTypeMap;
 type PromiseResolver = {
@@ -19,7 +20,8 @@ export const pendingPromises:Record<RequestUrl,Map<string|number,PromiseResolver
   [C2C_DETAIL.JSON_PREFIX]: new Map(),
   [C2C_LIST.URL]: new Map(),
   [MALL_DETAIL.JSON_PREFIX]: new Map(),
-  [ORDER_DETAIL.JSON_PREFIX]: new Map()
+  [ORDER_DETAIL.JSON_PREFIX]: new Map(),
+  [GOOFISH.UPLOAD_URL]: new Map()
 }
 
 export async function waitForRequest<T extends RequestUrl>(requestPrefix:T,key:string|number,timeout=20000):Promise<RequestTypeMap[T]> {
