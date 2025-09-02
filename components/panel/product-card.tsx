@@ -67,6 +67,14 @@ export function ProductCard({
     return availableItems.sort((a, b) => a!.price - b!.price)?.[0]?.showPrice;
   }
 
+  function getAveragePrice(it: DB.skuItem) {
+    if (!it.c2cLists || it.c2cLists.length === 0) return null;
+    const availableItems = it.c2cLists.filter(c2c => !c2c?.removable);
+    if (availableItems.length === 0) return null;
+    const totalPrice = availableItems.reduce((sum, c2c) => sum + (Number(c2c?.showPrice) || 0), 0);
+    return Math.round(totalPrice / availableItems.length);
+  }
+
   // 获取分类名称
   function getCategoryName(category?: string) {
     if (!category) return '未分类';
@@ -175,9 +183,9 @@ export function ProductCard({
               duration-200 flex items-center gap-1.5 " //border rounded-md
               title="跳转s-wg搜索库存"
             >
-              {getLowestPrice(item) && (
+              {getAveragePrice(item) && (
                 <>
-                  <span className="font-semibold">¥{getLowestPrice(item)}</span>
+                  <span className="font-semibold">¥{getAveragePrice(item)}</span>
                   |
                 </>
               )}
@@ -187,15 +195,16 @@ export function ProductCard({
           <HoverCardContent className="w-80 p-3 rounded-lg shadow-lg border border-gray-200 bg-white/77 backdrop-blur-md">
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-sm font-medium text-gray-700">可用库存列表</h4>
-              {getLowestPrice(item) && (
+              {getAveragePrice(item) && (
                 <span className="text-xs text-[#786DF6] font-semibold bg-[#786DF6]/10 px-2 py-0.5 rounded-full">
-                  最低 ¥{getLowestPrice(item)}
+                  平均 ¥{getAveragePrice(item)}
                 </span>
               )}
             </div>
             <ul className="text-sm space-y-1 max-h-60 overflow-y-auto">
               {item.c2cLists && item.c2cLists
               .filter(x => !x?.removable)
+              .sort((a, b) => (a?.price || 0) - (b?.price || 0))
               .map((c2c) => {
                 const isC2CSelected = c2c?.c2cItemsId && selectedC2CItems[c2c.c2cItemsId];
                 return (
